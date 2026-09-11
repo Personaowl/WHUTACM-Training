@@ -40,6 +40,9 @@ public class MySqlInitializer implements DatabaseInitializer {
                     avatar_customized TINYINT(1) NOT NULL DEFAULT 0,
                     total_points INT NOT NULL DEFAULT 0,
                     display_name VARCHAR(100),
+                    real_name VARCHAR(100),
+                    college VARCHAR(150),
+                    class_name VARCHAR(150),
                     bio TEXT,
                     codeforces_handle VARCHAR(64),
                     pending_codeforces_handle VARCHAR(64),
@@ -372,6 +375,9 @@ public class MySqlInitializer implements DatabaseInitializer {
         ensureColumn("users", "atcoder_binding_token", "ALTER TABLE users ADD COLUMN atcoder_binding_token VARCHAR(64)");
         ensureColumn("users", "atcoder_binding_started_at_seconds", "ALTER TABLE users ADD COLUMN atcoder_binding_started_at_seconds BIGINT");
         ensureColumn("users", "atcoder_verified_at_seconds", "ALTER TABLE users ADD COLUMN atcoder_verified_at_seconds BIGINT");
+        ensureColumn("users", "real_name", "ALTER TABLE users ADD COLUMN real_name VARCHAR(100)");
+        ensureColumn("users", "college", "ALTER TABLE users ADD COLUMN college VARCHAR(150)");
+        ensureColumn("users", "class_name", "ALTER TABLE users ADD COLUMN class_name VARCHAR(150)");
 
         // CREATE TABLE IF NOT EXISTS 不会给已有表补充新索引，因此单独执行轻量迁移。
         ensureIndex(

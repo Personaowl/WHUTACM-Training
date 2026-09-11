@@ -123,6 +123,9 @@ export default function AdminTrainingDashboardPage() {
       const matchesKeyword = !keyword || [
         member.username,
         member.displayName,
+        member.realName,
+        member.college,
+        member.className,
         member.codeforcesHandle,
       ].some((value) => String(value || "").toLowerCase().includes(keyword));
 
@@ -249,7 +252,7 @@ export default function AdminTrainingDashboardPage() {
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="搜索成员或 CF 账号"
+                placeholder="搜索姓名、班级或 CF 账号"
                 className="w-full border-0 bg-transparent text-sm text-text-primary outline-none sm:w-48"
               />
             </label>
@@ -453,6 +456,14 @@ function MemberRow({ member }) {
               {member.displayName || member.username}
             </strong>
             <small className="block max-w-44 truncate text-[10px] text-text-secondary">@{member.username}</small>
+            {(member.realName || member.college || member.className) && (
+              <small
+                className="block max-w-52 truncate text-[10px] text-text-secondary"
+                title={[member.realName, member.college, member.className].filter(Boolean).join(" · ")}
+              >
+                {[member.realName, member.college, member.className].filter(Boolean).join(" · ")}
+              </small>
+            )}
           </span>
         </Link>
       </td>

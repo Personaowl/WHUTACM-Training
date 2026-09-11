@@ -10,6 +10,9 @@ import jakarta.validation.constraints.Size;
  * @param email       邮箱，可置空。
  * @param password    新密码，留空表示不修改。
  * @param displayName 展示昵称。
+ * @param realName    真实姓名，可选。
+ * @param college     学院，可选。
+ * @param className   班级，可选。
  * @param avatar      头像地址。
  * @param bio         个人简介。
  * @param showProblemTags 每日一题是否显示标签。
@@ -24,6 +27,12 @@ public record UserUpdateRequest(
         String password,
         @Size(max = 100, message = "display name is too long")
         String displayName,
+        @Size(max = 100, message = "real name is too long")
+        String realName,
+        @Size(max = 150, message = "college is too long")
+        String college,
+        @Size(max = 150, message = "class name is too long")
+        String className,
         @Size(max = 700000, message = "avatar is too large")
         String avatar,
         @Size(max = 1000, message = "bio is too long")

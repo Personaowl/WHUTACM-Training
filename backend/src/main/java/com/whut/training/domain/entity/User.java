@@ -25,6 +25,9 @@ public class User {
     private Boolean avatarCustomized;
     private Integer totalPoints;
     private String displayName;
+    private String realName;
+    private String college;
+    private String className;
     private String bio;
     private String codeforcesHandle;
     private String pendingCodeforcesHandle;
@@ -351,6 +354,30 @@ public class User {
 
     public void setDisplayName(String displayName) {
         this.displayName = displayName;
+    }
+
+    public String getRealName() {
+        return realName;
+    }
+
+    public void setRealName(String realName) {
+        this.realName = realName;
+    }
+
+    public String getCollege() {
+        return college;
+    }
+
+    public void setCollege(String college) {
+        this.college = college;
+    }
+
+    public String getClassName() {
+        return className;
+    }
+
+    public void setClassName(String className) {
+        this.className = className;
     }
 
     public String getBio() {

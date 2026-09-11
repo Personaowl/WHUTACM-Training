@@ -18,7 +18,7 @@ public class UserRepository {
     private final JdbcTemplate jdbcTemplate;
 
     private static final String SELECT_COLUMNS =
-            "id, username, email, password, role, uid, codeforces_rating, max_rating, is_online, last_online_time_seconds, avatar_url, avatar_customized, total_points, display_name, bio, " +
+            "id, username, email, password, role, uid, codeforces_rating, max_rating, is_online, last_online_time_seconds, avatar_url, avatar_customized, total_points, display_name, real_name, college, class_name, bio, " +
                     "codeforces_handle, pending_codeforces_handle, codeforces_binding_started_at_seconds, " +
                     "atcoder_handle, pending_atcoder_handle, atcoder_binding_token, atcoder_binding_started_at_seconds, atcoder_verified_at_seconds, " +
                     "member_type, show_problem_tags";
@@ -49,6 +49,9 @@ public class UserRepository {
             }
         }
         u.setDisplayName(rs.getString("display_name"));
+        u.setRealName(rs.getString("real_name"));
+        u.setCollege(rs.getString("college"));
+        u.setClassName(rs.getString("class_name"));
         u.setBio(rs.getString("bio"));
         u.setAvatarCustomized(parseOnline(rs.getObject("avatar_customized")));
         u.setCodeforcesHandle(rs.getString("codeforces_handle"));
@@ -71,7 +74,7 @@ public class UserRepository {
     public User save(User user) {
         if (user.getId() == null) {
             jdbcTemplate.update(
-                    "INSERT INTO users (username, email, password, role, uid, codeforces_rating, max_rating, is_online, last_online_time_seconds, avatar_url, avatar_customized, total_points, display_name, bio, codeforces_handle, pending_codeforces_handle, codeforces_binding_started_at_seconds, atcoder_handle, pending_atcoder_handle, atcoder_binding_token, atcoder_binding_started_at_seconds, atcoder_verified_at_seconds, member_type, show_problem_tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO users (username, email, password, role, uid, codeforces_rating, max_rating, is_online, last_online_time_seconds, avatar_url, avatar_customized, total_points, display_name, real_name, college, class_name, bio, codeforces_handle, pending_codeforces_handle, codeforces_binding_started_at_seconds, atcoder_handle, pending_atcoder_handle, atcoder_binding_token, atcoder_binding_started_at_seconds, atcoder_verified_at_seconds, member_type, show_problem_tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     user.getUsername(),
                     user.getEmail(),
                     user.getPassword(),
@@ -85,6 +88,9 @@ public class UserRepository {
                     Boolean.TRUE.equals(user.getAvatarCustomized()),
                     user.getTotalPoints() == null ? 0 : user.getTotalPoints(),
                     user.getDisplayName(),
+                    user.getRealName(),
+                    user.getCollege(),
+                    user.getClassName(),
                     user.getBio(),
                     user.getCodeforcesHandle(),
                     user.getPendingCodeforcesHandle(),
@@ -107,7 +113,7 @@ public class UserRepository {
         }
 
         jdbcTemplate.update(
-                "UPDATE users SET username = ?, email = ?, password = ?, role = ?, uid = ?, codeforces_rating = ?, max_rating = ?, is_online = ?, last_online_time_seconds = ?, avatar_url = ?, avatar_customized = ?, total_points = ?, display_name = ?, bio = ?, codeforces_handle = ?, pending_codeforces_handle = ?, codeforces_binding_started_at_seconds = ?, atcoder_handle = ?, pending_atcoder_handle = ?, atcoder_binding_token = ?, atcoder_binding_started_at_seconds = ?, atcoder_verified_at_seconds = ?, member_type = ?, show_problem_tags = ? WHERE id = ?",
+                "UPDATE users SET username = ?, email = ?, password = ?, role = ?, uid = ?, codeforces_rating = ?, max_rating = ?, is_online = ?, last_online_time_seconds = ?, avatar_url = ?, avatar_customized = ?, total_points = ?, display_name = ?, real_name = ?, college = ?, class_name = ?, bio = ?, codeforces_handle = ?, pending_codeforces_handle = ?, codeforces_binding_started_at_seconds = ?, atcoder_handle = ?, pending_atcoder_handle = ?, atcoder_binding_token = ?, atcoder_binding_started_at_seconds = ?, atcoder_verified_at_seconds = ?, member_type = ?, show_problem_tags = ? WHERE id = ?",
                 user.getUsername(),
                 user.getEmail(),
                 user.getPassword(),
@@ -121,6 +127,9 @@ public class UserRepository {
                 Boolean.TRUE.equals(user.getAvatarCustomized()),
                 user.getTotalPoints() == null ? 0 : user.getTotalPoints(),
                 user.getDisplayName(),
+                user.getRealName(),
+                user.getCollege(),
+                user.getClassName(),
                 user.getBio(),
                 user.getCodeforcesHandle(),
                 user.getPendingCodeforcesHandle(),

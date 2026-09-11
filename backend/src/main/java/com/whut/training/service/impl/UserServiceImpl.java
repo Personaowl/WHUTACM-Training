@@ -196,6 +196,18 @@ public class UserServiceImpl implements UserService {
             user.setDisplayName(normalizeNullableText(request.displayName()));
         }
 
+        if (request.realName() != null) {
+            user.setRealName(normalizeNullableText(request.realName()));
+        }
+
+        if (request.college() != null) {
+            user.setCollege(normalizeNullableText(request.college()));
+        }
+
+        if (request.className() != null) {
+            user.setClassName(normalizeNullableText(request.className()));
+        }
+
         if (request.avatar() != null) {
             String avatarUrl = validateAvatar(normalizeNullableText(request.avatar()));
             user.setAvatarUrl(avatarUrl);

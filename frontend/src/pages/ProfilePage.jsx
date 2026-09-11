@@ -26,6 +26,9 @@ export default function ProfilePage() {
   const [editEmail, setEditEmail] = useState("");
   const [editPassword, setEditPassword] = useState("");
   const [editDisplayName, setEditDisplayName] = useState("");
+  const [editRealName, setEditRealName] = useState("");
+  const [editCollege, setEditCollege] = useState("");
+  const [editClassName, setEditClassName] = useState("");
   const [editBio, setEditBio] = useState("");
   const [saving, setSaving] = useState(false);
   const [avatarSaving, setAvatarSaving] = useState(false);
@@ -60,6 +63,9 @@ export default function ProfilePage() {
     setEditEmail(profile?.email || "");
     setEditPassword("");
     setEditDisplayName(profile?.displayName || "");
+    setEditRealName(profile?.realName || "");
+    setEditCollege(profile?.college || "");
+    setEditClassName(profile?.className || "");
     setEditBio(profile?.bio || "");
     setEditMode(true);
     setMessage("");
@@ -79,8 +85,11 @@ export default function ProfilePage() {
       if (editEmail.trim()) payload.email = editEmail.trim();
       else payload.email = null;
       if (editPassword.trim()) payload.password = editPassword;
-      if (editDisplayName.trim()) payload.displayName = editDisplayName.trim();
-      if (editBio.trim()) payload.bio = editBio.trim();
+      payload.displayName = editDisplayName.trim() || null;
+      payload.realName = editRealName.trim() || null;
+      payload.college = editCollege.trim() || null;
+      payload.className = editClassName.trim() || null;
+      payload.bio = editBio.trim() || null;
 
       const resp = await updateMyProfile(user.id, payload);
       if (resp.code === 200) {
@@ -214,6 +223,10 @@ export default function ProfilePage() {
               <span>
                 身份: {currentProfile?.memberType === "ACTIVE_TEAM" ? "现役队员" : "普通成员"}
               </span>
+              {currentProfile?.realName && <span>姓名: {currentProfile.realName}</span>}
+              {(currentProfile?.college || currentProfile?.className) && (
+                <span>{[currentProfile.college, currentProfile.className].filter(Boolean).join(" · ")}</span>
+              )}
             </div>
           </div>
           <div className="text-right flex-shrink-0">
@@ -311,6 +324,33 @@ export default function ProfilePage() {
                 className="px-3 py-2 text-sm border border-border rounded-ui outline-none focus:border-text-primary"
                 value={editDisplayName}
                 onChange={(e) => setEditDisplayName(e.target.value)}
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="text-xs text-text-secondary">姓名（校内管理用，可选）</span>
+              <input
+                className="px-3 py-2 text-sm border border-border rounded-ui outline-none focus:border-text-primary"
+                value={editRealName}
+                onChange={(e) => setEditRealName(e.target.value)}
+                placeholder="例如：张三"
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="text-xs text-text-secondary">学院（可选）</span>
+              <input
+                className="px-3 py-2 text-sm border border-border rounded-ui outline-none focus:border-text-primary"
+                value={editCollege}
+                onChange={(e) => setEditCollege(e.target.value)}
+                placeholder="例如：计算机与人工智能学院"
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="text-xs text-text-secondary">班级（可选）</span>
+              <input
+                className="px-3 py-2 text-sm border border-border rounded-ui outline-none focus:border-text-primary"
+                value={editClassName}
+                onChange={(e) => setEditClassName(e.target.value)}
+                placeholder="例如：计科 2301 班"
               />
             </label>
           </div>
