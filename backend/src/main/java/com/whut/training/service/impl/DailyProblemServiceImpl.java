@@ -137,13 +137,15 @@ public class DailyProblemServiceImpl implements DailyProblemService {
                                 s.date(),
                                 s.problemKey()
                         );
-                        boolean checkedIn = slotStatus.isPresent()
-                                || statusOptional.filter(status -> status.score() != null && status.score().equals(s.rating())).isPresent();
+                        // Daily score is the maximum score across every slot.  It must never be
+                        // used to infer an individual slot's state: doing so couples Easy and
+                        // Hard, and can mark a different slot as completed for legacy or
+                        // regenerated daily records.  The slot-status table is the source of
+                        // truth once slots exist.
+                        boolean checkedIn = slotStatus.isPresent();
                         Integer score = slotStatus
                                 .map(com.whut.training.domain.entity.UserDailyStatus::score)
-                                .orElseGet(() -> checkedIn
-                                        ? statusOptional.map(com.whut.training.domain.entity.UserDailyStatus::score).orElse(0)
-                                        : 0);
+                                .orElse(0);
                         return new ProblemView(
                                 s.slot().toUpperCase(),
                                 s.date().toString(),

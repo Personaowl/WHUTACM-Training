@@ -196,7 +196,11 @@ public class CodeforcesApiService {
         }
 
         String encodedHandle = URLEncoder.encode(handle.trim(), StandardCharsets.UTF_8);
-        String url = baseUrl + "/user.status?handle=" + encodedHandle + "&from=1&count=1000";
+        // A user may submit more than 1,000 times in a day or during a contest.
+        // Codeforces permits up to 10,000 records here; checking the full supported
+        // recent window prevents a valid Hard submission from being missed after an
+        // Easy submission (or a long practice session).
+        String url = baseUrl + "/user.status?handle=" + encodedHandle + "&from=1&count=10000";
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .GET()
