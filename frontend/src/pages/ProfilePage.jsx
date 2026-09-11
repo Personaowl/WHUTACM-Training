@@ -281,12 +281,6 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <CodeforcesOverview
-        userId={currentProfile?.id}
-        handle={currentProfile?.codeforcesHandle}
-        canRefresh
-      />
-
       {/* Edit form */}
       {editMode && (
         <div className="bg-white border border-border rounded-ui p-4 space-y-3">
@@ -365,6 +359,12 @@ export default function ProfilePage() {
           </label>
         </div>
       )}
+
+      <CodeforcesOverview
+        userId={currentProfile?.id}
+        handle={currentProfile?.codeforcesHandle}
+        canRefresh
+      />
 
       <section>
         <h2 className="text-base font-semibold text-text-primary m-0 mb-2">打卡热力图</h2>
