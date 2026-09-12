@@ -125,23 +125,19 @@ public class DailyProblemRepository {
     }
 
     /**
-     * 按日期与 slot 查询题位（例如 easy/hard）。
+     * 使指定日期、题位的所有当前有效题失效。
+     *
+     * <p>题位保留历史重抽记录，因此不能只按第一条记录的 id 更新。一次更新所有
+     * {@code is_redrawn = 0} 的记录，可以同时修复旧版本误生成的重复有效题位。
+     *
+     * @return 本次失效的题位记录数。
      */
-    public Optional<com.whut.training.domain.entity.DailyProblemSlot> findSlotByDateAndSlot(LocalDate date, String slot) {
-        List<com.whut.training.domain.entity.DailyProblemSlot> rows = jdbcTemplate.query(
-                "SELECT id, date, slot, problem_key, contest_id, problem_index, name, rating, tags, source_url, is_redrawn FROM daily_problem_slot WHERE date = ? AND slot = ? LIMIT 1",
-                dailyProblemSlotRowMapper,
+    public int markActiveSlotsRedrawn(LocalDate date, String slot) {
+        return jdbcTemplate.update(
+                "UPDATE daily_problem_slot SET is_redrawn = 1 WHERE date = ? AND slot = ? AND is_redrawn = 0",
                 date.toString(),
                 slot
         );
-        return rows.stream().findFirst();
-    }
-
-    /**
-     * 将指定题位标记为已重抽（is_redrawn = 1）。
-     */
-    public void markSlotRedrawn(Long slotId) {
-        jdbcTemplate.update("UPDATE daily_problem_slot SET is_redrawn = 1 WHERE id = ?", slotId);
     }
 
     /**

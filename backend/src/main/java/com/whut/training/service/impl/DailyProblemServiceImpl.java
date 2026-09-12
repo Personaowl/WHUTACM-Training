@@ -429,46 +429,39 @@ public class DailyProblemServiceImpl implements DailyProblemService {
         if (adminUser == null || (adminUser.getRole() != UserRole.ADMIN && adminUser.getRole() != UserRole.SUPER_ADMIN)) {
             throw new BusinessException(403, "admin role required");
         }
-        LocalDate target = date == null ? timeProvider.today() : date;
-        // ensure slots exist
-        ensureDailySlots(target, false, "admin-redraw");
-
-        var existingOpt = dailyProblemRepository.findSlotByDateAndSlot(target, slot);
-        if (existingOpt.isPresent()) {
-            // mark old slot as redrawn
-            dailyProblemRepository.markSlotRedrawn(existingOpt.get().id());
-        }
-
-        // generate new problem for the slot
-        ensureProblemPoolAvailable();
-        LocalDate noRepeatAfterDate = target.minusDays(Math.max(1, noRepeatDays));
-
-        CfProblem picked = null;
-        if ("easy".equalsIgnoreCase(slot)) {
-            picked = dailyProblemRepository.findRandomProblem(easyMinRating, easyMaxRating, noRepeatAfterDate)
-                    .or(() -> dailyProblemRepository.findRandomProblem(easyMinRating, easyMaxRating))
-                    .orElseThrow(() -> new BusinessException(500, "failed to select easy problem"));
-        } else if ("hard".equalsIgnoreCase(slot)) {
-            picked = dailyProblemRepository.findRandomProblem(hardMinRating, hardMaxRating, noRepeatAfterDate)
-                    .or(() -> dailyProblemRepository.findRandomProblem(hardMinRating, hardMaxRating))
-                    .orElseThrow(() -> new BusinessException(500, "failed to select hard problem"));
-        } else {
+        if (!"easy".equalsIgnoreCase(slot) && !"hard".equalsIgnoreCase(slot)) {
             throw new BusinessException(400, "invalid slot");
         }
+        LocalDate target = date == null ? timeProvider.today() : date;
+        synchronized (generationLock) {
+            // 生成、旧题失效、新题落库必须视为一个临界区，避免连续点击或并发请求插入多个有效题位。
+            ensureDailySlots(target, false, "admin-redraw");
+            dailyProblemRepository.markActiveSlotsRedrawn(target, slot);
 
-        var newSlot = dailyProblemRepository.insertDailySlot(target, slot, picked, "admin-redraw");
-        // confirm currently does not change backfill behavior; saved for future semantics
-        return new ProblemView(
-                slot.toUpperCase(),
-                newSlot.date().toString(),
-                newSlot.problemKey(),
-                newSlot.contestId(),
-                newSlot.problemIndex(),
-                newSlot.name(),
-                newSlot.rating(),
-                newSlot.tags(),
-                newSlot.sourceUrl()
-        );
+            ensureProblemPoolAvailable();
+            LocalDate noRepeatAfterDate = target.minusDays(Math.max(1, noRepeatDays));
+            CfProblem picked = "easy".equalsIgnoreCase(slot)
+                    ? dailyProblemRepository.findRandomProblem(easyMinRating, easyMaxRating, noRepeatAfterDate)
+                    .or(() -> dailyProblemRepository.findRandomProblem(easyMinRating, easyMaxRating))
+                    .orElseThrow(() -> new BusinessException(500, "failed to select easy problem"))
+                    : dailyProblemRepository.findRandomProblem(hardMinRating, hardMaxRating, noRepeatAfterDate)
+                    .or(() -> dailyProblemRepository.findRandomProblem(hardMinRating, hardMaxRating))
+                    .orElseThrow(() -> new BusinessException(500, "failed to select hard problem"));
+
+            var newSlot = dailyProblemRepository.insertDailySlot(target, slot, picked, "admin-redraw");
+            // confirm currently does not change backfill behavior; saved for future semantics
+            return new ProblemView(
+                    slot.toUpperCase(),
+                    newSlot.date().toString(),
+                    newSlot.problemKey(),
+                    newSlot.contestId(),
+                    newSlot.problemIndex(),
+                    newSlot.name(),
+                    newSlot.rating(),
+                    newSlot.tags(),
+                    newSlot.sourceUrl()
+            );
+        }
     }
 
     /**

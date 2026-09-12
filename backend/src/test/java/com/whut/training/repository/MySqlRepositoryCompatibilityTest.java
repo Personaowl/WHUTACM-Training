@@ -153,6 +153,18 @@ class MySqlRepositoryCompatibilityTest {
 
         LocalDate date = LocalDate.of(2026, 8, 1);
         dailyProblemRepository.insertDailySlot(date, "easy", updated, "test");
+        // 重抽必须让该题位的所有旧有效记录失效，最后插入的新题才是唯一有效题。
+        LocalDate redrawDate = date.plusDays(1);
+        dailyProblemRepository.insertDailySlot(redrawDate, "hard", first, "test");
+        dailyProblemRepository.insertDailySlot(redrawDate, "hard", updated, "test");
+        assertThat(dailyProblemRepository.markActiveSlotsRedrawn(redrawDate, "hard")).isEqualTo(2);
+        dailyProblemRepository.insertDailySlot(redrawDate, "hard", first, "redraw");
+        assertThat(dailyProblemRepository.findDailySlotsByDate(redrawDate))
+                .filteredOn(slot -> "hard".equals(slot.slot()) && !slot.isRedrawn())
+                .singleElement()
+                .extracting(slot -> slot.problemKey())
+                .isEqualTo("100-A");
+        dailyProblemRepository.deleteDailySlotsByDate(redrawDate);
         dailyProblemRepository.saveUserDailySlotStatus(
                 user.getId(), date, "easy", "100-A", 1L, "OK", 1200
         );

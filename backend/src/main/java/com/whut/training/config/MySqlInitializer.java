@@ -6,6 +6,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 /**
  * MySQL 表结构初始化器。
  *
@@ -407,10 +409,47 @@ public class MySqlInitializer implements DatabaseInitializer {
                 "ALTER TABLE user_daily_slot_status ADD INDEX idx_user_daily_slot_status_date_user (date, user_id)"
         );
 
+        deactivateDuplicateDailySlots();
+
         jdbcTemplate.update("""
                 UPDATE push_pool SET status = 'PUBLISHED'
                 WHERE status = 'APPROVED' AND id IN (SELECT push_id FROM daily_push)
                 """);
+    }
+
+    /**
+     * 保留每个日期、题位最新的一条有效题，将旧版本误生成的重复有效记录归档。
+     */
+    private void deactivateDuplicateDailySlots() {
+        List<ActiveDailySlot> duplicateSlots = jdbcTemplate.query(
+                """
+                        SELECT date, slot, MAX(id) AS latest_id
+                        FROM daily_problem_slot
+                        WHERE is_redrawn = 0
+                        GROUP BY date, slot
+                        HAVING COUNT(*) > 1
+                        """,
+                (rs, rowNum) -> new ActiveDailySlot(
+                        rs.getString("date"),
+                        rs.getString("slot"),
+                        rs.getLong("latest_id")
+                )
+        );
+        for (ActiveDailySlot duplicateSlot : duplicateSlots) {
+            jdbcTemplate.update(
+                    """
+                            UPDATE daily_problem_slot
+                            SET is_redrawn = 1
+                            WHERE date = ? AND slot = ? AND is_redrawn = 0 AND id <> ?
+                            """,
+                    duplicateSlot.date(),
+                    duplicateSlot.slot(),
+                    duplicateSlot.latestId()
+            );
+        }
+    }
+
+    private record ActiveDailySlot(String date, String slot, long latestId) {
     }
 
     private void ensureIndex(String tableName, String indexName, String createSql) {
