@@ -40,7 +40,7 @@ class DailyProblemServiceImplTest {
         CountDownLatch releaseFetch = new CountDownLatch(1);
 
         when(timeProvider.today()).thenReturn(today);
-        when(repository.findDailySlotsByDate(today)).thenReturn(List.of());
+        when(repository.findCurrentDailySlotsByDate(today)).thenReturn(List.of());
         when(repository.countProblems()).thenReturn(0L);
         when(codeforcesApiService.fetchProblemSet()).thenAnswer(invocation -> {
             fetchStarted.countDown();
@@ -90,7 +90,7 @@ class DailyProblemServiceImplTest {
         user.setCodeforcesHandle("Persona_owl");
 
         when(timeProvider.today()).thenReturn(today);
-        when(repository.findDailySlotsByDate(today)).thenReturn(slots);
+        when(repository.findCurrentDailySlotsByDate(today)).thenReturn(slots);
         when(codeforcesApiService.getSubmissionStatus("Persona_owl", 999L)).thenReturn(Optional.of(
                 new CodeforcesApiService.SubmissionStatus(999L, 200, "B", "OK", Instant.ofEpochSecond(1_000L))
         ));
@@ -127,7 +127,7 @@ class DailyProblemServiceImplTest {
         user.setCodeforcesHandle("Persona_owl");
 
         when(timeProvider.today()).thenReturn(today);
-        when(repository.findDailySlotsByDate(today)).thenReturn(slots);
+        when(repository.findCurrentDailySlotsByDate(today)).thenReturn(slots);
         when(codeforcesApiService.getSubmissionStatus("Persona_owl", 101L)).thenReturn(Optional.of(
                 new CodeforcesApiService.SubmissionStatus(101L, 100, "A", "OK", Instant.ofEpochSecond(1_000L))
         ));

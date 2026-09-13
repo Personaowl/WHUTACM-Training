@@ -157,6 +157,11 @@ class MySqlRepositoryCompatibilityTest {
         LocalDate redrawDate = date.plusDays(1);
         dailyProblemRepository.insertDailySlot(redrawDate, "hard", first, "test");
         dailyProblemRepository.insertDailySlot(redrawDate, "hard", updated, "test");
+        assertThat(dailyProblemRepository.findCurrentDailySlotsByDate(redrawDate))
+                .filteredOn(slot -> "hard".equals(slot.slot()))
+                .singleElement()
+                .extracting(slot -> slot.problemKey())
+                .isEqualTo("100-A");
         assertThat(dailyProblemRepository.markActiveSlotsRedrawn(redrawDate, "hard")).isEqualTo(2);
         dailyProblemRepository.insertDailySlot(redrawDate, "hard", first, "redraw");
         assertThat(dailyProblemRepository.findDailySlotsByDate(redrawDate))

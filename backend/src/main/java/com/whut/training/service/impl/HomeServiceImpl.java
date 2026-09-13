@@ -70,11 +70,9 @@ public class HomeServiceImpl implements HomeService {
         LocalDate today = timeProvider.today();
         boolean problemPoolReady = dailyProblemService.ensureTodaySlots();
         o.setProblemPoolInitializing(!problemPoolReady);
-        var slots = dailyProblemRepository.findDailySlotsByDate(today);
+        var slots = dailyProblemRepository.findCurrentDailySlotsByDate(today);
         if (slots != null && !slots.isEmpty()) {
-            // Filter out redrawn slots — only show active (non-redrawn) problems on homepage
             List<com.whut.training.domain.dto.ProblemView> views = slots.stream()
-                    .filter(s -> !s.isRedrawn())
                     .map(s -> new com.whut.training.domain.dto.ProblemView(
                             s.slot() != null ? s.slot().toUpperCase() : "DAILY",
                             s.date().toString(),

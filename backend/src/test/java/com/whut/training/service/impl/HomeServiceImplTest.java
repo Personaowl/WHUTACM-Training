@@ -32,7 +32,7 @@ class HomeServiceImplTest {
         when(dailyProblemRepository.countActiveUsers(7)).thenReturn(12);
         when(leaderboardService.getTop(50, 0)).thenReturn(List.of());
         when(dailyProblemService.ensureTodaySlots()).thenReturn(true);
-        when(dailyProblemRepository.findDailySlotsByDate(today)).thenReturn(List.of());
+        when(dailyProblemRepository.findCurrentDailySlotsByDate(today)).thenReturn(List.of());
         when(pushPoolService.getTodayPush()).thenReturn(Optional.empty());
 
         HomeServiceImpl service = new HomeServiceImpl(

@@ -141,6 +141,31 @@ public class DailyProblemRepository {
     }
 
     /**
+     * 查询某日每个题位当前应展示的题目。
+     *
+     * <p>正常情况下每个题位只有一条有效记录；查询仍按 slot 取最新 id，作为旧数据
+     * 残留或多实例短暂并发时的兜底，确保客户端最多收到一题 Easy 和一题 Hard。
+     */
+    public List<com.whut.training.domain.entity.DailyProblemSlot> findCurrentDailySlotsByDate(LocalDate date) {
+        return jdbcTemplate.query(
+                """
+                        SELECT s.id, s.date, s.slot, s.problem_key, s.contest_id, s.problem_index,
+                               s.name, s.rating, s.tags, s.source_url, s.is_redrawn
+                        FROM daily_problem_slot s
+                        INNER JOIN (
+                            SELECT slot, MAX(id) AS latest_id
+                            FROM daily_problem_slot
+                            WHERE date = ? AND is_redrawn = 0
+                            GROUP BY slot
+                        ) latest ON latest.latest_id = s.id
+                        ORDER BY s.slot
+                        """,
+                dailyProblemSlotRowMapper,
+                date.toString()
+        );
+    }
+
+    /**
      * 插入每日题位记录。
      */
     public com.whut.training.domain.entity.DailyProblemSlot insertDailySlot(LocalDate date, String slot, CfProblem problem, String generatedBy) {
@@ -574,7 +599,7 @@ public class DailyProblemRepository {
                         FROM (
                             SELECT date, slot, problem_key, name, rating, tags, source_url, is_redrawn
                             FROM daily_problem_slot
-                            WHERE date BETWEEN ? AND ?
+                            WHERE date BETWEEN ? AND ? AND is_redrawn = 0
                             UNION ALL
                             SELECT d.date,
                                    'daily' AS slot,

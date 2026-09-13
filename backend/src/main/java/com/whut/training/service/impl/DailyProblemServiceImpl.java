@@ -123,7 +123,7 @@ public class DailyProblemServiceImpl implements DailyProblemService {
         ensureDailySlots(today, false, "api");
 
         List<com.whut.training.domain.entity.DailyProblemSlot> slots =
-                dailyProblemRepository.findDailySlotsByDate(today);
+                dailyProblemRepository.findCurrentDailySlotsByDate(today);
         Optional<com.whut.training.domain.entity.UserDailyStatus> statusOptional =
                 dailyProblemRepository.findUserDailyStatus(user.getId(), today);
 
@@ -198,7 +198,7 @@ public class DailyProblemServiceImpl implements DailyProblemService {
         // support multi-slot daily: try to find matching slot (easy/hard) first
         ensureDailySlots(today, false, "api");
 
-        List<com.whut.training.domain.entity.DailyProblemSlot> slots = dailyProblemRepository.findDailySlotsByDate(today);
+        List<com.whut.training.domain.entity.DailyProblemSlot> slots = dailyProblemRepository.findCurrentDailySlotsByDate(today);
         List<com.whut.training.domain.entity.DailyProblemSlot> activeSlots = slots == null
                 ? List.of()
                 : slots.stream()
@@ -503,7 +503,7 @@ public class DailyProblemServiceImpl implements DailyProblemService {
             boolean hasActiveEasy = false;
             boolean hasActiveHard = false;
             if (!forceRegenerate) {
-                List<com.whut.training.domain.entity.DailyProblemSlot> exist = dailyProblemRepository.findDailySlotsByDate(date);
+                List<com.whut.training.domain.entity.DailyProblemSlot> exist = dailyProblemRepository.findCurrentDailySlotsByDate(date);
                 hasActiveEasy = exist != null && exist.stream()
                         .anyMatch(slot -> !slot.isRedrawn() && "easy".equalsIgnoreCase(slot.slot()));
                 hasActiveHard = exist != null && exist.stream()

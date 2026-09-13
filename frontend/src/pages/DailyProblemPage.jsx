@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { checkInToday, getDailyHistory, getTodayProblem } from "../api/dailyProblem";
 import { updateMyProfile } from "../api/user";
 import CheckInModal from "../components/ui/CheckInModal";
@@ -20,38 +20,16 @@ const TEXT = {
   requestFailed: "\u8bf7\u6c42\u5931\u8d25",
   checkedIn: "\u5df2\u6253\u5361",
   submitCheckIn: "\u63d0\u4ea4\u6253\u5361",
-  redrawnCheckedIn: "\u9898\u76ee\u5df2\u5237\u65b0 \u00b7 \u5df2\u6253\u5361",
   notGenerated: "\u4eca\u65e5\u9898\u76ee\u5c1a\u672a\u751f\u6210",
   history: "\u5386\u53f2\u8bb0\u5f55",
   noHistory: "\u6682\u65e0\u5386\u53f2\u8bb0\u5f55",
   checkedCount: "\u5df2\u6253\u5361",
-  redrawn: "\u5df2\u88ab\u5237\u65b0",
-  checkedBeforeRedraw: "\u5df2\u6253\u5361\uff08\u5df2\u5237\u65b0\uff09",
   notCheckedIn: "\u672a\u6253\u5361",
   currentScore: "\u5f53\u524d\u5f97\u5206",
   completed: "\u4eca\u65e5\u5df2\u6253\u5361",
   problemsUnit: "\u9898",
   checkIn: "\u6253\u5361",
 };
-
-function getTodayStr() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function parseProblemKey(key) {
-  const idx = key?.lastIndexOf("-");
-  if (idx > 0) {
-    return {
-      contestId: Number(key.slice(0, idx)) || undefined,
-      problemIndex: key.slice(idx + 1) || undefined,
-    };
-  }
-  return { contestId: undefined, problemIndex: undefined };
-}
 
 export default function DailyProblemPage() {
   const { user, updateUser } = useAuth();
@@ -167,30 +145,7 @@ export default function DailyProblemPage() {
     }
   }
 
-  const today = getTodayStr();
-  const todayDisplay = useMemo(() => {
-    const todayHistory = historyData.filter((item) => item.date === today);
-    const redrawnCheckedIn = todayHistory.filter((item) => item.isRedrawn && item.checkedIn);
-    const redrawnNotCheckedInKeys = new Set(
-      todayHistory
-        .filter((item) => item.isRedrawn && !item.checkedIn)
-        .map((item) => item.problemKey)
-    );
-    const active = (todayData?.problems || []).filter(
-      (problem) => !redrawnNotCheckedInKeys.has(problem.problemKey)
-    );
-    const extra = redrawnCheckedIn.map((item) => {
-      const parsed = parseProblemKey(item.problemKey);
-      return {
-        ...item,
-        type: (item.slot || "DAILY").toUpperCase(),
-        contestId: parsed.contestId,
-        problemIndex: parsed.problemIndex,
-        isRedrawnCheckedIn: true,
-      };
-    });
-    return { active, extra };
-  }, [todayData, historyData, today]);
+  const todayProblems = todayData?.problems || [];
 
   if (loading) {
     return (
@@ -210,11 +165,9 @@ export default function DailyProblemPage() {
     historyPage * PAGE_SIZE
   );
 
-  const hasTodayContent =
-    todayDisplay.active.length > 0 || todayDisplay.extra.length > 0;
-  const todayCompletedCount =
-    todayDisplay.active.filter((problem) => problem.checkedIn).length + todayDisplay.extra.length;
-  const todayTotalCount = todayDisplay.active.length + todayDisplay.extra.length;
+  const hasTodayContent = todayProblems.length > 0;
+  const todayCompletedCount = todayProblems.filter((problem) => problem.checkedIn).length;
+  const todayTotalCount = todayProblems.length;
 
   return (
     <div className="space-y-5">
@@ -268,7 +221,7 @@ export default function DailyProblemPage() {
 
       {hasTodayContent ? (
         <div className="space-y-3">
-          {todayDisplay.active.map((problem) => (
+          {todayProblems.map((problem) => (
             <div key={problem.problemKey}>
               <ProblemCard
                 problem={problem}
@@ -283,24 +236,6 @@ export default function DailyProblemPage() {
                     >
                       {problem.checkedIn ? TEXT.checkedIn : TEXT.submitCheckIn}
                     </button>
-                  </>
-                )}
-              />
-            </div>
-          ))}
-
-          {todayDisplay.extra.map((problem) => (
-            <div key={problem.problemKey}>
-              <ProblemCard
-                problem={problem}
-                showTags={showTags}
-                actions={(
-                  <>
-                    <AddToProblemListButton problem={problem} />
-                    <span className="text-xs text-text-secondary bg-bg-secondary px-2 py-1 rounded">
-                      {TEXT.redrawnCheckedIn}
-                    </span>
-                    <span className="text-sm text-success font-medium">+{problem.score ?? 0}</span>
                   </>
                 )}
               />
@@ -375,14 +310,6 @@ export default function DailyProblemPage() {
                               {tag}
                             </span>
                           ))}
-                          {item.isRedrawn && !item.checkedIn && (
-                            <span className="text-[11px] text-text-secondary bg-bg-secondary px-1.5 py-0.5 rounded">
-                              {TEXT.redrawn}
-                            </span>
-                          )}
-                          {item.isRedrawn && item.checkedIn && (
-                            <span className="text-[11px] text-text-secondary">{TEXT.checkedBeforeRedraw}</span>
-                          )}
                         </div>
                         <div className="flex flex-shrink-0 items-center gap-2">
                           <AddToProblemListButton problem={item} compact />
