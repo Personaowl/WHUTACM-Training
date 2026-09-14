@@ -34,6 +34,11 @@ public interface UserService {
     User createByAdmin(User administrator, AdminCreateUserRequest request);
 
     /**
+     * 由超级管理员将其他用户密码重置为平台统一临时密码。
+     */
+    void resetPasswordBySuperAdmin(User superAdmin, Long targetUserId);
+
+    /**
      * 获取全部用户。
      *
      * @return 用户列表。

@@ -13,6 +13,7 @@ import com.whut.training.domain.entity.User;
 import com.whut.training.domain.enums.UserRole;
 import com.whut.training.exception.BusinessException;
 import com.whut.training.repository.UserRepository;
+import com.whut.training.repository.AuthTokenSessionRepository;
 import com.whut.training.service.CodeforcesApiService;
 import com.whut.training.service.AtCoderApiService;
 import com.whut.training.service.UserService;
@@ -39,12 +40,14 @@ public class UserServiceImpl implements UserService {
     private static final long CODEFORCES_BINDING_TTL_SECONDS = 120;
     private static final String CODEFORCES_VERIFICATION_URL = "https://codeforces.com/contest/1/problem/A";
     private static final long ATCODER_BINDING_TTL_SECONDS = 600;
+    private static final String ADMIN_RESET_PASSWORD = "123456";
 
     private final UserRepository userRepository;
     private final CodeforcesApiService codeforcesApiService;
     private final AtCoderApiService atCoderApiService;
     private final TimeProvider timeProvider;
     private final PasswordEncoder passwordEncoder;
+    private final AuthTokenSessionRepository authTokenSessionRepository;
 
     /**
      * 创建用户服务实现。
@@ -54,12 +57,14 @@ public class UserServiceImpl implements UserService {
      */
     public UserServiceImpl(UserRepository userRepository, CodeforcesApiService codeforcesApiService,
                            AtCoderApiService atCoderApiService, TimeProvider timeProvider,
-                           PasswordEncoder passwordEncoder) {
+                           PasswordEncoder passwordEncoder,
+                           AuthTokenSessionRepository authTokenSessionRepository) {
         this.userRepository = userRepository;
         this.codeforcesApiService = codeforcesApiService;
         this.atCoderApiService = atCoderApiService;
         this.timeProvider = timeProvider;
         this.passwordEncoder = passwordEncoder;
+        this.authTokenSessionRepository = authTokenSessionRepository;
     }
 
     /**
@@ -223,6 +228,25 @@ public class UserServiceImpl implements UserService {
         }
 
         return userRepository.save(user);
+    }
+
+    @Override
+    public void resetPasswordBySuperAdmin(User superAdmin, Long targetUserId) {
+        if (superAdmin == null || superAdmin.getRole() != UserRole.SUPER_ADMIN) {
+            throw new BusinessException(403, "super admin role required");
+        }
+        if (targetUserId == null || targetUserId.equals(superAdmin.getId())) {
+            throw new BusinessException(400, "cannot reset your own password from admin management");
+        }
+
+        User target = getById(targetUserId);
+        if (target.getRole() == UserRole.SUPER_ADMIN) {
+            throw new BusinessException(403, "cannot reset another super admin password");
+        }
+
+        target.setPassword(passwordEncoder.encode(ADMIN_RESET_PASSWORD));
+        userRepository.save(target);
+        authTokenSessionRepository.deleteByUserId(targetUserId);
     }
 
     private String validateAvatar(String avatar) {

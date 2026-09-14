@@ -99,4 +99,17 @@ public class AdminUserController {
         userRepository.updateMemberType(id, memberType);
         return ApiResponse.ok(userService.getById(id));
     }
+
+    /**
+     * 超级管理员重置其他用户密码为 123456，同时注销该用户的全部既有会话。
+     */
+    @PostMapping("/{id}/reset-password")
+    public ApiResponse<Map<String, String>> resetPassword(@PathVariable Long id) {
+        User currentUser = UserContext.getCurrentUser();
+        if (currentUser == null || currentUser.getRole() != UserRole.SUPER_ADMIN) {
+            throw new BusinessException(403, "super admin role required");
+        }
+        userService.resetPasswordBySuperAdmin(currentUser, id);
+        return ApiResponse.ok(Map.of("message", "password reset to 123456"));
+    }
 }

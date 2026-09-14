@@ -24,6 +24,15 @@ export async function changeUserMemberType(userId, memberType) {
   return res.data;
 }
 
+export async function resetUserPassword(userId) {
+  const res = await http.post(
+    `/api/admin/users/${userId}/reset-password`,
+    {},
+    { headers: authHeaders() }
+  );
+  return res.data;
+}
+
 export async function regenerateDaily() {
   const res = await http.post(
     "/api/admin/daily-problem/regenerate",

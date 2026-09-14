@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { listUsers } from "../../api/user";
 import {
   adminCreateUser,
   changeUserMemberType,
   changeUserRole,
   getRoles,
+  resetUserPassword,
 } from "../../api/admin";
 import { useAuth } from "../../context/AuthContext";
 import UserAvatar from "../../components/ui/UserAvatar";
@@ -13,12 +14,15 @@ import EmptyState from "../../components/ui/EmptyState";
 import * as Select from "@radix-ui/react-select";
 import * as Dialog from "@radix-ui/react-dialog";
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
+import { Search } from "lucide-react";
 
 export default function AdminUsersPage() {
-  const { isSuperAdmin } = useAuth();
+  const { user, isSuperAdmin } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [search, setSearch] = useState("");
+  const [resettingUserId, setResettingUserId] = useState(null);
 
   // Create user modal
   const [createOpen, setCreateOpen] = useState(false);
@@ -104,6 +108,37 @@ export default function AdminUsersPage() {
     }
   }
 
+  async function handleResetPassword(target) {
+    if (!window.confirm(`确认将 ${target.displayName || target.username} 的密码重置为 123456？该用户当前所有登录将立即失效。`)) {
+      return;
+    }
+    setResettingUserId(target.id);
+    setMessage("");
+    try {
+      const resp = await resetUserPassword(target.id);
+      if (resp.code === 200) {
+        setMessage(`已将 ${target.displayName || target.username} 的密码重置为 123456，并注销其旧登录。`);
+      } else {
+        setMessage(resp.message || "密码重置失败");
+      }
+    } catch {
+      setMessage("密码重置失败");
+    } finally {
+      setResettingUserId(null);
+    }
+  }
+
+  const filteredUsers = useMemo(() => {
+    const keyword = search.trim().toLocaleLowerCase();
+    if (!keyword) return users;
+    return users.filter((item) => [
+      item.realName,
+      item.college,
+      item.displayName,
+      item.username,
+    ].some((value) => value?.toLocaleLowerCase().includes(keyword)));
+  }, [search, users]);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -120,10 +155,21 @@ export default function AdminUsersPage() {
         <p className="text-sm bg-bg-secondary text-text-secondary rounded-ui px-3 py-2 m-0">{message}</p>
       )}
 
+      <div className="relative max-w-md">
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" />
+        <input
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          className="w-full pl-9 pr-3 py-2 text-sm border border-border rounded-ui bg-white outline-none focus:border-text-primary"
+          placeholder="搜索姓名、学院或用户名"
+          aria-label="搜索姓名、学院或用户名"
+        />
+      </div>
+
       {loading ? (
         <ListSkeleton rows={8} />
-      ) : users.length === 0 ? (
-        <EmptyState title="暂无用户" />
+      ) : filteredUsers.length === 0 ? (
+        <EmptyState title={search ? "未找到匹配用户" : "暂无用户"} />
       ) : (
         <div className="bg-white border border-border rounded-ui overflow-hidden">
           <div className="overflow-x-auto">
@@ -141,7 +187,7 @@ export default function AdminUsersPage() {
                 </tr>
               </thead>
               <tbody>
-                {users.map((u) => (
+                {filteredUsers.map((u) => (
                   <tr key={u.id} className="border-b border-border last:border-0 hover:bg-bg-secondary">
                     <td className="px-4 py-2.5">
                       <div className="flex items-center gap-2">
@@ -174,11 +220,23 @@ export default function AdminUsersPage() {
                     <td className="px-4 py-2.5 text-right font-medium">{u.totalPoints ?? 0}</td>
                     {isSuperAdmin && (
                       <td className="px-4 py-2.5 text-right">
-                        <RoleSelect
-                          currentRole={u.role || "USER"}
-                          roles={roles}
-                          onChange={(role) => handleChangeRole(u.id, role)}
-                        />
+                        <div className="inline-flex items-center justify-end gap-2">
+                          <RoleSelect
+                            currentRole={u.role || "USER"}
+                            roles={roles}
+                            onChange={(role) => handleChangeRole(u.id, role)}
+                          />
+                          {u.id !== user?.id && u.role !== "SUPER_ADMIN" && (
+                            <button
+                              type="button"
+                              className="px-2 py-1 text-xs font-medium text-error border border-[#f3b4b4] bg-white rounded hover:bg-[#fff0f0] cursor-pointer disabled:opacity-50"
+                              disabled={resettingUserId === u.id}
+                              onClick={() => handleResetPassword(u)}
+                            >
+                              {resettingUserId === u.id ? "重置中…" : "重置密码"}
+                            </button>
+                          )}
+                        </div>
                       </td>
                     )}
                   </tr>

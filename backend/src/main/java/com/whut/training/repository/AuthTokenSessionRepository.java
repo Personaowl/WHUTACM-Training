@@ -128,6 +128,13 @@ public class AuthTokenSessionRepository {
         );
     }
 
+    /**
+     * 删除指定用户的全部会话；用于管理员重置密码后立即使旧登录失效。
+     */
+    public int deleteByUserId(Long userId) {
+        return jdbcTemplate.update("DELETE FROM auth_token_session WHERE user_id = ?", userId);
+    }
+
     private String tokenHash(String token) {
         if (token == null || token.isBlank()) {
             return "";

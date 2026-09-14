@@ -8,6 +8,7 @@ import com.whut.training.domain.dto.UserRegisterRequest;
 import com.whut.training.domain.entity.User;
 import com.whut.training.domain.enums.UserRole;
 import com.whut.training.repository.UserRepository;
+import com.whut.training.repository.AuthTokenSessionRepository;
 import com.whut.training.service.CodeforcesApiService;
 import com.whut.training.service.AtCoderApiService;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,6 +42,8 @@ class UserServiceImplTest {
     private TimeProvider timeProvider;
     @Mock
     private PasswordEncoder passwordEncoder;
+    @Mock
+    private AuthTokenSessionRepository authTokenSessionRepository;
 
     private UserServiceImpl userService;
 
@@ -51,7 +54,8 @@ class UserServiceImplTest {
                 codeforcesApiService,
                 atCoderApiService,
                 timeProvider,
-                passwordEncoder
+                passwordEncoder,
+                authTokenSessionRepository
         );
         lenient().when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
     }
@@ -91,6 +95,35 @@ class UserServiceImplTest {
 
         assertEquals(403, error.getCode());
         verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void superAdminCanResetAnotherUsersPasswordAndInvalidateSessions() {
+        User superAdmin = new User(1L, "root", null, "hash", UserRole.SUPER_ADMIN);
+        User target = new User(2L, "member", null, "old-hash", UserRole.USER);
+        when(userRepository.findById(2L)).thenReturn(Optional.of(target));
+        when(passwordEncoder.encode("123456")).thenReturn("new-hash");
+
+        userService.resetPasswordBySuperAdmin(superAdmin, 2L);
+
+        assertEquals("new-hash", target.getPassword());
+        verify(userRepository).save(target);
+        verify(authTokenSessionRepository).deleteByUserId(2L);
+    }
+
+    @Test
+    void passwordResetCannotTargetSuperAdmin() {
+        User superAdmin = new User(1L, "root", null, "hash", UserRole.SUPER_ADMIN);
+        User target = new User(2L, "other-root", null, "old-hash", UserRole.SUPER_ADMIN);
+        when(userRepository.findById(2L)).thenReturn(Optional.of(target));
+
+        BusinessException error = assertThrows(
+                BusinessException.class,
+                () -> userService.resetPasswordBySuperAdmin(superAdmin, 2L)
+        );
+
+        assertEquals(403, error.getCode());
+        verify(userRepository, never()).save(target);
     }
 
     @Test
