@@ -30,6 +30,8 @@ import java.util.Optional;
 @ServiceLog
 public class CodeforcesApiService {
 
+    private static final int CHECK_IN_RECENT_SUBMISSION_COUNT = 30;
+
     private final String baseUrl;
     private final CodeforcesRequestCoordinator requestCoordinator;
     private final HttpClient httpClient = HttpClient.newBuilder()
@@ -196,11 +198,19 @@ public class CodeforcesApiService {
         }
 
         String encodedHandle = URLEncoder.encode(handle.trim(), StandardCharsets.UTF_8);
-        // A user may submit more than 1,000 times in a day or during a contest.
-        // Codeforces permits up to 10,000 records here; checking the full supported
-        // recent window prevents a valid Hard submission from being missed after an
-        // Easy submission (or a long practice session).
-        String url = baseUrl + "/user.status?handle=" + encodedHandle + "&from=1&count=10000";
+        // Check-in is intended for a freshly submitted solution. Limiting the lookup
+        // to the latest 30 submissions keeps the Codeforces response compact and avoids
+        // a second, expensive fallback request for old submission IDs.
+        SubmissionLookup lookup = findSubmission(
+                encodedHandle, submissionId, CHECK_IN_RECENT_SUBMISSION_COUNT
+        );
+        return lookup.successful()
+                ? Optional.ofNullable(lookup.submissionStatus())
+                : Optional.empty();
+    }
+
+    private SubmissionLookup findSubmission(String encodedHandle, Long submissionId, int count) {
+        String url = baseUrl + "/user.status?handle=" + encodedHandle + "&from=1&count=" + count;
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .GET()
@@ -210,15 +220,15 @@ public class CodeforcesApiService {
         try {
             HttpResponse<String> response = sendWithRateLimit(request, CodeforcesRequestCoordinator.Priority.CHECK_IN);
             if (response.statusCode() != 200) {
-                return Optional.empty();
+                return SubmissionLookup.failed();
             }
             JsonNode root = objectMapper.readTree(response.body());
             if (!"OK".equalsIgnoreCase(root.path("status").asText())) {
-                return Optional.empty();
+                return SubmissionLookup.failed();
             }
             JsonNode result = root.path("result");
             if (!result.isArray()) {
-                return Optional.empty();
+                return SubmissionLookup.failed();
             }
 
             for (JsonNode row : result) {
@@ -232,9 +242,9 @@ public class CodeforcesApiService {
                 String verdict = nullableText(row, "verdict");
                 Long creationTimeSeconds = nullableLong(row, "creationTimeSeconds");
                 if (contestId == null || index == null) {
-                    return Optional.empty();
+                    return SubmissionLookup.found(null);
                 }
-                return Optional.of(new SubmissionStatus(
+                return SubmissionLookup.found(new SubmissionStatus(
                         submissionId,
                         contestId,
                         index,
@@ -242,12 +252,22 @@ public class CodeforcesApiService {
                         creationTimeSeconds == null ? null : Instant.ofEpochSecond(creationTimeSeconds)
                 ));
             }
-            return Optional.empty();
+            return SubmissionLookup.found(null);
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
-            return Optional.empty();
+            return SubmissionLookup.failed();
         } catch (Exception ex) {
-            return Optional.empty();
+            return SubmissionLookup.failed();
+        }
+    }
+
+    private record SubmissionLookup(boolean successful, SubmissionStatus submissionStatus) {
+        private static SubmissionLookup found(SubmissionStatus submissionStatus) {
+            return new SubmissionLookup(true, submissionStatus);
+        }
+
+        private static SubmissionLookup failed() {
+            return new SubmissionLookup(false, null);
         }
     }
 

@@ -22,7 +22,11 @@ export async function checkInToday(submissionId) {
     if (job.status === "FAILED") {
       return { code: job.errorCode || 400, message: job.message || "校验失败", data: null };
     }
-    await new Promise((resolve) => window.setTimeout(resolve, 2000));
+    // The first request is normally a fresh Codeforces submission. Poll quickly
+    // at first so a fast check-in does not feel delayed, then back off to avoid
+    // unnecessary requests while Codeforces is rate-limited or busy.
+    const delayMs = attempt === 0 ? 250 : attempt < 4 ? 500 : 1000;
+    await new Promise((resolve) => window.setTimeout(resolve, delayMs));
     const statusResponse = await http.get(
       `/api/daily-problem/check-in/${encodeURIComponent(job.jobId)}`,
       { headers: authHeaders() }

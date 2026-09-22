@@ -47,12 +47,14 @@ export default function DailyProblemPage() {
   const [settingSaving, setSettingSaving] = useState(false);
   const [settingMessage, setSettingMessage] = useState("");
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  const loadData = useCallback(async ({ showLoading = true } = {}) => {
+    if (showLoading) setLoading(true);
     setError("");
     try {
-      const todayResp = await getTodayProblem();
-      const historyResp = await getDailyHistory(0);
+      const [todayResp, historyResp] = await Promise.all([
+        getTodayProblem(),
+        getDailyHistory(0),
+      ]);
 
       if (todayResp.code === 200) {
         setTodayData(todayResp.data);
@@ -66,7 +68,7 @@ export default function DailyProblemPage() {
     } catch {
       setError(TEXT.loadDataFailed);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   }, []);
 
@@ -110,7 +112,7 @@ export default function DailyProblemPage() {
           ...resp.data,
           earnedScore: Math.max(0, currentDayScore - previousDayScore),
         });
-        loadData();
+        void loadData({ showLoading: false });
       } else {
         setCheckInResult({
           accepted: false,
