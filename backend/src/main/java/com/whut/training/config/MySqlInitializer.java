@@ -381,6 +381,12 @@ public class MySqlInitializer implements DatabaseInitializer {
         ensureColumn("users", "college", "ALTER TABLE users ADD COLUMN college VARCHAR(150)");
         ensureColumn("users", "class_name", "ALTER TABLE users ADD COLUMN class_name VARCHAR(150)");
 
+        // Retire externally hosted avatars while preserving all uploaded image data.
+        jdbcTemplate.update("""
+                UPDATE users SET avatar_url = NULL, avatar_customized = 0
+                WHERE avatar_url IS NOT NULL AND avatar_url NOT LIKE 'data:image/%'
+                """);
+
         // CREATE TABLE IF NOT EXISTS 不会给已有表补充新索引，因此单独执行轻量迁移。
         ensureIndex(
                 "users",

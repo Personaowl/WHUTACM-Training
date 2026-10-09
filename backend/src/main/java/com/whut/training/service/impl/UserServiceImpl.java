@@ -259,15 +259,7 @@ public class UserServiceImpl implements UserService {
         if (avatar.matches("^data:image/(png|jpeg|webp);base64,[A-Za-z0-9+/=\\r\\n]+$")) {
             return avatar;
         }
-        try {
-            URI uri = URI.create(avatar);
-            if ("https".equalsIgnoreCase(uri.getScheme()) && uri.getHost() != null) {
-                return avatar;
-            }
-        } catch (IllegalArgumentException ignored) {
-            // converted to a stable client error below
-        }
-        throw new BusinessException(400, "avatar must be a HTTPS URL or a PNG/JPEG/WebP data image");
+        throw new BusinessException(400, "请上传 PNG、JPEG 或 WebP 图片作为头像");
     }
 
     @Override
@@ -406,9 +398,6 @@ public class UserServiceImpl implements UserService {
         user.setMaxRating(profile.maxRating());
         user.setOnline(profile.online());
         user.setLastOnlineTimeSeconds(profile.lastOnlineTimeSeconds());
-        if (!Boolean.TRUE.equals(user.getAvatarCustomized())) {
-            user.setAvatarUrl(profile.avatarUrl());
-        }
         user.setUid(parseUidFromAvatarUrl(profile.avatarUrl()));
     }
 
@@ -422,11 +411,9 @@ public class UserServiceImpl implements UserService {
         boolean needEnrich = user.getCodeforcesRating() == null
                 || user.getMaxRating() == null
                 || user.getOnline() == null
-                || user.getLastOnlineTimeSeconds() == null
-                || user.getAvatarUrl() == null
-                || user.getAvatarUrl().isBlank();
+                || user.getLastOnlineTimeSeconds() == null;
         if (!needEnrich) {
-            user.setUid(parseUidFromAvatarUrl(user.getAvatarUrl()));
+            user.setUid(parseUidFromAvatarUrl(profile.avatarUrl()));
             return;
         }
 
@@ -442,10 +429,7 @@ public class UserServiceImpl implements UserService {
         if (user.getLastOnlineTimeSeconds() == null) {
             user.setLastOnlineTimeSeconds(profile.lastOnlineTimeSeconds());
         }
-        if (user.getAvatarUrl() == null || user.getAvatarUrl().isBlank()) {
-            user.setAvatarUrl(profile.avatarUrl());
-        }
-        user.setUid(parseUidFromAvatarUrl(user.getAvatarUrl()));
+        user.setUid(parseUidFromAvatarUrl(profile.avatarUrl()));
     }
 
     private void clearPendingCodeforcesBinding(User user) {

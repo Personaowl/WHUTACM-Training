@@ -88,7 +88,7 @@ public class AuthServiceImpl implements AuthService {
             user.setPassword(passwordEncoder.encode(request.getPassword()));
             userRepository.save(user);
         }
-        syncAvatarFromCodeforcesOnLogin(user);
+        syncCodeforcesUidOnLogin(user);
 
         TokenPair pair = issueTokenPair(user.getId());
 
@@ -242,12 +242,12 @@ public class AuthServiceImpl implements AuthService {
     }
 
     /**
-     * 登录时同步用户头像与 UID。
+     * 登录时补齐 Codeforces UID，不修改用户上传的头像。
      *
      * @param user 当前用户。
      */
-    private void syncAvatarFromCodeforcesOnLogin(User user) {
-        if (user == null || user.getCodeforcesHandle() == null || user.getCodeforcesHandle().isBlank()) {
+    private void syncCodeforcesUidOnLogin(User user) {
+        if (user == null || user.getUid() != null || user.getCodeforcesHandle() == null || user.getCodeforcesHandle().isBlank()) {
             return;
         }
         codeforcesApiService.getUserInfo(user.getCodeforcesHandle()).ifPresent(profile -> {
@@ -255,13 +255,6 @@ public class AuthServiceImpl implements AuthService {
             Long latestUid = parseUidFromAvatarUrl(latestAvatarUrl);
             boolean changed = false;
 
-            if (!Boolean.TRUE.equals(user.getAvatarCustomized())
-                    && latestAvatarUrl != null
-                    && !latestAvatarUrl.isBlank()
-                    && !latestAvatarUrl.equals(user.getAvatarUrl())) {
-                user.setAvatarUrl(latestAvatarUrl);
-                changed = true;
-            }
             if (latestUid != null && !latestUid.equals(user.getUid())) {
                 user.setUid(latestUid);
                 changed = true;
@@ -270,7 +263,7 @@ public class AuthServiceImpl implements AuthService {
                 try {
                     userRepository.save(user);
                 } catch (DataAccessException ex) {
-                    // 头像同步失败不影响登录流程
+                    // UID 同步失败不影响登录流程
                 }
             }
         });

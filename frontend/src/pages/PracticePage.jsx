@@ -10,6 +10,8 @@ import AddToProblemListButton from "../components/ui/AddToProblemListButton";
 import EmptyState from "../components/ui/EmptyState";
 import { ListSkeleton } from "../components/ui/Skeleton";
 
+const RATING_OPTIONS = Array.from({ length: 28 }, (_, index) => 800 + index * 100);
+
 export default function PracticePage() {
   const [minRating, setMinRating] = useState(1200);
   const [maxRating, setMaxRating] = useState(1600);
@@ -119,21 +121,35 @@ export default function PracticePage() {
         <div className="flex items-end gap-3 flex-wrap">
           <label className="flex flex-col gap-1">
             <span className="text-xs text-text-secondary">最小难度</span>
-            <input
-              className="w-24 px-3 py-2 text-sm border border-border rounded-ui outline-none focus:border-text-primary"
-              type="number"
+            <select
+              className="w-28 px-3 py-2 text-sm bg-white border border-border rounded-ui outline-none focus:border-text-primary"
               value={minRating}
-              onChange={(e) => setMinRating(e.target.value)}
-            />
+              onChange={(e) => {
+                const rating = Number(e.target.value);
+                setMinRating(rating);
+                setMaxRating((current) => Math.max(current, rating));
+              }}
+            >
+              {RATING_OPTIONS.map((rating) => (
+                <option key={rating} value={rating}>{rating}</option>
+              ))}
+            </select>
           </label>
           <label className="flex flex-col gap-1">
             <span className="text-xs text-text-secondary">最大难度</span>
-            <input
-              className="w-24 px-3 py-2 text-sm border border-border rounded-ui outline-none focus:border-text-primary"
-              type="number"
+            <select
+              className="w-28 px-3 py-2 text-sm bg-white border border-border rounded-ui outline-none focus:border-text-primary"
               value={maxRating}
-              onChange={(e) => setMaxRating(e.target.value)}
-            />
+              onChange={(e) => {
+                const rating = Number(e.target.value);
+                setMaxRating(rating);
+                setMinRating((current) => Math.min(current, rating));
+              }}
+            >
+              {RATING_OPTIONS.map((rating) => (
+                <option key={rating} value={rating}>{rating}</option>
+              ))}
+            </select>
           </label>
           <button
             className="px-4 py-2 text-sm font-medium text-white bg-text-primary hover:bg-[#1b1f23] rounded-ui border-0 cursor-pointer disabled:opacity-50"
