@@ -59,7 +59,7 @@ export default function AdminDailyPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="stack-y-4">
       <h1 className="text-lg font-semibold text-text-primary m-0">每日题管理</h1>
 
       {message && (
@@ -69,7 +69,7 @@ export default function AdminDailyPage() {
       {loading ? (
         <CardSkeleton />
       ) : todayData?.problems && todayData.problems.length > 0 ? (
-        <div className="space-y-3">
+        <div className="stack-y-3">
           {todayData.problems.map((p) => (
             <div key={p.problemKey}>
               <ProblemCard problem={p} />

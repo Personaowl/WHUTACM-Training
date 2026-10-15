@@ -149,7 +149,7 @@ export default function TrainingExportButton({ defaultType = "daily" }) {
                   {Object.values(exportTypes).every(Boolean) ? "取消全选" : "全部选择"}
                 </button>
               </div>
-              <div className="space-y-2">
+              <div className="stack-y-2">
                 {EXPORT_TYPES.map((item) => (
                   <label key={item.key} className="flex cursor-pointer items-start gap-3 rounded-xl border border-border p-3 hover:bg-bg-secondary">
                     <input

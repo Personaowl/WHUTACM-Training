@@ -138,7 +138,7 @@ export default function AddToProblemListButton({ problem, compact = false, class
               </Dialog.Close>
             </div>
           ) : (
-            <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
+            <form className="mt-5 stack-y-4" onSubmit={handleSubmit}>
               {lists.length > 0 && (
                 <div className="grid grid-cols-2 gap-2 rounded-xl bg-bg-secondary p-1">
                   <ModeButton active={!createNew} onClick={() => setCreateNew(false)}>选择题单</ModeButton>
@@ -226,7 +226,7 @@ function ModeButton({ active, onClick, children }) {
       type="button"
       onClick={onClick}
       className={`flex min-h-9 items-center justify-center gap-1.5 rounded-lg border-0 text-xs font-bold transition-colors ${
-        active ? "bg-white text-text-primary shadow-sm" : "bg-transparent text-text-secondary hover:text-text-primary"
+        active ? "bg-white text-text-primary shadow-xs" : "bg-transparent text-text-secondary hover:text-text-primary"
       }`}
     >
       {children}

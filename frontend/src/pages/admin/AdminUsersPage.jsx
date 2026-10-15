@@ -140,7 +140,7 @@ export default function AdminUsersPage() {
   }, [search, users]);
 
   return (
-    <div className="space-y-4">
+    <div className="stack-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-text-primary m-0">用户管理</h1>
         <button
@@ -160,7 +160,7 @@ export default function AdminUsersPage() {
         <input
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          className="w-full pl-9 pr-3 py-2 text-sm border border-border rounded-ui bg-white outline-none focus:border-text-primary"
+          className="w-full pl-9 pr-3 py-2 text-sm border border-border rounded-ui bg-white outline-hidden focus:border-text-primary"
           placeholder="搜索姓名、学院或用户名"
           aria-label="搜索姓名、学院或用户名"
         />
@@ -229,7 +229,7 @@ export default function AdminUsersPage() {
                           {u.id !== user?.id && u.role !== "SUPER_ADMIN" && (
                             <button
                               type="button"
-                              className="px-2 py-1 text-xs font-medium text-error border border-[#f3b4b4] bg-white rounded hover:bg-[#fff0f0] cursor-pointer disabled:opacity-50"
+                              className="px-2 py-1 text-xs font-medium text-error border border-[#f3b4b4] bg-white rounded-sm hover:bg-[#fff0f0] cursor-pointer disabled:opacity-50"
                               disabled={resettingUserId === u.id}
                               onClick={() => handleResetPassword(u)}
                             >
@@ -256,15 +256,15 @@ export default function AdminUsersPage() {
               <Dialog.Title>创建用户</Dialog.Title>
             </VisuallyHidden.Root>
             <h3 className="text-base font-semibold text-text-primary m-0 mb-4">创建用户</h3>
-            <div className="space-y-3">
-              <input className="w-full px-3 py-2 text-sm border border-border rounded-ui outline-none focus:border-text-primary"
+            <div className="stack-y-3">
+              <input className="w-full px-3 py-2 text-sm border border-border rounded-ui outline-hidden focus:border-text-primary"
                 value={createUsername} onChange={(e) => setCreateUsername(e.target.value)} placeholder="用户名 *" />
-              <input className="w-full px-3 py-2 text-sm border border-border rounded-ui outline-none focus:border-text-primary"
+              <input className="w-full px-3 py-2 text-sm border border-border rounded-ui outline-hidden focus:border-text-primary"
                 type="email" value={createEmail} onChange={(e) => setCreateEmail(e.target.value)} placeholder="邮箱" />
-              <input className="w-full px-3 py-2 text-sm border border-border rounded-ui outline-none focus:border-text-primary"
+              <input className="w-full px-3 py-2 text-sm border border-border rounded-ui outline-hidden focus:border-text-primary"
                 type="password" value={createPassword} onChange={(e) => setCreatePassword(e.target.value)} placeholder="密码 * (至少8位)" />
               <select
-                className="w-full px-3 py-2 text-sm border border-border rounded-ui bg-white outline-none focus:border-text-primary"
+                className="w-full px-3 py-2 text-sm border border-border rounded-ui bg-white outline-hidden focus:border-text-primary"
                 value={createRole}
                 onChange={(e) => setCreateRole(e.target.value)}
               >
@@ -288,7 +288,7 @@ export default function AdminUsersPage() {
 function MemberTypeSelect({ currentMemberType, onChange }) {
   return (
     <select
-      className={`text-xs px-2 py-1 border rounded bg-white cursor-pointer ${
+      className={`text-xs px-2 py-1 border rounded-sm bg-white cursor-pointer ${
         currentMemberType === "ACTIVE_TEAM"
           ? "border-[#9be9a8] text-[#216e39]"
           : "border-border text-text-secondary"
@@ -305,7 +305,7 @@ function MemberTypeSelect({ currentMemberType, onChange }) {
 function RoleSelect({ currentRole, roles, onChange }) {
   return (
     <select
-      className="text-xs px-2 py-1 border border-border rounded bg-white text-text-primary cursor-pointer"
+      className="text-xs px-2 py-1 border border-border rounded-sm bg-white text-text-primary cursor-pointer"
       value={currentRole}
       onChange={(e) => onChange(e.target.value)}
     >

@@ -71,7 +71,7 @@ export default function ProfileEditDialog({ profile, onSaved }) {
           <Dialog.Description className="m-0 mb-4 text-sm text-text-secondary">
             姓名、学院和班级为选填信息，可以随时修改。
           </Dialog.Description>
-          <form onSubmit={handleSubmit} className="min-h-0 overflow-y-auto space-y-4 pr-1">
+          <form onSubmit={handleSubmit} className="min-h-0 overflow-y-auto stack-y-4 pr-1">
             <fieldset disabled={saving} className="m-0 min-w-0 border-0 p-0 grid grid-cols-1 sm:grid-cols-2 gap-3">
               {FIELDS.map(({ name, label, ...attributes }) => (
                 <label key={name} className="flex min-w-0 flex-col gap-1">
@@ -81,7 +81,7 @@ export default function ProfileEditDialog({ profile, onSaved }) {
                     name={name}
                     value={draft[name]}
                     onChange={(event) => setDraft((current) => ({ ...current, [name]: event.target.value }))}
-                    className="w-full box-border px-3 py-2 text-sm border border-border rounded-ui bg-white text-text-primary outline-none focus:border-text-primary"
+                    className="w-full box-border px-3 py-2 text-sm border border-border rounded-ui bg-white text-text-primary outline-hidden focus:border-text-primary"
                   />
                 </label>
               ))}
@@ -89,7 +89,7 @@ export default function ProfileEditDialog({ profile, onSaved }) {
                 <span className="text-sm text-text-secondary">个人简介</span>
                 <textarea value={draft.bio} maxLength={1000} rows={3}
                   onChange={(event) => setDraft((current) => ({ ...current, bio: event.target.value }))}
-                  className="w-full box-border px-3 py-2 text-sm border border-border rounded-ui outline-none focus:border-text-primary resize-y" />
+                  className="w-full box-border px-3 py-2 text-sm border border-border rounded-ui outline-hidden focus:border-text-primary resize-y" />
               </label>
             </fieldset>
             {error && <p role="alert" className="m-0 text-sm text-error">{error}</p>}

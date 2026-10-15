@@ -67,8 +67,9 @@
 ## 技术与目录
 
 - 后端：Spring Boot 3.3.5、Maven、MySQL 8、JdbcTemplate、BCrypt 密码哈希。
-- 前端：React 18、Vite 8、React Router 7、Tailwind CSS、Radix UI。
-- 推荐环境：Java 21、Node.js 22、MySQL 8，与 CI 和现有生产环境一致；后端编译目标为 Java 17。
+- 前端：React 18、Vite 8、React Router 7、Tailwind CSS 4（官方 Vite 插件）、Radix UI。
+- 推荐环境：Java 21、Node.js 22（至少 22.12）、MySQL 8，与 CI 和现有生产环境一致；后端编译目标为 Java 17。
+- 浏览器：Chrome / Edge 111+、Safari 16.4+、Firefox 128+。Tailwind 4 使用现代 CSS 功能，不面向旧版浏览器；保留现有墨蓝色主题与页面结构。
 - 部署：Nginx 提供静态页面及 HTTPS，systemd 管理后端。Docker 为可选项。
 
 ```text
@@ -606,9 +607,11 @@ certbot renew --dry-run
 
 ### 依赖审计状态
 
-2026-10-15 对锁文件运行 npm audit --registry=https://registry.npmjs.org，仍报告 16 个受影响包（15 high、1 moderate，包括间接依赖）。尝试兼容范围内更新未清除这些告警；不能将“测试及构建通过”解释为“依赖安全审计通过”。现有 CI 的高危审计门槛仍保留，当前会在该步骤失败，需要逐项核对上游修复版本或评估替代依赖后再解除发布阻碍。
+2026-10-15 已修复此前 CI 报告的前端依赖问题：Axios 升级至 1.20.0，source-map-js 升级至 1.2.2；Tailwind 升至 4.3.3 并使用官方 Vite 插件，移除旧 PostCSS 配置及包含 braces 的旧构建依赖链。干净执行 npm ci 后，npm run audit:security 当前报告 **0 vulnerabilities**；高危审计门槛继续保留，没有忽略开发依赖或屏蔽告警。审计结果是当时的依赖库状态，不代表未来永远没有新漏洞。
 
-其中既包含 Axios 的条件性请求处理问题，也包含构建工具链的解析/资源耗尽问题；实际影响需结合使用路径判断。当前生产方案仅由 Nginx 提供静态产物，不将 Vite 开发服务器对公网部署，也不在服务端用 Axios 处理用户提供的 URL；这些部署限制不等于漏洞已经修复。相关上游记录：[Axios](https://github.com/advisories/GHSA-vh66-26gq-q6x8)、[braces](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)、[source-map-js](https://github.com/advisories/GHSA-68fv-2mgg-jv7q)。
+迁移保留原 JS 主题配置、圆角及轻阴影，并以 stack-y-* 兼容旧版可见兄弟元素间距，避免条件表单和弹窗变形；样式编译回归测试随 npm test 执行。GitHub Actions 升级至 Node 24 运行时的官方 action，固定完整提交 SHA，但应用构建仍使用 Node 22 / Java 21。
+
+升级验证应依次在 frontend 目录运行 npm ci、npm run audit:security、npm test、npm run build。当前生产方案仍仅由 Nginx 提供静态产物，不公开 Vite 开发服务器。相关上游记录：[Tailwind 升级指南](https://tailwindcss.com/docs/upgrade-guide)、[Axios](https://github.com/advisories/GHSA-vh66-26gq-q6x8)、[braces](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)、[source-map-js](https://github.com/advisories/GHSA-68fv-2mgg-jv7q)。
 
 ## 文档索引
 

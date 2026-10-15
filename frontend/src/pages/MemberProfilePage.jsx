@@ -38,7 +38,7 @@ export default function MemberProfilePage() {
 
   if (loading) {
     return (
-      <div className="space-y-4">
+      <div className="stack-y-4">
         <CardSkeleton />
         <CardSkeleton />
       </div>
@@ -58,7 +58,7 @@ export default function MemberProfilePage() {
 
   const ratingMeta = getRatingMeta(profile.codeforcesRating);
   return (
-    <div className="space-y-5">
+    <div className="stack-y-5">
       <Link
         to="/leaderboard"
         className="inline-flex items-center gap-1 text-sm text-text-secondary hover:text-text-primary no-underline"

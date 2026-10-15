@@ -78,7 +78,7 @@ export default function AdminTrainingDashboardPage() {
   const maxTrend = Math.max(summary.activeMemberCount || 0, 1);
 
   return (
-    <div className="space-y-5">
+    <div className="stack-y-5">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h2 className="m-0 text-xl font-bold tracking-tight text-text-primary">每日一题完成情况</h2>
@@ -175,13 +175,13 @@ export default function AdminTrainingDashboardPage() {
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="搜索成员或 CF 账号"
-                className="w-full border-0 bg-transparent text-sm text-text-primary outline-none sm:w-48"
+                className="w-full border-0 bg-transparent text-sm text-text-primary outline-hidden sm:w-48"
               />
             </label>
             <select
               value={filter}
               onChange={(event) => setFilter(event.target.value)}
-              className="min-h-10 rounded-xl border border-border bg-white px-3 text-sm text-text-primary outline-none focus:border-text-primary"
+              className="min-h-10 rounded-xl border border-border bg-white px-3 text-sm text-text-primary outline-hidden focus:border-text-primary"
             >
               {FILTERS.map((item) => (
                 <option key={item.value} value={item.value}>{item.label}</option>
@@ -336,13 +336,13 @@ function MemberRow({ member }) {
 
 function DashboardSkeleton() {
   return (
-    <div className="space-y-5 animate-pulse">
+    <div className="stack-y-5 animate-pulse">
       <div className="h-16 w-80 rounded-xl bg-[#e8e8e3]" />
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {Array.from({ length: 3 }).map((_, index) => (
           <div key={index} className="h-36 rounded-2xl border border-border bg-white p-4">
-            <div className="h-3 w-10 rounded bg-[#ecece8]" />
-            <div className="mt-12 h-7 w-24 rounded bg-[#ecece8]" />
+            <div className="h-3 w-10 rounded-sm bg-[#ecece8]" />
+            <div className="mt-12 h-7 w-24 rounded-sm bg-[#ecece8]" />
           </div>
         ))}
       </div>

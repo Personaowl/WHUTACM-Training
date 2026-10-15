@@ -112,7 +112,7 @@ export default function PracticePage() {
   ));
 
   return (
-    <div className="space-y-5">
+    <div className="stack-y-5">
       <h1 className="text-lg font-semibold text-text-primary m-0">自主练习</h1>
       <p className="text-sm text-text-secondary m-0">按 Rating 与算法标签组合抽题，仅记录抽题历史，不进行提交校验</p>
 
@@ -122,7 +122,7 @@ export default function PracticePage() {
           <label className="flex flex-col gap-1">
             <span className="text-xs text-text-secondary">最小难度</span>
             <select
-              className="w-28 px-3 py-2 text-sm bg-white border border-border rounded-ui outline-none focus:border-text-primary"
+              className="w-28 px-3 py-2 text-sm bg-white border border-border rounded-ui outline-hidden focus:border-text-primary"
               value={minRating}
               onChange={(e) => {
                 const rating = Number(e.target.value);
@@ -138,7 +138,7 @@ export default function PracticePage() {
           <label className="flex flex-col gap-1">
             <span className="text-xs text-text-secondary">最大难度</span>
             <select
-              className="w-28 px-3 py-2 text-sm bg-white border border-border rounded-ui outline-none focus:border-text-primary"
+              className="w-28 px-3 py-2 text-sm bg-white border border-border rounded-ui outline-hidden focus:border-text-primary"
               value={maxRating}
               onChange={(e) => {
                 const rating = Number(e.target.value);
@@ -180,7 +180,7 @@ export default function PracticePage() {
           </div>
 
           <input
-            className="w-full px-3 py-2 text-sm border border-border rounded-ui outline-none focus:border-text-primary box-border"
+            className="w-full px-3 py-2 text-sm border border-border rounded-ui outline-hidden focus:border-text-primary box-border"
             value={tagQuery}
             onChange={(event) => setTagQuery(event.target.value)}
             placeholder="搜索标签，例如 dp、binary search、greedy"
@@ -246,7 +246,7 @@ export default function PracticePage() {
         ) : history.length === 0 ? (
           <EmptyState title="暂无抽题记录" description="点击上方按钮开始抽题练习" />
         ) : (
-          <div className="space-y-2">
+          <div className="stack-y-2">
             {history.map((item) => (
               <div
                 key={item.drawId}
@@ -270,10 +270,10 @@ export default function PracticePage() {
                     {item.drawDate}{item.drawnAt ? ` · ${item.drawnAt.slice(11, 19)}` : ""}
                   </p>
                 </div>
-                <div className="flex flex-shrink-0 items-center gap-2">
+                <div className="flex shrink-0 items-center gap-2">
                   <AddToProblemListButton problem={item} compact />
                   <button
-                    className="px-2 py-1 text-xs text-error border border-border rounded hover:bg-[#fff0f0] cursor-pointer disabled:opacity-40 bg-white"
+                    className="px-2 py-1 text-xs text-error border border-border rounded-sm hover:bg-[#fff0f0] cursor-pointer disabled:opacity-40 bg-white"
                     onClick={() => handleDelete(item.drawId)}
                     disabled={deletingId === item.drawId}
                   >

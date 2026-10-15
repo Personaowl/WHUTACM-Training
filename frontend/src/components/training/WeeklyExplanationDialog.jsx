@@ -71,7 +71,7 @@ export default function WeeklyExplanationDialog({ week, member, onUpdated }) {
             对应 {week}{" "}
             开始的一周。说明提交后由管理员审核，不会直接修改原始训练数据或积分。
           </Dialog.Description>
-          <form onSubmit={submit} className="space-y-4">
+          <form onSubmit={submit} className="stack-y-4">
             <label className="block text-sm font-semibold text-text-primary">
               说明内容
               <textarea
@@ -83,7 +83,7 @@ export default function WeeklyExplanationDialog({ week, member, onUpdated }) {
                 value={content}
                 onChange={(event) => setContent(event.target.value)}
                 placeholder="请说明本周未能按要求训练的原因、涉及日期等信息。"
-                className="mt-2 box-border w-full resize-y rounded-xl border border-border bg-bg-secondary p-3 text-sm leading-6 outline-none focus:border-[#245b8f]"
+                className="mt-2 box-border w-full resize-y rounded-xl border border-border bg-bg-secondary p-3 text-sm leading-6 outline-hidden focus:border-[#245b8f]"
               />
             </label>
             <div className="flex justify-between gap-3 text-xs text-text-secondary">

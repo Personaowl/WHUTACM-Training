@@ -146,7 +146,7 @@ export default function CodeforcesOverview({
   }
 
   return (
-    <section className="space-y-3">
+    <section className="stack-y-3">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold text-text-primary m-0">
@@ -279,7 +279,7 @@ function TagDonutChart({ items }) {
         <p className="text-sm text-text-secondary my-12 text-center">暂无 AC 题目标签</p>
       ) : (
         <div className="flex flex-col md:flex-row items-center gap-3 lg:gap-5">
-          <div className="relative w-[250px] h-[250px] flex-shrink-0">
+          <div className="relative w-[250px] h-[250px] shrink-0">
             <svg
               viewBox="0 0 260 260"
               className="w-full h-full overflow-visible"
@@ -298,7 +298,7 @@ function TagDonutChart({ items }) {
                     stroke={CHART_COLORS[arc.index % CHART_COLORS.length]}
                     strokeWidth={active ? 31 : 26}
                     strokeLinecap="round"
-                    className="cursor-pointer outline-none transition-all duration-200"
+                    className="cursor-pointer outline-hidden transition-all duration-200"
                     style={{
                       filter: active
                         ? `drop-shadow(0 5px 6px ${CHART_COLORS[arc.index % CHART_COLORS.length]}55)`
@@ -350,7 +350,7 @@ function TagDonutChart({ items }) {
                 onBlur={() => setActiveIndex(null)}
               >
                 <span
-                  className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                  className="w-2.5 h-2.5 rounded-full shrink-0"
                   style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
                 />
                 <span className="text-xs text-text-secondary truncate flex-1">

@@ -59,7 +59,7 @@ export default function AdminWeeklyRecordsPage() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="stack-y-5">
       <header>
         <h2 className="m-0 text-xl font-bold text-text-primary">
           周训练记录与情况说明
@@ -116,7 +116,7 @@ export default function AdminWeeklyRecordsPage() {
                 </div>
               ))}
             </section>
-            <section className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm">
+            <section className="overflow-hidden rounded-2xl border border-border bg-white shadow-xs">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-4">
                 <h3 className="m-0 text-base font-bold text-text-primary">
                   成员周训练明细

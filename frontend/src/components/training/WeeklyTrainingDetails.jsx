@@ -27,7 +27,7 @@ const ACTIONS = {
 export default function WeeklyTrainingDetails({ member }) {
   const explanation = member.explanation;
   return (
-    <div className="space-y-5">
+    <div className="stack-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#eef3f8] p-4">
         <div className="flex flex-wrap items-center gap-3">
           <strong className="text-base text-text-primary">本周训练状态</strong>
@@ -102,7 +102,7 @@ export default function WeeklyTrainingDetails({ member }) {
           <TrainingStatus status={member.contestStatus} />
         </div>
         {member.contests.length ? (
-          <div className="space-y-3">
+          <div className="stack-y-3">
             {member.contests.map((contest) => (
               <div
                 key={contest.contestId}
@@ -182,7 +182,7 @@ export default function WeeklyTrainingDetails({ member }) {
             <summary className="cursor-pointer text-xs font-bold text-text-secondary">
               查看处理记录（最近 {member.history.length} 条）
             </summary>
-            <ol className="m-0 mt-3 list-none space-y-3 p-0">
+            <ol className="m-0 mt-3 list-none stack-y-3 p-0">
               {member.history.map((entry) => (
                 <li key={entry.id} className="border-l-2 border-[#d4dfeb] pl-3">
                   <div className="text-xs font-bold text-text-primary">

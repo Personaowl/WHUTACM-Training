@@ -45,14 +45,14 @@ export default function WeeklyReviewForm({
   return (
     <form
       onSubmit={submit}
-      className="mt-5 space-y-4 rounded-xl border border-[#d4dfeb] bg-[#f7f9fc] p-4"
+      className="mt-5 stack-y-4 rounded-xl border border-[#d4dfeb] bg-[#f7f9fc] p-4"
     >
       <h3 className="m-0 text-base font-bold text-text-primary">
         {pending ? "审核情况说明" : "调整本周状态"}
       </h3>
       <fieldset
         disabled={saving}
-        className="m-0 min-w-0 space-y-4 border-0 p-0"
+        className="m-0 min-w-0 stack-y-4 border-0 p-0"
       >
         {pending && (
           <div className="flex flex-wrap gap-4 text-sm text-text-primary">
@@ -99,7 +99,7 @@ export default function WeeklyReviewForm({
             rows={3}
             value={note}
             onChange={(event) => setNote(event.target.value)}
-            className="mt-2 box-border w-full rounded-xl border border-border bg-white p-3 text-sm outline-none focus:border-[#245b8f]"
+            className="mt-2 box-border w-full rounded-xl border border-border bg-white p-3 text-sm outline-hidden focus:border-[#245b8f]"
             placeholder="必填，选手可看到此意见。"
           />
         </label>

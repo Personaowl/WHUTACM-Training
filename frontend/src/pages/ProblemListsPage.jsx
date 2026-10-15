@@ -219,7 +219,7 @@ export default function ProblemListsPage() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="stack-y-5">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="m-0 text-2xl font-bold tracking-tight text-text-primary">我的题单</h1>
@@ -245,7 +245,7 @@ export default function ProblemListsPage() {
       <section className="grid min-h-[560px] gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
         <aside className="rounded-2xl border border-border bg-white p-3 shadow-[0_12px_36px_rgba(17,17,17,0.035)]">
           {loading ? (
-            <div className="space-y-2 p-1 animate-pulse">
+            <div className="stack-y-2 p-1 animate-pulse">
               {Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-20 rounded-xl bg-bg-secondary" />)}
             </div>
           ) : (
@@ -272,9 +272,9 @@ export default function ProblemListsPage() {
         <main className="overflow-hidden rounded-2xl border border-border bg-white shadow-[0_12px_36px_rgba(17,17,17,0.035)]">
           {detailLoading ? (
             <div className="p-6 animate-pulse">
-              <div className="h-7 w-52 rounded bg-bg-secondary" />
-              <div className="mt-3 h-4 w-96 max-w-full rounded bg-bg-secondary" />
-              <div className="mt-8 space-y-3">{Array.from({ length: 3 }).map((_, index) => <div key={index} className="h-28 rounded-xl bg-bg-secondary" />)}</div>
+              <div className="h-7 w-52 rounded-sm bg-bg-secondary" />
+              <div className="mt-3 h-4 w-96 max-w-full rounded-sm bg-bg-secondary" />
+              <div className="mt-8 stack-y-3">{Array.from({ length: 3 }).map((_, index) => <div key={index} className="h-28 rounded-xl bg-bg-secondary" />)}</div>
             </div>
           ) : detail ? (
             <>
@@ -316,7 +316,7 @@ export default function ProblemListsPage() {
                 {detail.problems.length === 0 ? (
                   <EmptyState title="题单还是空的" />
                 ) : (
-                  <div className="space-y-3">
+                  <div className="stack-y-3">
                     {detail.problems.map((problem, index) => (
                       <ProblemRow
                         key={problem.id}
@@ -381,7 +381,7 @@ function ListGroup({ title, items, selectedId, onSelect, empty }) {
     <div>
       <p className="m-0 px-2 py-2 font-mono text-[10px] font-bold tracking-[0.15em] text-text-secondary">{title}</p>
       {items.length === 0 ? <p className="m-0 px-2 py-3 text-xs text-text-secondary">{empty}</p> : (
-        <div className="space-y-1">
+        <div className="stack-y-1">
           {items.map((item) => (
             <button
               key={item.id}
@@ -462,7 +462,7 @@ function DialogFrame({ open, onOpenChange, title, description, children }) {
 function ListEditorDialog({ open, onOpenChange, editing, form, setForm, isAdmin, saving, onSubmit }) {
   return (
     <DialogFrame open={open} onOpenChange={onOpenChange} title={editing ? "编辑题单" : "创建题单"} description="题单就是一级分类，例如“区间 DP”或“暑假补题”。">
-      <form className="mt-5 space-y-4" onSubmit={onSubmit}>
+      <form className="mt-5 stack-y-4" onSubmit={onSubmit}>
         <Field label="题单名称"><input required maxLength={80} value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} placeholder="例如：区间 DP" className="form-input" /></Field>
         <Field label="简介（可选）"><textarea maxLength={500} rows={3} value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} placeholder="记录这个题单的训练目标或使用说明" className="form-input resize-none" /></Field>
         {isAdmin && (
@@ -480,7 +480,7 @@ function ListEditorDialog({ open, onOpenChange, editing, form, setForm, isAdmin,
 function ProblemEditorDialog({ open, onOpenChange, editing, form, setForm, saving, onSubmit }) {
   return (
     <DialogFrame open={open} onOpenChange={onOpenChange} title={editing ? "编辑题目" : "添加题目"} description="粘贴标准 Codeforces 链接后，可自动从本地题库补全题目资料。">
-      <form className="mt-5 space-y-4" onSubmit={onSubmit}>
+      <form className="mt-5 stack-y-4" onSubmit={onSubmit}>
         <Field label="题目链接"><input required maxLength={1000} type="url" value={form.link} onChange={(event) => setForm((current) => ({ ...current, link: event.target.value }))} placeholder="https://codeforces.com/problemset/problem/607/B" className="form-input" /></Field>
         <Field label="题目标题（CF 题库可自动补全）"><input maxLength={255} value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} placeholder="Zuma" className="form-input" /></Field>
         <div className="grid gap-3 sm:grid-cols-2">

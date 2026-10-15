@@ -1,6 +1,47 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css";
+@import "tailwindcss/utilities.css";
+@config "../tailwind.config.js";
+
+/* Keep the established unlayered utility/component cascade and v3 defaults. */
+@theme {
+  --color-gray-200: #e5e7eb;
+  --color-gray-400: #9ca3af;
+  --default-ring-width: 3px;
+  --default-ring-color: #3b82f6;
+}
+
+/* Preserve sibling spacing when conditional fields or Radix portals are present. */
+@utility stack-y-* {
+  & > :not([hidden]) ~ :not([hidden]) {
+    --tw-space-y-reverse: 0;
+    margin-top: calc(--value(integer) * 0.25rem * (1 - var(--tw-space-y-reverse)));
+    margin-bottom: calc(--value(integer) * 0.25rem * var(--tw-space-y-reverse));
+  }
+}
+
+textarea {
+  background-color: white;
+}
+
+*,
+::before,
+::after,
+::backdrop,
+::file-selector-button {
+  border-color: #e5e7eb;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #9ca3af;
+  opacity: 1;
+}
+
+button:not(:disabled),
+[role="button"]:not(:disabled) {
+  cursor: pointer;
+}
 
 :root {
   color-scheme: light;

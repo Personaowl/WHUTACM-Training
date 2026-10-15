@@ -90,7 +90,7 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <div className="space-y-4">
+      <div className="stack-y-4">
         <h1 className="text-lg font-semibold">首页</h1>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <CardSkeleton />
@@ -114,7 +114,7 @@ export default function HomePage() {
   const todayProblems = Array.isArray(todayProblem) ? todayProblem : (todayProblem ? [todayProblem] : []);
 
   return (
-    <div className="space-y-5">
+    <div className="stack-y-5">
       <header className="home-profile-panel">
         <div className="home-profile-identity">
           <UserAvatar user={user} size={88} />
@@ -182,7 +182,7 @@ export default function HomePage() {
             </Link>
           </div>
           {todayProblems.length > 0 ? (
-            <div className="space-y-2">
+            <div className="stack-y-2">
               {todayProblems.map((p, i) => (
                 <ProblemCard
                   key={p.problemKey || i}
@@ -204,7 +204,7 @@ export default function HomePage() {
         </section>
 
         {/* Today's Push + Leaderboard preview */}
-        <div className="space-y-4">
+        <div className="stack-y-4">
           {/* Today's Push */}
           <section>
             <div className="flex items-center justify-between mb-2">

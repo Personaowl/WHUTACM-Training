@@ -122,7 +122,7 @@ export default function PushPage() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="stack-y-5">
       <h1 className="text-lg font-semibold text-text-primary m-0">推题系统</h1>
 
       {message && (
@@ -155,7 +155,7 @@ export default function PushPage() {
         ) : historyItems.length === 0 ? (
           <EmptyState title="暂无历史推题" description="系统推送的题目将在此处显示" />
         ) : (
-          <div className="space-y-2">
+          <div className="stack-y-2">
             {historyItems
               .filter((item) => String(item.id) !== String(todayPush?.id))
               .map((item) => (
@@ -171,7 +171,7 @@ export default function PushPage() {
       </section>
 
       {/* 我的推题 */}
-      <Accordion.Root type="multiple" className="space-y-2">
+      <Accordion.Root type="multiple" className="stack-y-2">
         <Accordion.Item value="mine" className="bg-white border border-border rounded-ui overflow-hidden">
           <Accordion.Trigger className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium text-text-primary hover:bg-bg-secondary border-0 bg-transparent cursor-pointer">
             <span>我的推题 ({myItems.length})</span>
@@ -181,7 +181,7 @@ export default function PushPage() {
             {myItems.length === 0 ? (
               <EmptyState title="暂无我的推题" description="提交推题后，可在此查看审核状态" />
             ) : (
-              <div className="space-y-2">
+              <div className="stack-y-2">
                 {myItems.map((item) => (
                   <div key={item.id} className="flex items-start justify-between gap-3 p-3 border border-border rounded-ui">
                     <div className="flex-1 min-w-0">
@@ -196,7 +196,7 @@ export default function PushPage() {
                       )}
                       <span
                         className={
-                          "text-xs px-1.5 py-0.5 rounded mt-1 inline-block " +
+                          "text-xs px-1.5 py-0.5 rounded-sm mt-1 inline-block " +
                           (item.status === "APPROVED"
                             ? "bg-[#f0fff0] text-success"
                             : item.status === "PUBLISHED"
@@ -215,17 +215,17 @@ export default function PushPage() {
                           : "已拒绝"}
                       </span>
                     </div>
-                    <div className="flex gap-1 flex-shrink-0">
+                    <div className="flex gap-1 shrink-0">
                       {(item.status === "APPROVED" || item.status === "PUBLISHED") && (
                         <button
-                          className="px-2 py-1 text-xs font-medium text-white bg-success hover:bg-[#268845] rounded border-0 cursor-pointer"
+                          className="px-2 py-1 text-xs font-medium text-white bg-success hover:bg-[#268845] rounded-sm border-0 cursor-pointer"
                           onClick={() => setSolvePushId(item.id)}
                         >
                           提交解答
                         </button>
                       )}
                       <button
-                        className="px-2 py-1 text-xs text-text-secondary border border-border rounded bg-white hover:bg-bg-secondary cursor-pointer"
+                        className="px-2 py-1 text-xs text-text-secondary border border-border rounded-sm bg-white hover:bg-bg-secondary cursor-pointer"
                         onClick={() => loadSubmissions(item.id)}
                       >
                         查看提交
@@ -245,23 +245,23 @@ export default function PushPage() {
             <Chevron />
           </Accordion.Trigger>
           <Accordion.Content className="border-t border-border px-4 py-3">
-            <div className="space-y-3">
+            <div className="stack-y-3">
               <input
-                className="w-full px-3 py-2 text-sm border border-border rounded-ui outline-none focus:border-text-primary"
+                className="w-full px-3 py-2 text-sm border border-border rounded-ui outline-hidden focus:border-text-primary"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="题目标题 *"
                 maxLength={255}
               />
               <input
-                className="w-full px-3 py-2 text-sm border border-border rounded-ui outline-none focus:border-text-primary"
+                className="w-full px-3 py-2 text-sm border border-border rounded-ui outline-hidden focus:border-text-primary"
                 value={link}
                 onChange={(e) => setLink(e.target.value)}
                 placeholder="题目链接 *（可直接填写 codeforces.com/...）"
                 maxLength={1000}
               />
               <textarea
-                className="w-full px-3 py-2 text-sm border border-border rounded-ui outline-none focus:border-text-primary resize-y"
+                className="w-full px-3 py-2 text-sm border border-border rounded-ui outline-hidden focus:border-text-primary resize-y"
                 rows={3}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -291,13 +291,13 @@ export default function PushPage() {
           <div className="bg-white rounded-ui border border-border p-6 w-[400px] max-w-[90vw] shadow-lg z-50" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-base font-semibold text-text-primary m-0 mb-4">提交解答</h3>
             <input
-              className="w-full px-3 py-2 text-sm border border-border rounded-ui outline-none focus:border-text-primary mb-2"
+              className="w-full px-3 py-2 text-sm border border-border rounded-ui outline-hidden focus:border-text-primary mb-2"
               value={solutionLink}
               onChange={(e) => setSolutionLink(e.target.value)}
               placeholder="解答链接 *"
             />
             <textarea
-              className="w-full px-3 py-2 text-sm border border-border rounded-ui outline-none focus:border-text-primary resize-y mb-3"
+              className="w-full px-3 py-2 text-sm border border-border rounded-ui outline-hidden focus:border-text-primary resize-y mb-3"
               rows={2}
               value={solutionDesc}
               onChange={(e) => setSolutionDesc(e.target.value)}
@@ -329,7 +329,7 @@ export default function PushPage() {
             {viewSubmissions.items.length === 0 ? (
               <EmptyState title="暂无提交" />
             ) : (
-              <div className="space-y-2">
+              <div className="stack-y-2">
                 {viewSubmissions.items.map((sub) => (
                   <div key={sub.id} className="p-3 border border-border rounded-ui">
                     <a href={sub.submissionLink} target="_blank" rel="noreferrer" className="text-sm text-text-primary underline break-all">
@@ -386,15 +386,15 @@ function TodayPushCard({ item, onSolve, onViewSubmissions }) {
             </a>
           )}
         </div>
-        <div className="flex gap-1.5 flex-shrink-0">
+        <div className="flex gap-1.5 shrink-0">
           <button
-            className="px-2.5 py-1 text-xs font-medium text-white bg-success hover:bg-[#268845] rounded border-0 cursor-pointer"
+            className="px-2.5 py-1 text-xs font-medium text-white bg-success hover:bg-[#268845] rounded-sm border-0 cursor-pointer"
             onClick={onSolve}
           >
             提交解答
           </button>
           <button
-            className="px-2.5 py-1 text-xs text-text-secondary border border-border rounded bg-white hover:bg-bg-secondary cursor-pointer"
+            className="px-2.5 py-1 text-xs text-text-secondary border border-border rounded-sm bg-white hover:bg-bg-secondary cursor-pointer"
             onClick={onViewSubmissions}
           >
             查看提交
@@ -414,7 +414,7 @@ function HistoryPushCard({ item, onSolve, onViewSubmissions }) {
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="text-sm font-semibold text-text-primary m-0 truncate">{item.title}</h3>
             {item.pushDate && (
-              <span className="text-xs text-text-secondary flex-shrink-0">{item.pushDate}</span>
+              <span className="text-xs text-text-secondary shrink-0">{item.pushDate}</span>
             )}
           </div>
           {item.submitterUsername && (
@@ -436,15 +436,15 @@ function HistoryPushCard({ item, onSolve, onViewSubmissions }) {
             </a>
           )}
         </div>
-        <div className="flex gap-1 flex-shrink-0">
+        <div className="flex gap-1 shrink-0">
           <button
-            className="px-2 py-1 text-xs font-medium text-white bg-success hover:bg-[#268845] rounded border-0 cursor-pointer"
+            className="px-2 py-1 text-xs font-medium text-white bg-success hover:bg-[#268845] rounded-sm border-0 cursor-pointer"
             onClick={onSolve}
           >
             提交解答
           </button>
           <button
-            className="px-2 py-1 text-xs text-text-secondary border border-border rounded bg-white hover:bg-bg-secondary cursor-pointer"
+            className="px-2 py-1 text-xs text-text-secondary border border-border rounded-sm bg-white hover:bg-bg-secondary cursor-pointer"
             onClick={onViewSubmissions}
           >
             查看提交

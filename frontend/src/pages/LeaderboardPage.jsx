@@ -44,7 +44,7 @@ export default function LeaderboardPage() {
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
-    <div className="space-y-4">
+    <div className="stack-y-4">
       <h1 className="text-lg font-semibold text-text-primary m-0">排行榜</h1>
       <p className="text-sm text-text-secondary m-0">
         按总积分降序排列，积分相同时按最后打卡时间排序
@@ -68,7 +68,7 @@ export default function LeaderboardPage() {
                 idx > 0 ? "border-t border-border" : ""
               }`}
             >
-              <span className="text-sm text-text-secondary w-7 text-right font-mono flex-shrink-0">
+              <span className="text-sm text-text-secondary w-7 text-right font-mono shrink-0">
                 {(page - 1) * PAGE_SIZE + idx + 1}
               </span>
               <UserAvatar
@@ -81,7 +81,7 @@ export default function LeaderboardPage() {
               <span className="flex-1 text-sm text-text-primary font-medium truncate">
                 {item.displayName || item.username}
               </span>
-              <span className="text-sm font-semibold text-text-primary flex-shrink-0">
+              <span className="text-sm font-semibold text-text-primary shrink-0">
                 {item.totalPoints ?? 0} 分
               </span>
             </Link>

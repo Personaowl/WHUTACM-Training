@@ -75,11 +75,11 @@ export default function DevPanel() {
   }
 
   return (
-    <div className="bg-[#fff8f0] border border-warning/30 rounded-ui p-4 space-y-4">
+    <div className="bg-[#fff8f0] border border-warning/30 rounded-ui p-4 stack-y-4">
       <div className="flex items-center gap-2">
         <span className="text-xs font-semibold text-warning uppercase tracking-wide">DEV TOOLS</span>
         {devTime?.fixed && (
-          <span className="text-xs bg-warning/10 text-warning px-1.5 py-0.5 rounded">
+          <span className="text-xs bg-warning/10 text-warning px-1.5 py-0.5 rounded-sm">
             模拟时间: {devTime.today}
           </span>
         )}
@@ -95,18 +95,18 @@ export default function DevPanel() {
         <div className="flex gap-2 items-center">
           <input
             type="datetime-local"
-            className="flex-1 px-2 py-1 text-xs border border-border rounded-ui outline-none"
+            className="flex-1 px-2 py-1 text-xs border border-border rounded-ui outline-hidden"
             value={inputDateTime}
             onChange={(e) => setInputDateTime(e.target.value)}
           />
           <button
-            className="px-2.5 py-1 text-xs font-medium text-white bg-warning hover:bg-[#b08816] rounded border-0 cursor-pointer flex-shrink-0"
+            className="px-2.5 py-1 text-xs font-medium text-white bg-warning hover:bg-[#b08816] rounded-sm border-0 cursor-pointer shrink-0"
             onClick={handleSetTime}
           >
             设置
           </button>
           <button
-            className="px-2.5 py-1 text-xs border border-border rounded bg-white text-text-secondary hover:bg-bg-secondary cursor-pointer flex-shrink-0"
+            className="px-2.5 py-1 text-xs border border-border rounded-sm bg-white text-text-secondary hover:bg-bg-secondary cursor-pointer shrink-0"
             onClick={handleResetTime}
           >
             重置
@@ -120,12 +120,12 @@ export default function DevPanel() {
         <div className="flex gap-2 items-center">
           <input
             type="date"
-            className="px-2 py-1 text-xs border border-border rounded-ui outline-none"
+            className="px-2 py-1 text-xs border border-border rounded-ui outline-hidden"
             value={checkInDate}
             onChange={(e) => setCheckInDate(e.target.value)}
           />
           <select
-            className="px-2 py-1 text-xs border border-border rounded-ui outline-none bg-white"
+            className="px-2 py-1 text-xs border border-border rounded-ui outline-hidden bg-white"
             value={checkInSlot}
             onChange={(e) => setCheckInSlot(e.target.value)}
           >
@@ -134,7 +134,7 @@ export default function DevPanel() {
             <option value="hard">hard</option>
           </select>
           <button
-            className="px-2.5 py-1 text-xs font-medium text-white bg-success hover:bg-[#268845] rounded border-0 cursor-pointer flex-shrink-0"
+            className="px-2.5 py-1 text-xs font-medium text-white bg-success hover:bg-[#268845] rounded-sm border-0 cursor-pointer shrink-0"
             onClick={handleForceCheckIn}
           >
             完成打卡

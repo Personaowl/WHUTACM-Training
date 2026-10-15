@@ -164,11 +164,11 @@ export default function AccountBindingPage() {
   }
 
   if (loading) {
-    return <div className="space-y-4"><h1 className="page-title">账号绑定</h1><CardSkeleton /><CardSkeleton /></div>;
+    return <div className="stack-y-4"><h1 className="page-title">账号绑定</h1><CardSkeleton /><CardSkeleton /></div>;
   }
 
   return (
-    <div className="space-y-5">
+    <div className="stack-y-5">
       <header className="page-heading">
         <div>
           <h1 className="page-title">账号绑定</h1>

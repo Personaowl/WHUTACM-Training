@@ -9,7 +9,7 @@ export default function UserAvatar({ user, size = 40 }) {
 
   return (
     <Avatar.Root
-      className="rounded-full overflow-hidden flex-shrink-0 inline-flex"
+      className="rounded-full overflow-hidden shrink-0 inline-flex"
       style={{ width: size, height: size }}
     >
       {avatarUrl && (

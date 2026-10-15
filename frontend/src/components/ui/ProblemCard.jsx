@@ -21,7 +21,7 @@ export default function ProblemCard({ problem, showTags = true, actions = null }
           )}
         </div>
         <span
-          className="text-sm font-bold flex-shrink-0"
+          className="text-sm font-bold shrink-0"
           style={{ color: meta.color }}
         >
           {problem.rating ?? "未定级"}

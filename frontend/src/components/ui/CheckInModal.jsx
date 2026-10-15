@@ -34,7 +34,7 @@ export default function CheckInModal({ open, onOpenChange, onCheckIn, loading, r
                 Codeforces 提交 ID
               </label>
               <input
-                className="w-full px-3 py-2 text-sm border border-border rounded-ui bg-white text-text-primary outline-none focus:border-text-primary"
+                className="w-full px-3 py-2 text-sm border border-border rounded-ui bg-white text-text-primary outline-hidden focus:border-text-primary"
                 value={submissionId}
                 onChange={(e) => setSubmissionId(e.target.value)}
                 placeholder="输入 submission ID"

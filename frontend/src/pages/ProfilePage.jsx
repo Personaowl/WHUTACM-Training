@@ -110,7 +110,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="space-y-4">
+      <div className="stack-y-4">
         <h1 className="text-lg font-semibold">个人中心</h1>
         <CardSkeleton />
       </div>
@@ -118,7 +118,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="stack-y-5">
       <h1 className="text-lg font-semibold text-text-primary m-0">个人中心</h1>
 
       {message && (
@@ -176,7 +176,7 @@ export default function ProfilePage() {
               )}
             </div>
           </div>
-          <div className="text-right flex-shrink-0">
+          <div className="text-right shrink-0">
             <p className="text-xs text-text-secondary m-0">Codeforces rating</p>
             <p className="text-xl font-bold m-0" style={{ color: ratingMeta.color }}>
               {currentProfile?.codeforcesRating ?? "-"}

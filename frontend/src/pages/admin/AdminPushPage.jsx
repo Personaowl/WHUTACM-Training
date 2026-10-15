@@ -86,7 +86,7 @@ export default function AdminPushPage() {
   const published = items.filter((i) => i.status === "PUBLISHED");
 
   return (
-    <div className="space-y-5">
+    <div className="stack-y-5">
       <h1 className="text-lg font-semibold text-text-primary m-0">推题审核</h1>
 
       {message && (
@@ -105,7 +105,7 @@ export default function AdminPushPage() {
             {pending.length === 0 ? (
               <EmptyState title="暂无待审核推题" />
             ) : (
-              <div className="space-y-2">
+              <div className="stack-y-2">
                 {pending.map((item) => (
                   <div key={item.id} className="bg-white border border-border rounded-ui p-3 flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
@@ -120,10 +120,10 @@ export default function AdminPushPage() {
                       )}
                       {item.description && <p className="text-xs text-text-secondary mt-0.5 m-0">{item.description}</p>}
                     </div>
-                    <div className="flex gap-1 flex-shrink-0">
-                      <button className="px-2.5 py-1 text-xs font-medium text-white bg-success hover:bg-[#268845] rounded border-0 cursor-pointer"
+                    <div className="flex gap-1 shrink-0">
+                      <button className="px-2.5 py-1 text-xs font-medium text-white bg-success hover:bg-[#268845] rounded-sm border-0 cursor-pointer"
                         onClick={() => handleApprove(item.id)}>通过</button>
-                      <button className="px-2.5 py-1 text-xs font-medium text-white bg-error hover:bg-[#b01e28] rounded border-0 cursor-pointer"
+                      <button className="px-2.5 py-1 text-xs font-medium text-white bg-error hover:bg-[#b01e28] rounded-sm border-0 cursor-pointer"
                         onClick={() => handleReject(item.id)}>拒绝</button>
                     </div>
                   </div>
@@ -140,7 +140,7 @@ export default function AdminPushPage() {
             {poolItems.length === 0 ? (
               <EmptyState title="推题池为空" description="审核通过推题后，未被推送的题目会出现在这里" />
             ) : (
-              <div className="space-y-2">
+              <div className="stack-y-2">
                 {poolItems.map((item) => (
                   <div key={item.id} className="bg-white border border-border rounded-ui p-3 flex items-center justify-between gap-3">
                     <div className="flex-1 min-w-0">
@@ -149,10 +149,10 @@ export default function AdminPushPage() {
                         <span className="text-xs text-text-secondary">推题人：{item.submitterUsername}</span>
                       )}
                     </div>
-                    <div className="flex gap-1 flex-shrink-0">
-                      <button className="px-2.5 py-1 text-xs border border-border rounded bg-white text-text-secondary hover:bg-bg-secondary cursor-pointer"
+                    <div className="flex gap-1 shrink-0">
+                      <button className="px-2.5 py-1 text-xs border border-border rounded-sm bg-white text-text-secondary hover:bg-bg-secondary cursor-pointer"
                         onClick={() => handlePromote(item.id)}>提升</button>
-                      <button className="px-2.5 py-1 text-xs font-medium text-white bg-error hover:bg-[#b01e28] rounded border-0 cursor-pointer disabled:opacity-40"
+                      <button className="px-2.5 py-1 text-xs font-medium text-white bg-error hover:bg-[#b01e28] rounded-sm border-0 cursor-pointer disabled:opacity-40"
                         onClick={() => handleDelete(item.id)}
                         disabled={deletingId === item.id}>
                         {deletingId === item.id ? "..." : "删除"}
@@ -172,7 +172,7 @@ export default function AdminPushPage() {
             {published.length === 0 ? (
               <EmptyState title="暂无已推送推题" description="系统每日凌晨自动推送，或用户访问时触发懒发布" />
             ) : (
-              <div className="space-y-2">
+              <div className="stack-y-2">
                 {published.map((item) => (
                   <div key={item.id} className="bg-white border border-border rounded-ui p-3 flex items-center justify-between gap-3">
                     <div className="flex-1 min-w-0">
@@ -189,7 +189,7 @@ export default function AdminPushPage() {
                         </a>
                       )}
                     </div>
-                    <span className="text-xs px-1.5 py-0.5 rounded bg-[#f0f0ff] text-[#5865f2] flex-shrink-0">已推送</span>
+                    <span className="text-xs px-1.5 py-0.5 rounded-sm bg-[#f0f0ff] text-[#5865f2] shrink-0">已推送</span>
                   </div>
                 ))}
               </div>
@@ -204,7 +204,7 @@ export default function AdminPushPage() {
             {approved.length === 0 ? (
               <EmptyState title="暂无已通过推题" />
             ) : (
-              <div className="space-y-2">
+              <div className="stack-y-2">
                 {approved.map((item) => (
                   <div key={item.id} className="bg-white border border-border rounded-ui p-3 flex items-center justify-between gap-3">
                     <div className="flex-1 min-w-0">
@@ -213,7 +213,7 @@ export default function AdminPushPage() {
                         <span className="text-xs text-text-secondary">推题人：{item.submitterUsername}</span>
                       )}
                     </div>
-                    <button className="px-2.5 py-1 text-xs border border-border rounded bg-white text-text-secondary hover:bg-bg-secondary cursor-pointer"
+                    <button className="px-2.5 py-1 text-xs border border-border rounded-sm bg-white text-text-secondary hover:bg-bg-secondary cursor-pointer"
                       onClick={() => handlePromote(item.id)}>提升</button>
                   </div>
                 ))}

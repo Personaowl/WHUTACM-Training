@@ -151,7 +151,7 @@ export default function DailyProblemPage() {
 
   if (loading) {
     return (
-      <div className="space-y-4">
+      <div className="stack-y-4">
         <h1 className="text-lg font-semibold">{TEXT.title}</h1>
         <CardSkeleton />
         <CardSkeleton />
@@ -172,7 +172,7 @@ export default function DailyProblemPage() {
   const todayTotalCount = todayProblems.length;
 
   return (
-    <div className="space-y-5">
+    <div className="stack-y-5">
       <h1 className="text-lg font-semibold text-text-primary m-0">{TEXT.title}</h1>
 
       {error && (
@@ -182,7 +182,7 @@ export default function DailyProblemPage() {
       <section className="bg-white border border-border rounded-ui px-4 py-3">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
-            <span className="grid place-items-center w-9 h-9 flex-shrink-0 rounded-full bg-bg-secondary">
+            <span className="grid place-items-center w-9 h-9 shrink-0 rounded-full bg-bg-secondary">
               <Settings2 size={17} />
             </span>
             <div>
@@ -192,7 +192,7 @@ export default function DailyProblemPage() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3 flex-shrink-0">
+          <div className="flex items-center gap-3 shrink-0">
             {settingMessage && (
               <span className="hidden sm:inline text-xs text-text-secondary">{settingMessage}</span>
             )}
@@ -212,7 +212,7 @@ export default function DailyProblemPage() {
               }`}
             >
               <span
-                className={`absolute left-0.5 top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${
+                className={`absolute left-0.5 top-0.5 w-5 h-5 rounded-full bg-white shadow-xs transition-transform ${
                   showTags ? "translate-x-5" : "translate-x-0"
                 }`}
               />
@@ -222,7 +222,7 @@ export default function DailyProblemPage() {
       </section>
 
       {hasTodayContent ? (
-        <div className="space-y-3">
+        <div className="stack-y-3">
           {todayProblems.map((problem) => (
             <div key={problem.problemKey}>
               <ProblemCard
@@ -268,7 +268,7 @@ export default function DailyProblemPage() {
         {historyDates.length === 0 ? (
           <EmptyState title={TEXT.noHistory} />
         ) : (
-          <div className="space-y-1">
+          <div className="stack-y-1">
             {pagedDates.map((date) => {
               const items = groupedHistory[date];
               return (
@@ -287,7 +287,7 @@ export default function DailyProblemPage() {
                       >
                         <div className="flex items-center gap-2">
                           <span
-                            className={`text-xs px-1.5 py-0.5 rounded ${
+                            className={`text-xs px-1.5 py-0.5 rounded-sm ${
                               item.slot === "easy"
                                 ? "bg-[#f0fff0] text-success"
                                 : "bg-[#fff8f0] text-warning"
@@ -313,7 +313,7 @@ export default function DailyProblemPage() {
                             </span>
                           ))}
                         </div>
-                        <div className="flex flex-shrink-0 items-center gap-2">
+                        <div className="flex shrink-0 items-center gap-2">
                           <AddToProblemListButton problem={item} compact />
                           {item.checkedIn ? (
                             <span className="text-success font-medium">

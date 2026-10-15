@@ -27,7 +27,7 @@ export function CardSkeleton() {
 
 export function ListSkeleton({ rows = 5 }) {
   return (
-    <div className="space-y-2">
+    <div className="stack-y-2">
       {Array.from({ length: rows }, (_, i) => (
         <Skeleton key={i} className="h-12 w-full" />
       ))}

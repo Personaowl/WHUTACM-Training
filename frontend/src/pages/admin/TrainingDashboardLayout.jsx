@@ -10,17 +10,17 @@ const SECTIONS = [
 
 export default function TrainingDashboardLayout() {
   return (
-    <div className="space-y-6">
+    <div className="stack-y-6">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="m-0 text-2xl font-bold tracking-tight text-text-primary">训练看板</h1>
-        <nav aria-label="训练项目" className="inline-flex w-fit max-w-full flex-wrap gap-1 rounded-2xl border border-border bg-white p-1.5 shadow-sm">
+        <nav aria-label="训练项目" className="inline-flex w-fit max-w-full flex-wrap gap-1 rounded-2xl border border-border bg-white p-1.5 shadow-xs">
           {SECTIONS.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}
               end
               className={({ isActive }) => `inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#245b8f] ${
-                isActive ? "bg-[#142943] text-white shadow-sm" : "text-text-secondary hover:bg-bg-secondary hover:text-text-primary"
+                isActive ? "bg-[#142943] text-white shadow-xs" : "text-text-secondary hover:bg-bg-secondary hover:text-text-primary"
               }`}
             >
               <Icon size={17} aria-hidden="true" />

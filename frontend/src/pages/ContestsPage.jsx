@@ -69,7 +69,7 @@ export default function ContestsPage() {
   );
 
   return (
-    <div className="space-y-5">
+    <div className="stack-y-5">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div>
           <p className="text-[11px] font-bold tracking-[0.18em] text-text-secondary m-0">
@@ -136,7 +136,7 @@ export default function ContestsPage() {
               >
                 <div className="flex items-start gap-4">
                   <div
-                    className="hidden sm:flex w-12 h-12 flex-shrink-0 items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-105"
+                    className="hidden sm:flex w-12 h-12 shrink-0 items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-105"
                     style={{ backgroundColor: platform.soft, color: platform.color }}
                   >
                     {status.live ? <Radio size={20} /> : <CalendarClock size={20} />}
@@ -175,7 +175,7 @@ export default function ContestsPage() {
                     </div>
                   </div>
                   <a
-                    className="inline-flex flex-shrink-0 items-center gap-1 text-xs font-semibold text-text-primary hover:underline"
+                    className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-text-primary hover:underline"
                     href={contest.url}
                     target="_blank"
                     rel="noreferrer"

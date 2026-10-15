@@ -81,7 +81,7 @@ export default function RegisterPage() {
             required
           />
         </label>
-        <fieldset className="m-0 min-w-0 border border-border rounded-ui p-3 space-y-3">
+        <fieldset className="m-0 min-w-0 border border-border rounded-ui p-3 stack-y-3">
           <legend className="px-1 text-sm text-text-secondary">校内信息（选填）</legend>
           {[
             { name: "realName", label: "姓名", placeholder: "填写真实姓名", maxLength: 100 },
