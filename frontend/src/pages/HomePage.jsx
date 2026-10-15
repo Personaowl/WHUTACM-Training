@@ -10,13 +10,17 @@ import UserAvatar from "../components/ui/UserAvatar";
 import { CardSkeleton } from "../components/ui/Skeleton";
 import {
   Activity,
+  ArrowRight,
   ArrowUpRight,
-  CalendarCheck2,
+  BookOpen,
+  CalendarDays,
+  Code2,
   LoaderCircle,
   Send,
   Trophy,
 } from "lucide-react";
 import CodeforcesOverview from "../components/profile/CodeforcesOverview";
+import "./HomePage.css";
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -33,6 +37,7 @@ export default function HomePage() {
     setHeatmapLoading(Boolean(user?.id));
     setError("");
     setHeatmapError("");
+    setHeatmapData([]);
 
     getHomeOverview(10)
       .then((overview) => {
@@ -50,6 +55,8 @@ export default function HomePage() {
         .then((heatmap) => {
           if (!cancelled && heatmap?.code === 200) {
             setHeatmapData(heatmap.data || []);
+          } else if (!cancelled) {
+            setHeatmapError("热力图暂时无法加载");
           }
         })
         .catch(() => {
@@ -110,54 +117,79 @@ export default function HomePage() {
 
   const { totalUsers, topUsers, todayProblem, todayPushProblem, dailySubmissionSummary } = data || {};
 
-  // Determine today's display problems (backend now filters out redrawn slots)
   const todayProblems = Array.isArray(todayProblem) ? todayProblem : (todayProblem ? [todayProblem] : []);
 
   return (
-    <div className="stack-y-5">
+    <div className="home-page">
       <header className="home-profile-panel">
         <div className="home-profile-identity">
-          <UserAvatar user={user} size={88} />
+          <UserAvatar user={user} size={76} />
           <div>
-            <span className="home-profile-eyebrow">MY TRAINING SPACE</span>
+            <span className="home-profile-eyebrow">我的训练空间</span>
             <h1>{user?.displayName || user?.username || "训练者"}</h1>
-            <p>
-              @{user?.username || "guest"}
-              {user?.codeforcesHandle ? <span> · Codeforces @{user.codeforcesHandle}</span> : null}
-            </p>
+            <p title={user?.username}>@{user?.username || "guest"}</p>
           </div>
         </div>
 
         <div className="home-quick-actions">
+          <Link to="/problem-lists" className="home-secondary-entry">
+            <BookOpen size={17} aria-hidden="true" />我的题单
+          </Link>
           <Link to="/daily" className="home-training-entry">
-            <span>开始训练</span><ArrowUpRight size={18} />
+            <span>开始今日训练</span><ArrowUpRight size={18} aria-hidden="true" />
           </Link>
         </div>
+
+        <dl className="home-stats" aria-label="训练概览">
+          <StatCard icon={Trophy} label="我的积分" value={user?.totalPoints ?? 0} />
+          <StatCard icon={Send} label="今日提交" value={dailySubmissionSummary?.todaySubmissions ?? 0} />
+          <StatCard icon={Activity} label="近 7 日活跃" value={totalUsers ?? 0} />
+        </dl>
       </header>
 
-      {/* Stats row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard icon={Activity} label="活跃用户" value={totalUsers ?? 0} />
-        <StatCard
-          icon={CalendarCheck2}
-          label="今日完成人数"
-          value={dailySubmissionSummary?.todayCheckedInUsers ?? 0}
-        />
-        <StatCard icon={Send} label="今日提交" value={dailySubmissionSummary?.todaySubmissions ?? 0} />
-        <StatCard icon={Trophy} label="我的积分" value={user?.totalPoints ?? 0} />
+      <div className="home-training-grid">
+        <section className="home-section home-daily-section" aria-labelledby="home-daily-title">
+          <SectionHeading id="home-daily-title" title="今日训练" to="/daily" linkText="查看每日一题" />
+          {todayProblems.length > 0 ? (
+            <div className="home-problem-grid">
+              {todayProblems.map((problem, index) => (
+                <ProblemCard
+                  key={problem.problemKey || index}
+                  problem={problem}
+                  actions={<AddToProblemListButton problem={problem} />}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="home-empty-state" role="status">
+              {data?.problemPoolInitializing ? (
+                <><LoaderCircle className="animate-spin" size={22} aria-hidden="true" /><p>题库初始化中，今日题目即将就绪</p></>
+              ) : (
+                <><Code2 size={26} aria-hidden="true" /><p>今日题目尚未生成</p><Link to="/practice">先去自主练习 <ArrowRight size={15} aria-hidden="true" /></Link></>
+              )}
+            </div>
+          )}
+        </section>
+
+        <aside className="home-training-aside" aria-label="个人训练概览">
+          {user?.codeforcesHandle ? (
+            <CodeforcesOverview userId={user?.id} handle={user.codeforcesHandle} compact />
+          ) : (
+            <section className="home-binding-prompt">
+              <img src="/platforms/codeforces.png" alt="" width="32" height="32" />
+              <div><h2>连接 Codeforces</h2><p>查看你的 Rating 和做题数据</p></div>
+              <Link to="/account-binding" className="home-text-link">绑定账号 <ArrowUpRight size={15} aria-hidden="true" /></Link>
+            </section>
+          )}
+          <nav className="home-shortcuts" aria-label="训练快捷入口">
+            <Link to="/weekly-training"><CalendarDays size={19} aria-hidden="true" /><span>我的周训练<small>回顾本周完成情况</small></span><ArrowUpRight size={16} aria-hidden="true" /></Link>
+            <Link to="/practice"><Code2 size={19} aria-hidden="true" /><span>自主练习<small>按难度挑选下一题</small></span><ArrowUpRight size={16} aria-hidden="true" /></Link>
+          </nav>
+        </aside>
       </div>
 
-      <CodeforcesOverview
-        userId={user?.id}
-        handle={user?.codeforcesHandle}
-        compact
-      />
-
       <section className="render-lazy cf-heatmap-section">
-        <div className="cf-heatmap-section-head">
-          <h2>训练热力图</h2>
-          <span>LAST 12 MONTHS</span>
-        </div>
+        <SectionHeading title="训练足迹" subtitle="过去 12 个月" />
         {heatmapLoading ? (
           <CardSkeleton />
         ) : heatmapError ? (
@@ -171,136 +203,96 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* Main content */}
-      <div className="render-lazy grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Today's Problems */}
-        <section>
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-base font-semibold text-text-primary m-0">今日题目</h2>
-            <Link to="/daily" className="text-xs text-text-secondary hover:text-text-primary">
-              查看详情 →
-            </Link>
-          </div>
-          {todayProblems.length > 0 ? (
-            <div className="stack-y-2">
-              {todayProblems.map((p, i) => (
-                <ProblemCard
-                  key={p.problemKey || i}
-                  problem={p}
-                  actions={<AddToProblemListButton problem={p} />}
-                />
-              ))}
-            </div>
-          ) : data?.problemPoolInitializing ? (
-            <div className="bg-white border border-border rounded-ui p-6 text-center text-sm text-text-secondary">
-              <LoaderCircle className="inline-block mr-2 animate-spin" size={16} />
-              首次启动正在初始化 Codeforces 题库，完成后会自动显示今日题目
-            </div>
-          ) : (
-            <div className="bg-white border border-border rounded-ui p-6 text-center text-sm text-text-secondary">
-              今日题目尚未生成
-            </div>
-          )}
-        </section>
-
-        {/* Today's Push + Leaderboard preview */}
-        <div className="stack-y-4">
-          {/* Today's Push */}
-          <section>
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-base font-semibold text-text-primary m-0">今日推题</h2>
-              <Link to="/push" className="text-xs text-text-secondary hover:text-text-primary">
-                查看详情 →
-              </Link>
-            </div>
+      <div className="render-lazy home-community-grid">
+          <section className="home-section home-push-section">
+            <SectionHeading title="今日推题" to="/push" linkText="更多推题" />
             {todayPushProblem ? (
-              <div className="bg-white border border-border rounded-ui p-4">
-                <h3 className="text-sm font-semibold text-text-primary m-0">
+              <div className="home-push-content">
+                <span className="home-content-label"><Send size={15} aria-hidden="true" /> 来自训练伙伴的推荐</span>
+                <h3>
                   {todayPushProblem.title}
                 </h3>
                 {todayPushProblem.description ? (
-                  <p className="text-xs text-text-secondary mt-1 m-0 line-clamp-2">
+                  <p>
                     {todayPushProblem.description}
                   </p>
-                ) : (
-                  <p className="text-xs text-text-secondary mt-1 m-0">无描述</p>
-                )}
+                ) : null}
                 {todayPushProblem.link && (
                   <a
                     href={todayPushProblem.link}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-block mt-2 text-xs text-text-secondary hover:text-text-primary underline"
+                    className="home-text-link"
                   >
-                    在外部打开 →
+                    打开题目 <ArrowUpRight size={15} aria-hidden="true" />
                   </a>
                 )}
               </div>
             ) : (
-              <div className="bg-white border border-border rounded-ui p-6 text-center text-sm text-text-secondary">
-                今日无推题
+              <div className="home-empty-state">
+                <Send size={26} aria-hidden="true" /><p>今天还没有推荐题目</p>
+                <Link to="/push">分享一道好题 <ArrowRight size={15} aria-hidden="true" /></Link>
               </div>
             )}
           </section>
 
-          {/* Leaderboard Top 10 */}
-          <section>
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-base font-semibold text-text-primary m-0">排行榜 Top 10</h2>
-              <Link to="/leaderboard" className="text-xs text-text-secondary hover:text-text-primary">
-                查看完整排行榜 →
-              </Link>
-            </div>
+          <section className="home-section home-leaderboard-section">
+            <SectionHeading title="训练排行" to="/leaderboard" linkText="完整排行" />
             {topUsers && topUsers.length > 0 ? (
-              <div className="bg-white border border-border rounded-ui overflow-hidden">
+              <ol className="home-leaderboard">
                 {topUsers.map((item, idx) => (
+                  <li key={item.userId ?? item.id}>
                   <Link
-                    key={item.userId ?? item.id}
                     to={`/members/${item.userId ?? item.id}`}
-                    className={`flex items-center gap-3 px-4 py-2.5 ${
-                      idx > 0 ? "border-t border-border" : ""
-                    } no-underline hover:bg-bg-secondary transition-colors`}
+                    className="home-leaderboard-row"
                   >
-                    <span className="text-xs text-text-secondary w-5 text-right font-mono">
-                      {idx + 1}
+                    <span className={`home-rank ${idx < 3 ? "is-top" : ""}`}>
+                      {String(idx + 1).padStart(2, "0")}
                     </span>
                     <UserAvatar
                       user={{
                         username: item.displayName || item.username,
                         avatarUrl: item.avatarUrl,
                       }}
-                      size={24}
+                      size={32}
                     />
-                    <span className="flex-1 text-sm text-text-primary truncate">
+                    <span className="home-leaderboard-name">
                       {item.displayName || item.username}
                     </span>
-                    <span className="text-sm font-semibold text-text-primary">
-                      {item.totalPoints ?? 0}
-                    </span>
+                    <strong>{formatNumber(item.totalPoints)}<small>分</small></strong>
                   </Link>
+                  </li>
                 ))}
-              </div>
+              </ol>
             ) : (
-              <div className="bg-white border border-border rounded-ui p-4 text-center text-sm text-text-secondary">
+              <div className="home-empty-state">
                 暂无排行数据
               </div>
             )}
           </section>
-        </div>
       </div>
     </div>
   );
 }
 
-function StatCard({ icon: Icon, label, value, subtitle }) {
+function StatCard({ icon: Icon, label, value }) {
   return (
-    <div className="stat-card">
-      <div className="stat-card-top">
-        <Icon size={17} strokeWidth={1.7} />
-      </div>
-      <p>{label}</p>
-      <strong>{value}</strong>
-      {subtitle && <small>{subtitle}</small>}
+    <div className="home-stat">
+      <dt><span className="home-stat-icon"><Icon size={19} strokeWidth={1.7} aria-hidden="true" /></span>{label}</dt>
+      <dd>{formatNumber(value)}</dd>
     </div>
   );
+}
+
+function SectionHeading({ id, title, subtitle, to, linkText }) {
+  return (
+    <div className="home-section-heading">
+      <h2 id={id}>{title}</h2>
+      {to ? <Link to={to}>{linkText}<ArrowUpRight size={15} aria-hidden="true" /></Link> : <span>{subtitle}</span>}
+    </div>
+  );
+}
+
+function formatNumber(value) {
+  return Number(value ?? 0).toLocaleString("zh-CN");
 }

@@ -115,15 +115,15 @@ export default function CodeforcesOverview({
 
   if (compact) {
     return (
-      <section className="bg-white border border-border rounded-ui p-4">
-        <div className="flex items-center justify-between gap-3 mb-3">
+      <section className="cf-compact-overview bg-white border border-border rounded-ui p-4">
+        <div className="cf-compact-heading flex items-center justify-between gap-3 mb-3">
           <div>
             <h2 className="m-0 mb-1 text-sm font-bold text-text-primary">Codeforces 概览</h2>
             <a
               href={`https://codeforces.com/profile/${encodeURIComponent(handle)}`}
               target="_blank"
               rel="noreferrer"
-              className="text-sm font-semibold text-text-primary no-underline hover:underline"
+              className="cf-compact-handle text-sm font-semibold text-text-primary no-underline hover:underline"
             >
               @{handle}
             </a>
@@ -233,7 +233,7 @@ function OverviewStat({ label, value, hint, valueColor }) {
 
 function CompactStat({ label, value, valueColor }) {
   return (
-    <div className="bg-bg-secondary rounded-ui px-3 py-2.5">
+    <div className="cf-compact-stat bg-bg-secondary rounded-ui px-3 py-2.5">
       <span className="block text-[11px] font-semibold text-text-secondary">{label}</span>
       <strong
         className="block text-lg text-text-primary mt-0.5"

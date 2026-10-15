@@ -878,89 +878,6 @@ a {
   line-height: 1.2;
 }
 
-.home-profile-panel {
-  position: relative;
-  display: grid;
-  min-height: 132px;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 28px;
-  padding: 22px 25px;
-  overflow: hidden;
-  background:
-    linear-gradient(105deg, rgba(238, 244, 249, 0.72), transparent 38%),
-    rgba(255, 255, 255, 0.96);
-  border: 1px solid var(--line);
-  border-radius: 21px;
-  box-shadow: 0 14px 42px rgba(8, 22, 39, 0.045);
-}
-
-.home-profile-panel::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  opacity: 0.14;
-  background-image:
-    linear-gradient(rgba(29, 59, 88, 0.13) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(29, 59, 88, 0.13) 1px, transparent 1px);
-  background-size: 28px 28px;
-  mask-image: linear-gradient(90deg, transparent 32%, black);
-  pointer-events: none;
-}
-
-.home-profile-identity,
-.home-quick-actions {
-  position: relative;
-  z-index: 1;
-}
-
-.home-profile-identity {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 18px;
-}
-
-.home-profile-identity > :first-child {
-  flex: 0 0 auto;
-  box-shadow: 0 0 0 5px white, 0 12px 28px rgba(13, 33, 56, 0.14);
-}
-
-.home-profile-identity > div:last-child { min-width: 0; }
-.home-profile-eyebrow { color: #6d8093; font-size: 10px; font-weight: 800; letter-spacing: 0.15em; }
-.home-profile-identity h1 { margin: 4px 0 2px; color: var(--ink); font-size: 25px; font-weight: 850; letter-spacing: -0.025em; }
-.home-profile-identity p { margin: 0; overflow: hidden; color: var(--muted); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
-
-.home-quick-actions {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.home-training-entry {
-  display: flex;
-  min-width: 0;
-  min-height: 72px;
-  align-items: center;
-  gap: 11px;
-  padding: 10px 13px;
-  font-family: inherit;
-  border-radius: 15px;
-  cursor: pointer;
-  transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
-}
-
-.home-training-entry {
-  min-width: 170px;
-  justify-content: space-between;
-  color: white;
-  background: #122a43;
-  border: 1px solid #122a43;
-  font-size: 14px;
-  font-weight: 800;
-}
-
-.home-training-entry:hover { color: white; transform: translateY(-2px); box-shadow: 0 10px 22px rgba(18, 42, 67, 0.17); }
-
 .dashboard-user-chip strong {
   max-width: 175px;
   overflow: hidden;
@@ -2081,11 +1998,6 @@ body {
 .notice-success { color: #315d3b; background: #f0f8f1; border-color: #d5e8d8; }
 .notice-error { color: #a43b43; background: #fff5f5; border-color: #eed4d6; }
 
-@media (max-width: 1220px) {
-  .home-profile-panel { grid-template-columns: minmax(0, 1fr); gap: 17px; }
-  .home-quick-actions { justify-content: flex-start; }
-}
-
 @media (max-width: 640px) {
   body { font-size: 15px; }
   .page-heading { align-items: flex-start; flex-direction: column; }
@@ -2093,11 +2005,6 @@ body {
   .binding-card { min-height: auto; padding: 20px; }
   .binding-input-row { flex-direction: column; }
   .binding-input-row .button-primary { width: 100%; }
-  .home-profile-panel { padding: 20px 17px; border-radius: 18px; }
-  .home-profile-identity { gap: 15px; }
-  .home-profile-identity h1 { font-size: 22px; }
-  .home-quick-actions { justify-content: flex-start; }
-  .home-training-entry { width: 100%; min-height: 48px; }
   .cf-heatmap-card { padding: 18px 12px 22px; }
   .heatmap-toolbar { align-items: flex-start; flex-direction: column; gap: 8px; }
   .heatmap-cf-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 15px; padding: 23px 4px 2px; }

@@ -1,5 +1,5 @@
-import http from "./http";
-import { getStoredAuth } from "../auth";
+import http from "./http.js";
+import { getStoredAuth } from "../auth.js";
 
 export function authHeaders() {
   const auth = getStoredAuth();
