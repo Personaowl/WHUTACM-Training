@@ -30,6 +30,7 @@ codeforces:
   profile-cache-minutes: 30
   request-interval-ms: 2100
   max-pending-requests: 200
+  request-timeout-ms: 30000
 
 contests:
   cache-minutes: 15

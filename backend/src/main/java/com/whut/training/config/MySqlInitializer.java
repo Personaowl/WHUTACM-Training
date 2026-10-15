@@ -148,23 +148,6 @@ public class MySqlInitializer implements DatabaseInitializer {
                 """);
 
         jdbcTemplate.execute("""
-                CREATE TABLE IF NOT EXISTS user_fun_check_in (
-                    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-                    user_id BIGINT NOT NULL,
-                    check_in_date VARCHAR(10) NOT NULL,
-                    fortune_key VARCHAR(32) NOT NULL,
-                    fortune_title VARCHAR(100) NOT NULL,
-                    fortune_message VARCHAR(500) NOT NULL,
-                    lucky_tag VARCHAR(64) NOT NULL,
-                    lucky_color VARCHAR(16) NOT NULL,
-                    luck_level INT NOT NULL,
-                    checked_at VARCHAR(64) NOT NULL,
-                    UNIQUE KEY uk_user_fun_check_in_day (user_id, check_in_date),
-                    KEY idx_user_fun_check_in_date (check_in_date)
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-                """);
-
-        jdbcTemplate.execute("""
                 CREATE TABLE IF NOT EXISTS user_practice_draw (
                     id BIGINT PRIMARY KEY AUTO_INCREMENT,
                     user_id BIGINT NOT NULL,
@@ -308,6 +291,39 @@ public class MySqlInitializer implements DatabaseInitializer {
                 """);
 
         jdbcTemplate.execute("""
+                CREATE TABLE IF NOT EXISTS weekly_training_record (
+                    week_start VARCHAR(10) NOT NULL,
+                    user_id BIGINT NOT NULL,
+                    explanation TEXT,
+                    submitted_at VARCHAR(64),
+                    review_status VARCHAR(32) NOT NULL DEFAULT 'NONE',
+                    review_note TEXT,
+                    reviewed_by BIGINT,
+                    reviewed_at VARCHAR(64),
+                    manual_status VARCHAR(32),
+                    version BIGINT NOT NULL DEFAULT 0,
+                    created_at VARCHAR(64) NOT NULL,
+                    PRIMARY KEY (week_start, user_id),
+                    KEY idx_weekly_training_user_week (user_id, week_start)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                """);
+
+        jdbcTemplate.execute("""
+                CREATE TABLE IF NOT EXISTS weekly_training_audit (
+                    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                    week_start VARCHAR(10) NOT NULL,
+                    user_id BIGINT NOT NULL,
+                    actor_id BIGINT NOT NULL,
+                    action VARCHAR(32) NOT NULL,
+                    message TEXT NOT NULL,
+                    result_status VARCHAR(32),
+                    created_at VARCHAR(64) NOT NULL,
+                    KEY idx_weekly_audit_week_user (week_start, user_id, id),
+                    KEY idx_weekly_audit_user_week (user_id, week_start, id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                """);
+
+        jdbcTemplate.execute("""
                 CREATE TABLE IF NOT EXISTS atcoder_contest (
                     contest_id VARCHAR(64) PRIMARY KEY,
                     name VARCHAR(255) NOT NULL,
@@ -388,6 +404,11 @@ public class MySqlInitializer implements DatabaseInitializer {
                 """);
 
         // CREATE TABLE IF NOT EXISTS 不会给已有表补充新索引，因此单独执行轻量迁移。
+        ensureIndex(
+                "auth_token_session",
+                "idx_auth_session_refresh_expiry",
+                "ALTER TABLE auth_token_session ADD INDEX idx_auth_session_refresh_expiry (refresh_expired_at_seconds)"
+        );
         ensureIndex(
                 "users",
                 "idx_users_total_points",

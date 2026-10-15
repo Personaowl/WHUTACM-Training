@@ -16,6 +16,26 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class CodeforcesRequestCoordinatorTest {
 
     @Test
+    void timedOutQueuedWorkIsRemovedAndReleasesCapacity() throws Exception {
+        CodeforcesRequestCoordinator coordinator = new CodeforcesRequestCoordinator(0, 1, 500);
+        var executed = new java.util.concurrent.atomic.AtomicBoolean();
+        try {
+            // No worker yet: the request must expire in the queue, without executing its action.
+            assertThatThrownBy(() -> coordinator.execute(CodeforcesRequestCoordinator.Priority.NORMAL, () -> {
+                executed.set(true);
+                return "expired";
+            })).isInstanceOf(IOException.class).hasMessageContaining("timed out");
+            assertThat(coordinator.pendingRequests()).isZero();
+            coordinator.start();
+            assertThat(coordinator.execute(CodeforcesRequestCoordinator.Priority.CHECK_IN, () -> "next"))
+                    .isEqualTo("next");
+            assertThat(executed).isFalse();
+        } finally {
+            coordinator.shutdown();
+        }
+    }
+
+    @Test
     void rejectsNewWorkWhenTheBoundedQueueIsFull() throws Exception {
         CodeforcesRequestCoordinator coordinator = new CodeforcesRequestCoordinator(0, 1);
         coordinator.start();

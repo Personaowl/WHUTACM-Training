@@ -8,6 +8,7 @@ export default function RegisterPage() {
   const navigate = useNavigate();
   const [account, setAccount] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [schoolInfo, setSchoolInfo] = useState({ realName: "", college: "", className: "" });
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -27,6 +28,7 @@ export default function RegisterPage() {
       const result = await register({
         username: account.trim(),
         displayName: displayName.trim(),
+        ...Object.fromEntries(Object.entries(schoolInfo).map(([key, value]) => [key, value.trim()])),
         password,
       });
       if (result.ok) {
@@ -64,6 +66,7 @@ export default function RegisterPage() {
             onChange={(event) => setAccount(event.target.value)}
             placeholder="用于登录的唯一账号"
             autoComplete="username"
+            maxLength={50}
             required
           />
         </label>
@@ -74,14 +77,31 @@ export default function RegisterPage() {
             value={displayName}
             onChange={(event) => setDisplayName(event.target.value)}
             placeholder="对外展示的名称"
+            maxLength={50}
             required
           />
         </label>
+        <fieldset className="m-0 min-w-0 border border-border rounded-ui p-3 space-y-3">
+          <legend className="px-1 text-sm text-text-secondary">校内信息（选填）</legend>
+          {[
+            { name: "realName", label: "姓名", placeholder: "填写真实姓名", maxLength: 100 },
+            { name: "college", label: "学院", placeholder: "填写所在学院", maxLength: 150 },
+            { name: "className", label: "班级", placeholder: "填写所在班级", maxLength: 150 },
+          ].map(({ name, label, ...attributes }) => (
+            <label key={name}>
+              <span>{label}</span>
+              <input {...attributes} name={name} className="auth-field" value={schoolInfo[name]}
+                onChange={(event) => setSchoolInfo((current) => ({ ...current, [name]: event.target.value }))} />
+            </label>
+          ))}
+        </fieldset>
         <label>
           <span>密码</span>
           <input
             className="auth-field"
             type="password"
+            minLength={8}
+            maxLength={64}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             placeholder="至少 8 位"
@@ -95,6 +115,8 @@ export default function RegisterPage() {
             className="auth-field"
             type="password"
             value={confirmPassword}
+            minLength={8}
+            maxLength={64}
             onChange={(event) => setConfirmPassword(event.target.value)}
             placeholder="再次输入密码"
             autoComplete="new-password"

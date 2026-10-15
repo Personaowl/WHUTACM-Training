@@ -11,21 +11,20 @@ import com.whut.training.repository.AuthTokenSessionRepository;
 import com.whut.training.repository.AuthTokenSessionRepository.AuthTokenSession;
 import com.whut.training.repository.UserRepository;
 import com.whut.training.service.AuthService;
-import com.whut.training.service.CodeforcesApiService;
 import com.whut.training.service.UserService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.scheduling.annotation.Scheduled;
 
-import java.net.URI;
-import java.time.Instant;
 import java.util.UUID;
 
 /**
  * 认证服务实现。
  *
- * <p>负责账号密码登录、token 续期、退出登录以及登录时同步 Codeforces 头像与 UID。
+ * <p>负责账号密码登录、token 续期及退出；认证不依赖外部竞赛平台可用性。
  * 新密码使用 BCrypt；旧明文账号会在首次成功登录时自动升级。
  */
 @Service
@@ -36,7 +35,6 @@ public class AuthServiceImpl implements AuthService {
     private final long refreshTokenTtlSeconds;
 
     private final UserService userService;
-    private final CodeforcesApiService codeforcesApiService;
     private final UserRepository userRepository;
     private final AuthTokenSessionRepository authTokenSessionRepository;
     private final TimeProvider timeProvider;
@@ -44,7 +42,6 @@ public class AuthServiceImpl implements AuthService {
 
     public AuthServiceImpl(
             UserService userService,
-            CodeforcesApiService codeforcesApiService,
             UserRepository userRepository,
             AuthTokenSessionRepository authTokenSessionRepository,
             TimeProvider timeProvider,
@@ -53,7 +50,6 @@ public class AuthServiceImpl implements AuthService {
             @Value("${app.auth.refresh-token-ttl-seconds:21600}") long refreshTokenTtlSeconds
     ) {
         this.userService = userService;
-        this.codeforcesApiService = codeforcesApiService;
         this.userRepository = userRepository;
         this.authTokenSessionRepository = authTokenSessionRepository;
         this.timeProvider = timeProvider;
@@ -88,8 +84,6 @@ public class AuthServiceImpl implements AuthService {
             user.setPassword(passwordEncoder.encode(request.getPassword()));
             userRepository.save(user);
         }
-        syncCodeforcesUidOnLogin(user);
-
         TokenPair pair = issueTokenPair(user.getId());
 
         return new LoginResponse(
@@ -119,10 +113,12 @@ public class AuthServiceImpl implements AuthService {
      * @return 新的刷新响应。
      */
     @Override
+    @Transactional
     public RefreshTokenResponse refresh(String refreshToken) {
         AuthTokenSession refreshSession = validateRefreshSession(refreshToken);
-        authTokenSessionRepository.deleteByRefreshToken(refreshToken);
-        authTokenSessionRepository.deleteByAccessToken(refreshSession.accessToken());
+        if (authTokenSessionRepository.deleteByRefreshToken(refreshToken) != 1) {
+            throw new BusinessException(401, "refresh token has already been used");
+        }
 
         TokenPair nextPair = issueTokenPair(refreshSession.userId(), refreshSession.createdAtSeconds());
         return new RefreshTokenResponse(nextPair.accessToken(), nextPair.refreshToken());
@@ -233,7 +229,6 @@ public class AuthServiceImpl implements AuthService {
                 sessionStartedAtSeconds
         );
         try {
-            authTokenSessionRepository.deleteExpiredBefore(timeProvider.nowEpochSecond());
             authTokenSessionRepository.save(session);
         } catch (DataAccessException ex) {
             throw new BusinessException(500, "failed to issue token");
@@ -241,65 +236,11 @@ public class AuthServiceImpl implements AuthService {
         return new TokenPair(accessToken, refreshToken);
     }
 
-    /**
-     * 登录时补齐 Codeforces UID，不修改用户上传的头像。
-     *
-     * @param user 当前用户。
-     */
-    private void syncCodeforcesUidOnLogin(User user) {
-        if (user == null || user.getUid() != null || user.getCodeforcesHandle() == null || user.getCodeforcesHandle().isBlank()) {
-            return;
-        }
-        codeforcesApiService.getUserInfo(user.getCodeforcesHandle()).ifPresent(profile -> {
-            String latestAvatarUrl = profile.avatarUrl();
-            Long latestUid = parseUidFromAvatarUrl(latestAvatarUrl);
-            boolean changed = false;
-
-            if (latestUid != null && !latestUid.equals(user.getUid())) {
-                user.setUid(latestUid);
-                changed = true;
-            }
-            if (changed) {
-                try {
-                    userRepository.save(user);
-                } catch (DataAccessException ex) {
-                    // UID 同步失败不影响登录流程
-                }
-            }
-        });
+    @Scheduled(fixedDelayString = "${app.auth.cleanup-delay-ms:600000}")
+    public void cleanupExpiredSessions() {
+        authTokenSessionRepository.deleteExpiredBefore(timeProvider.nowEpochSecond());
     }
 
-    /**
-     * 从头像 URL 中解析 UID。
-     *
-     * @param avatarUrl Codeforces 头像地址。
-     * @return UID；若无法解析则返回 null。
-     */
-    private Long parseUidFromAvatarUrl(String avatarUrl) {
-        if (avatarUrl == null || avatarUrl.isBlank()) {
-            return null;
-        }
-        try {
-            URI uri = URI.create(avatarUrl.trim());
-            String path = uri.getPath();
-            if (path == null || path.isBlank()) {
-                return null;
-            }
-            String[] segments = path.split("/");
-            for (String segment : segments) {
-                if (segment == null || segment.isBlank()) {
-                    continue;
-                }
-                if (segment.chars().allMatch(Character::isDigit)) {
-                    return Long.parseLong(segment);
-                }
-                break;
-            }
-            return null;
-        } catch (Exception ex) {
-            return null;
-        }
-    }
 
     /**
      * 一对 token 的简单封装。

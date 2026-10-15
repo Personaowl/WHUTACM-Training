@@ -24,6 +24,15 @@ public class UserRegisterRequest {
     @Size(max = 50, message = "display name length must be <= 50")
     private String displayName;
 
+    @Size(max = 100, message = "real name length must be <= 100")
+    private String realName;
+
+    @Size(max = 150, message = "college length must be <= 150")
+    private String college;
+
+    @Size(max = 150, message = "class name length must be <= 150")
+    private String className;
+
     @Email(message = "email format is invalid")
     @Size(max = 255, message = "email length must be <= 255")
     private String email;
@@ -53,6 +62,13 @@ public class UserRegisterRequest {
     public String getDisplayName() {
         return displayName;
     }
+
+    public String getRealName() { return realName; }
+    public void setRealName(String realName) { this.realName = realName; }
+    public String getCollege() { return college; }
+    public void setCollege(String college) { this.college = college; }
+    public String getClassName() { return className; }
+    public void setClassName(String className) { this.className = className; }
 
     public void setDisplayName(String displayName) {
         this.displayName = displayName;

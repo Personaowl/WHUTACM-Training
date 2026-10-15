@@ -1,5 +1,5 @@
 import axios from "axios";
-import { clearStoredAuth, getStoredAuth, setStoredAuth } from "../auth";
+import { clearStoredAuth, getStoredAuth, setStoredAuth } from "../auth.js";
 
 const http = axios.create({
   baseURL: "/",
@@ -32,7 +32,7 @@ async function refreshAccessToken() {
   const response = await axios.post(
     "/api/auth/refresh",
     {},
-    { headers: { "X-Refresh-Token": refreshToken } }
+    { headers: { "X-Refresh-Token": refreshToken }, timeout: 10000 }
   );
 
   const payload = response?.data;
@@ -44,10 +44,30 @@ async function refreshAccessToken() {
     accessToken: payload.data.accessToken,
     refreshToken: payload.data.refreshToken,
   };
-  const nextAuth = { ...auth, tokens: nextTokens };
+  const currentAuth = getStoredAuth();
+  if (currentAuth?.tokens?.refreshToken !== refreshToken) {
+    throw new Error("登录状态已改变，请重试");
+  }
+  const nextAuth = { ...currentAuth, tokens: nextTokens };
   setStoredAuth(nextAuth);
+  window.dispatchEvent(new CustomEvent("auth:tokens", { detail: nextTokens }));
   return nextTokens;
 }
+
+// Reuse the latest token for requests created before another request finished refreshing.
+http.interceptors.request.use((config) => {
+  if (shouldSkipRefresh(config) || !config.headers?.Authorization) return config;
+  const auth = getStoredAuth();
+  if (config._authUserId != null && config._authUserId !== auth?.user?.id) {
+    throw new Error("登录账号已改变，请重试");
+  }
+  config._authUserId = auth?.user?.id;
+  if (auth?.tokens?.accessToken) {
+    config.headers.Authorization = `Bearer ${auth.tokens.accessToken}`;
+    config.headers["X-Refresh-Token"] = auth.tokens.refreshToken;
+  }
+  return config;
+});
 
 http.interceptors.response.use(
   (response) => response,
@@ -60,8 +80,14 @@ http.interceptors.response.use(
     }
 
     config._retry = true;
+    const refreshTokenAtStart = getStoredAuth()?.tokens?.refreshToken;
 
     try {
+      const currentTokens = getStoredAuth()?.tokens;
+      if (currentTokens?.accessToken
+          && config.headers?.Authorization !== `Bearer ${currentTokens.accessToken}`) {
+        return http(config);
+      }
       if (!refreshingPromise) {
         refreshingPromise = refreshAccessToken().finally(() => {
           refreshingPromise = null;
@@ -73,9 +99,15 @@ http.interceptors.response.use(
       config.headers["X-Refresh-Token"] = tokens.refreshToken;
       return http(config);
     } catch (refreshError) {
-      clearStoredAuth();
-      window.dispatchEvent(new CustomEvent("auth:invalid"));
-      return resolveApiError(error);
+      const refreshStatus = refreshError?.response?.status;
+      const currentRefreshToken = getStoredAuth()?.tokens?.refreshToken;
+      // Timeouts, 429 and server outages do not invalidate an otherwise valid session.
+      if ((refreshStatus === 401 || refreshStatus === 403 || !currentRefreshToken)
+          && currentRefreshToken === refreshTokenAtStart) {
+        clearStoredAuth();
+        window.dispatchEvent(new CustomEvent("auth:invalid"));
+      }
+      return resolveApiError(refreshError);
     }
   }
 );

@@ -51,6 +51,7 @@ public class CodeforcesProfileService {
     private final Map<Long, CacheEntry> memoryCache = new ConcurrentHashMap<>();
     private final Map<Long, Object> refreshLocks = new ConcurrentHashMap<>();
     private final Set<Long> refreshingUsers = ConcurrentHashMap.newKeySet();
+    private final Map<Long, Long> backgroundRetryAfter = new ConcurrentHashMap<>();
 
     @Autowired
     public CodeforcesProfileService(
@@ -151,6 +152,7 @@ public class CodeforcesProfileService {
     }
 
     private void refreshInBackground(Long userId) {
+        if (System.nanoTime() < backgroundRetryAfter.getOrDefault(userId, Long.MIN_VALUE)) return;
         if (!refreshingUsers.add(userId)) {
             return;
         }
@@ -158,13 +160,16 @@ public class CodeforcesProfileService {
             CompletableFuture.runAsync(() -> {
                 try {
                     refresh(userId);
+                    backgroundRetryAfter.remove(userId);
                 } catch (RuntimeException ex) {
+                    backgroundRetryAfter.put(userId, System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(60));
                     log.warn("Background Codeforces profile refresh failed for userId={}: {}", userId, ex.getMessage());
                 } finally {
                     refreshingUsers.remove(userId);
                 }
             }, backgroundExecutor);
         } catch (RuntimeException rejected) {
+            backgroundRetryAfter.put(userId, System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(60));
             refreshingUsers.remove(userId);
             log.warn("Background Codeforces profile refresh queue is full for userId={}", userId);
         }
@@ -251,9 +256,7 @@ public class CodeforcesProfileService {
 
         if (!java.util.Objects.equals(user.getCodeforcesRating(), currentRating)
                 || !java.util.Objects.equals(user.getMaxRating(), maxRating)) {
-            user.setCodeforcesRating(currentRating);
-            user.setMaxRating(maxRating);
-            userRepository.save(user);
+            userRepository.updateCodeforcesRatings(user.getId(), handle, currentRating, maxRating);
         }
         snapshotRepository.save(user.getId(), handle, overview);
         ratingHistoryRepository.replaceForUser(user.getId(), ratingChanges);

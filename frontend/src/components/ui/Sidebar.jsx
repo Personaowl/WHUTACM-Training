@@ -22,6 +22,7 @@ import { useAuth } from "../../context/AuthContext";
 const NAV_ITEMS = [
   { to: "/", label: "首页", icon: House },
   { to: "/daily", label: "每日一题", icon: CalendarDays },
+  { to: "/weekly-training", label: "我的周训练", icon: ClipboardCheck, requireAuth: true },
   { to: "/contests", label: "近期比赛", icon: CalendarClock },
   { to: "/leaderboard", label: "排行榜", icon: Trophy },
   { to: "/practice", label: "自主练习", icon: Code2 },
@@ -105,7 +106,7 @@ export default function Sidebar({
               <NavLink
                 key={item.to}
                 item={item}
-                active={location.pathname === item.to}
+                active={location.pathname === item.to || location.pathname.startsWith(`${item.to}/`)}
                 collapsed={collapsed}
                 onNavigate={onClose}
               />

@@ -15,6 +15,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -37,6 +38,8 @@ public class CodeforcesRequestCoordinator {
     private final PriorityBlockingQueue<QueuedRequest<?>> queue = new PriorityBlockingQueue<>();
     private final AtomicLong sequence = new AtomicLong();
     private final Semaphore queueSlots;
+    private final long requestTimeoutMillis;
+    private final Object lifecycleLock = new Object();
     private volatile boolean running = true;
     private volatile long nextRequestAllowedAtNanos;
     private Thread worker;
@@ -45,13 +48,19 @@ public class CodeforcesRequestCoordinator {
         this(requestIntervalMillis, 200);
     }
 
+    CodeforcesRequestCoordinator(long requestIntervalMillis, int maxPendingRequests) {
+        this(requestIntervalMillis, maxPendingRequests, 30_000);
+    }
+
     @Autowired
     public CodeforcesRequestCoordinator(
             @Value("${codeforces.request-interval-ms:2100}") long requestIntervalMillis,
-            @Value("${codeforces.max-pending-requests:200}") int maxPendingRequests
+            @Value("${codeforces.max-pending-requests:200}") int maxPendingRequests,
+            @Value("${codeforces.request-timeout-ms:30000}") long requestTimeoutMillis
     ) {
         this.requestIntervalNanos = TimeUnit.MILLISECONDS.toNanos(Math.max(0, requestIntervalMillis));
         this.queueSlots = new Semaphore(Math.max(1, maxPendingRequests));
+        this.requestTimeoutMillis = Math.max(1, requestTimeoutMillis);
     }
 
     @PostConstruct
@@ -62,20 +71,27 @@ public class CodeforcesRequestCoordinator {
     }
 
     public <T> T execute(Priority priority, Callable<T> action) throws IOException, InterruptedException {
-        if (!running) throw new IOException("Codeforces request coordinator is shutting down");
-        if (!queueSlots.tryAcquire()) {
-            throw new IOException("Codeforces request queue is full; please try again later");
-        }
         CompletableFuture<T> result = new CompletableFuture<>();
-        try {
-            queue.add(new QueuedRequest<>(priority, sequence.getAndIncrement(), action, result));
-        } catch (RuntimeException ex) {
-            queueSlots.release();
-            throw ex;
+        QueuedRequest<T> request = new QueuedRequest<>(priority, sequence.getAndIncrement(), action, result);
+        synchronized (lifecycleLock) {
+            if (!running) throw new IOException("Codeforces request coordinator is shutting down");
+            if (!queueSlots.tryAcquire()) {
+                throw new IOException("Codeforces request queue is full; please try again later");
+            }
+            try {
+                queue.add(request);
+            } catch (RuntimeException ex) {
+                queueSlots.release();
+                throw ex;
+            }
         }
         try {
-            return result.get();
+            return result.get(requestTimeoutMillis, TimeUnit.MILLISECONDS);
+        } catch (TimeoutException ex) {
+            cancel(request);
+            throw new IOException("Codeforces request timed out while queued or executing", ex);
         } catch (InterruptedException ex) {
+            cancel(request);
             Thread.currentThread().interrupt();
             throw ex;
         } catch (ExecutionException ex) {
@@ -94,13 +110,20 @@ public class CodeforcesRequestCoordinator {
         return queue.size();
     }
 
+    private void cancel(QueuedRequest<?> request) {
+        request.result.cancel(false);
+        if (queue.remove(request)) queueSlots.release();
+    }
+
     private void runLoop() {
         while (running) {
             QueuedRequest<?> request = null;
             try {
                 request = queue.take();
+                if (request.result.isCancelled()) continue;
                 long waitNanos = nextRequestAllowedAtNanos - System.nanoTime();
                 if (waitNanos > 0) TimeUnit.NANOSECONDS.sleep(waitNanos);
+                if (request.result.isCancelled()) continue;
                 nextRequestAllowedAtNanos = System.nanoTime() + requestIntervalNanos;
                 request.run();
             } catch (InterruptedException ex) {
@@ -116,14 +139,16 @@ public class CodeforcesRequestCoordinator {
 
     @PreDestroy
     void shutdown() {
-        running = false;
-        if (worker != null) worker.interrupt();
-        List<QueuedRequest<?>> abandoned = new ArrayList<>();
-        queue.drainTo(abandoned);
-        abandoned.forEach(request -> {
-            request.fail(new IOException("Codeforces request coordinator stopped before processing the request"));
-            queueSlots.release();
-        });
+        synchronized (lifecycleLock) {
+            running = false;
+            if (worker != null) worker.interrupt();
+            List<QueuedRequest<?>> abandoned = new ArrayList<>();
+            queue.drainTo(abandoned);
+            abandoned.forEach(request -> {
+                request.fail(new IOException("Codeforces request coordinator stopped before processing the request"));
+                queueSlots.release();
+            });
+        }
     }
 
     private static final class QueuedRequest<T> implements Comparable<QueuedRequest<?>> {

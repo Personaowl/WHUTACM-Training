@@ -42,3 +42,5 @@ jobs:
         run: npm audit --audit-level=high --registry=https://registry.npmjs.org
       - name: Build frontend
         run: npm run build
+      - name: Test frontend session handling
+        run: npm test

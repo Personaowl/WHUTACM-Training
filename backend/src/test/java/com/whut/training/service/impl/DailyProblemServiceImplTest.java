@@ -51,8 +51,8 @@ class DailyProblemServiceImplTest {
         DailyProblemServiceImpl service = new DailyProblemServiceImpl(
                 repository,
                 codeforcesApiService,
-                userRepository,
                 timeProvider,
+                new com.whut.training.service.DailyCheckInRecorder(repository, userRepository),
                 1200,
                 2000,
                 90,
@@ -99,7 +99,8 @@ class DailyProblemServiceImplTest {
         when(repository.maxUserDailySlotScore(7L, today)).thenReturn(1800);
 
         DailyProblemServiceImpl service = new DailyProblemServiceImpl(
-                repository, codeforcesApiService, userRepository, timeProvider,
+                repository, codeforcesApiService, timeProvider,
+                new com.whut.training.service.DailyCheckInRecorder(repository, userRepository),
                 1200, 2000, 90, 800, 1800, 1900, 3000, true
         );
         var result = service.checkIn(user, 999L);
@@ -144,7 +145,8 @@ class DailyProblemServiceImplTest {
                 .thenReturn(2500);
 
         DailyProblemServiceImpl service = new DailyProblemServiceImpl(
-                repository, codeforcesApiService, userRepository, timeProvider,
+                repository, codeforcesApiService, timeProvider,
+                new com.whut.training.service.DailyCheckInRecorder(repository, userRepository),
                 1200, 2000, 90, 800, 1800, 1900, 3000, true
         );
 

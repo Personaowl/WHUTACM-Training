@@ -23,6 +23,7 @@ public class DailyCheckInJobService {
     private static final Logger log = LoggerFactory.getLogger(DailyCheckInJobService.class);
     private static final long DEDUPLICATION_MILLIS = 10 * 60 * 1000L;
     private static final long RETENTION_MILLIS = 60 * 60 * 1000L;
+    private static final int MAX_RETAINED_JOBS = 2000;
 
     private final DailyProblemService dailyProblemService;
     private final TimeProvider timeProvider;
@@ -46,8 +47,16 @@ public class DailyCheckInJobService {
         JobKey key = new JobKey(user.getId(), submissionId, targetDate);
         String existingId = jobIdsByRequest.get(key);
         Job existing = existingId == null ? null : jobs.get(existingId);
-        if (existing != null && now - existing.createdAtMillis < DEDUPLICATION_MILLIS) {
+        if (existing != null && (existing.isActive()
+                || ("SUCCEEDED".equals(existing.status) && now - existing.createdAtMillis < DEDUPLICATION_MILLIS))) {
             return existing.response();
+        }
+
+        if (jobs.size() >= MAX_RETAINED_JOBS) {
+            cleanupExpiredJobs();
+            if (jobs.size() >= MAX_RETAINED_JOBS) {
+                throw new BusinessException(503, "校验请求较多，请稍后重试");
+            }
         }
 
         Job job = new Job(UUID.randomUUID().toString(), user.getId(), submissionId, targetDate, now);
@@ -81,11 +90,11 @@ public class DailyCheckInJobService {
     }
 
     @Scheduled(fixedDelayString = "${app.daily-check-in.cleanup-delay-ms:600000}")
-    public void cleanupExpiredJobs() {
+    public synchronized void cleanupExpiredJobs() {
         long cutoff = System.currentTimeMillis() - RETENTION_MILLIS;
         jobs.entrySet().removeIf(entry -> {
             Job job = entry.getValue();
-            if (job.createdAtMillis >= cutoff) return false;
+            if (job.isActive() || job.createdAtMillis >= cutoff) return false;
             jobIdsByRequest.remove(new JobKey(job.userId, job.submissionId, job.targetDate), job.id);
             return true;
         });
@@ -116,6 +125,10 @@ public class DailyCheckInJobService {
         private void running() {
             status = "RUNNING";
             message = "正在等待 Codeforces 校验";
+        }
+
+        private boolean isActive() {
+            return "PENDING".equals(status) || "RUNNING".equals(status);
         }
 
         private void succeed(CheckInResultResponse value) {

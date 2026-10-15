@@ -7,6 +7,7 @@ const LoginPage = lazy(() => import("./pages/LoginPage"));
 const RegisterPage = lazy(() => import("./pages/RegisterPage"));
 const HomePage = lazy(() => import("./pages/HomePage"));
 const DailyProblemPage = lazy(() => import("./pages/DailyProblemPage"));
+const WeeklyTrainingPage = lazy(() => import("./pages/WeeklyTrainingPage"));
 const ContestsPage = lazy(() => import("./pages/ContestsPage"));
 const LeaderboardPage = lazy(() => import("./pages/LeaderboardPage"));
 const PracticePage = lazy(() => import("./pages/PracticePage"));
@@ -17,6 +18,9 @@ const AccountBindingPage = lazy(() => import("./pages/AccountBindingPage"));
 const MemberProfilePage = lazy(() => import("./pages/MemberProfilePage"));
 const AdminDailyPage = lazy(() => import("./pages/admin/AdminDailyPage"));
 const AdminTrainingDashboardPage = lazy(() => import("./pages/admin/AdminTrainingDashboardPage"));
+const TrainingDashboardLayout = lazy(() => import("./pages/admin/TrainingDashboardLayout"));
+const AdminWeeklyTrainingPage = lazy(() => import("./pages/admin/AdminWeeklyTrainingPage"));
+const AdminWeeklyRecordsPage = lazy(() => import("./pages/admin/AdminWeeklyRecordsPage"));
 const AdminUsersPage = lazy(() => import("./pages/admin/AdminUsersPage"));
 const AdminPushPage = lazy(() => import("./pages/admin/AdminPushPage"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
@@ -68,6 +72,7 @@ export default function App() {
       <Route element={<AuthGuard><AppLayout /></AuthGuard>}>
         <Route path="/" element={<HomePage />} />
         <Route path="/daily" element={<DailyProblemPage />} />
+        <Route path="/weekly-training" element={<WeeklyTrainingPage />} />
         <Route path="/contests" element={<ContestsPage />} />
         <Route path="/leaderboard" element={<LeaderboardPage />} />
         <Route path="/practice" element={<PracticePage />} />
@@ -78,7 +83,12 @@ export default function App() {
         <Route path="/members/:id" element={<MemberProfilePage />} />
 
         {/* Admin routes */}
-        <Route path="/admin/training" element={<AdminGuard><AdminTrainingDashboardPage /></AdminGuard>} />
+        <Route path="/admin/training" element={<AdminGuard><TrainingDashboardLayout /></AdminGuard>}>
+          <Route index element={<Navigate to="daily" replace />} />
+          <Route path="daily" element={<AdminTrainingDashboardPage />} />
+          <Route path="weekly" element={<AdminWeeklyTrainingPage />} />
+          <Route path="records" element={<AdminWeeklyRecordsPage />} />
+        </Route>
         <Route path="/admin/daily" element={<AdminGuard><AdminDailyPage /></AdminGuard>} />
         <Route path="/admin/users" element={<AdminGuard><AdminUsersPage /></AdminGuard>} />
         <Route path="/admin/push" element={<AdminGuard><AdminPushPage /></AdminGuard>} />

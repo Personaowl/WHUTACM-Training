@@ -76,6 +76,9 @@ class UserServiceImplTest {
         assertEquals("Site User", saved.getDisplayName());
         assertEquals("{bcrypt}123456", saved.getPassword());
         assertNull(saved.getCodeforcesHandle());
+        assertNull(saved.getRealName());
+        assertNull(saved.getCollege());
+        assertNull(saved.getClassName());
         verify(codeforcesApiService, never()).getUserInfo(any());
     }
 

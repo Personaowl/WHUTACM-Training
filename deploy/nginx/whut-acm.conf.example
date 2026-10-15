@@ -35,6 +35,18 @@ server {
         try_files $uri $uri/ /index.html;
     }
 
+    # Revalidate the entry page so deployments do not keep pointing at old JS chunks.
+    # expires preserves the server-level security headers, unlike a location add_header override.
+    location = /index.html {
+        expires -1;
+        try_files $uri =404;
+    }
+
+    # Reject dotfiles before they reach the SPA fallback or Java API.
+    location ~ (^|/)\.(?!well-known/) {
+        return 404;
+    }
+
     location = /api/auth/login {
         limit_req zone=whut_auth burst=5 nodelay;
         proxy_pass http://127.0.0.1:8080;

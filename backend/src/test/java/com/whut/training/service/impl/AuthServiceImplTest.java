@@ -7,7 +7,6 @@ import com.whut.training.domain.enums.UserRole;
 import com.whut.training.exception.BusinessException;
 import com.whut.training.repository.AuthTokenSessionRepository;
 import com.whut.training.repository.UserRepository;
-import com.whut.training.service.CodeforcesApiService;
 import com.whut.training.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,7 +29,6 @@ import static org.mockito.Mockito.when;
 class AuthServiceImplTest {
 
     @Mock private UserService userService;
-    @Mock private CodeforcesApiService codeforcesApiService;
     @Mock private UserRepository userRepository;
     @Mock private AuthTokenSessionRepository tokenRepository;
     @Mock private TimeProvider timeProvider;
@@ -42,7 +40,6 @@ class AuthServiceImplTest {
     void setUp() {
         authService = new AuthServiceImpl(
                 userService,
-                codeforcesApiService,
                 userRepository,
                 tokenRepository,
                 timeProvider,
@@ -86,6 +83,7 @@ class AuthServiceImplTest {
         );
         when(tokenRepository.findByAccessToken("expired-access")).thenReturn(Optional.of(session));
         when(tokenRepository.findByRefreshToken("active-refresh")).thenReturn(Optional.of(session));
+        when(tokenRepository.deleteByRefreshToken("active-refresh")).thenReturn(1);
 
         assertThatThrownBy(() -> authService.validateAccessTokenAndGetUser("expired-access"))
                 .isInstanceOf(BusinessException.class)
@@ -104,7 +102,6 @@ class AuthServiceImplTest {
     void refreshKeepsTheOriginalSessionDeadline() {
         authService = new AuthServiceImpl(
                 userService,
-                codeforcesApiService,
                 userRepository,
                 tokenRepository,
                 timeProvider,
@@ -117,6 +114,7 @@ class AuthServiceImplTest {
         );
         when(timeProvider.nowEpochSecond()).thenReturn(8_000L);
         when(tokenRepository.findByRefreshToken("active-refresh")).thenReturn(Optional.of(session));
+        when(tokenRepository.deleteByRefreshToken("active-refresh")).thenReturn(1);
 
         authService.refresh("active-refresh");
 
@@ -125,6 +123,19 @@ class AuthServiceImplTest {
                         && saved.refreshExpiredAtSeconds().equals(22_600L)
                         && saved.accessExpiredAtSeconds().equals(15_200L)
         ));
+    }
+
+    @Test
+    void onlyTheCallerThatConsumesTheRefreshTokenMayIssueANewPair() {
+        var session = new AuthTokenSessionRepository.AuthTokenSession(
+                3L, "old-access", "already-consumed", 1500L, 2000L, 500L
+        );
+        when(tokenRepository.findByRefreshToken("already-consumed")).thenReturn(Optional.of(session));
+        when(tokenRepository.deleteByRefreshToken("already-consumed")).thenReturn(0);
+
+        assertThatThrownBy(() -> authService.refresh("already-consumed"))
+                .isInstanceOf(BusinessException.class).hasMessageContaining("already been used");
+        verify(tokenRepository, never()).save(any());
     }
 
     private LoginRequest login(String username, String password) {

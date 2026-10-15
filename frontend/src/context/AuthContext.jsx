@@ -32,20 +32,25 @@ function reducer(state, action) {
       };
     }
     case "UPDATE_USER": {
+      const stored = getStoredAuth();
       const nextUser = { ...state.user, ...action.payload };
-      const nextAuth = { user: nextUser, tokens: state.tokens };
+      const tokens = stored?.user?.id === state.user?.id ? stored.tokens : state.tokens;
+      const nextAuth = { user: nextUser, tokens };
       setStoredAuth(nextAuth);
       return {
         ...state,
         user: nextUser,
+        tokens,
         isAdmin: nextUser?.role === "ADMIN" || nextUser?.role === "SUPER_ADMIN",
         isSuperAdmin: nextUser?.role === "SUPER_ADMIN",
       };
     }
     case "UPDATE_TOKENS": {
-      const nextAuth = { user: state.user, tokens: action.payload };
+      const stored = getStoredAuth();
+      const currentUser = stored?.user || state.user;
+      const nextAuth = { user: currentUser, tokens: action.payload };
       setStoredAuth(nextAuth);
-      return { ...state, tokens: action.payload };
+      return { ...state, user: currentUser, tokens: action.payload };
     }
     case "LOGOUT": {
       clearStoredAuth();
@@ -84,8 +89,18 @@ export function AuthProvider({ children }) {
   // Listen for auth invalidation from http interceptor (token refresh failed)
   useEffect(() => {
     const handler = () => dispatch({ type: "LOGOUT" });
+    const tokensHandler = (event) => dispatch({ type: "UPDATE_TOKENS", payload: event.detail });
+    const storageHandler = (event) => {
+      if (event.key === "whut-training-auth" || event.key === null) dispatch({ type: "RESTORE" });
+    };
     window.addEventListener("auth:invalid", handler);
-    return () => window.removeEventListener("auth:invalid", handler);
+    window.addEventListener("auth:tokens", tokensHandler);
+    window.addEventListener("storage", storageHandler);
+    return () => {
+      window.removeEventListener("auth:invalid", handler);
+      window.removeEventListener("auth:tokens", tokensHandler);
+      window.removeEventListener("storage", storageHandler);
+    };
   }, []);
 
   const login = useCallback(async (payload) => {

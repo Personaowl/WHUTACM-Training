@@ -22,6 +22,27 @@ import static org.mockito.Mockito.when;
 class DailyCheckInJobServiceTest {
 
     @Test
+    void failedSubmissionCanBeRetriedImmediately() {
+        DailyProblemService daily = mock(DailyProblemService.class);
+        TimeProvider time = mock(TimeProvider.class);
+        LocalDate date = LocalDate.of(2026, 10, 15);
+        when(time.today()).thenReturn(date);
+        User user = new User(7L, "owl", null, "password", UserRole.USER);
+        when(daily.checkIn(user, 123L, date))
+                .thenThrow(new BusinessException(503, "temporary failure"))
+                .thenReturn(new CheckInResultResponse("HARD", true, 123L, "OK", 1900));
+        DailyCheckInJobService service = new DailyCheckInJobService(daily, time, Runnable::run);
+
+        var failed = service.submit(user, 123L);
+        var retried = service.submit(user, 123L);
+
+        assertThat(failed.status()).isEqualTo("FAILED");
+        assertThat(retried.status()).isEqualTo("SUCCEEDED");
+        assertThat(retried.jobId()).isNotEqualTo(failed.jobId());
+        verify(daily, times(2)).checkIn(user, 123L, date);
+    }
+
+    @Test
     void returnsImmediatelyAndDeduplicatesTheSameSubmission() {
         DailyProblemService dailyProblemService = mock(DailyProblemService.class);
         TimeProvider timeProvider = mock(TimeProvider.class);

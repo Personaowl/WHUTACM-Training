@@ -87,6 +87,9 @@ public class UserServiceImpl implements UserService {
                 UserRole.USER
         );
         user.setDisplayName(request.getDisplayName().trim());
+        user.setRealName(normalizeNullableText(request.getRealName()));
+        user.setCollege(normalizeNullableText(request.getCollege()));
+        user.setClassName(normalizeNullableText(request.getClassName()));
         return userRepository.save(user);
     }
 
@@ -231,6 +234,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @org.springframework.transaction.annotation.Transactional
     public void resetPasswordBySuperAdmin(User superAdmin, Long targetUserId) {
         if (superAdmin == null || superAdmin.getRole() != UserRole.SUPER_ADMIN) {
             throw new BusinessException(403, "super admin role required");

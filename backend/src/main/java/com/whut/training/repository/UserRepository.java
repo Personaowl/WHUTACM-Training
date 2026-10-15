@@ -113,7 +113,7 @@ public class UserRepository {
         }
 
         jdbcTemplate.update(
-                "UPDATE users SET username = ?, email = ?, password = ?, role = ?, uid = ?, codeforces_rating = ?, max_rating = ?, is_online = ?, last_online_time_seconds = ?, avatar_url = ?, avatar_customized = ?, total_points = ?, display_name = ?, real_name = ?, college = ?, class_name = ?, bio = ?, codeforces_handle = ?, pending_codeforces_handle = ?, codeforces_binding_started_at_seconds = ?, atcoder_handle = ?, pending_atcoder_handle = ?, atcoder_binding_token = ?, atcoder_binding_started_at_seconds = ?, atcoder_verified_at_seconds = ?, member_type = ?, show_problem_tags = ? WHERE id = ?",
+                "UPDATE users SET username = ?, email = ?, password = ?, role = ?, uid = ?, codeforces_rating = ?, max_rating = ?, is_online = ?, last_online_time_seconds = ?, avatar_url = ?, avatar_customized = ?, display_name = ?, real_name = ?, college = ?, class_name = ?, bio = ?, codeforces_handle = ?, pending_codeforces_handle = ?, codeforces_binding_started_at_seconds = ?, atcoder_handle = ?, pending_atcoder_handle = ?, atcoder_binding_token = ?, atcoder_binding_started_at_seconds = ?, atcoder_verified_at_seconds = ?, member_type = ?, show_problem_tags = ? WHERE id = ?",
                 user.getUsername(),
                 user.getEmail(),
                 user.getPassword(),
@@ -125,7 +125,6 @@ public class UserRepository {
                 user.getLastOnlineTimeSeconds(),
                 user.getAvatarUrl(),
                 Boolean.TRUE.equals(user.getAvatarCustomized()),
-                user.getTotalPoints() == null ? 0 : user.getTotalPoints(),
                 user.getDisplayName(),
                 user.getRealName(),
                 user.getCollege(),
@@ -148,6 +147,19 @@ public class UserRepository {
 
     public void incrementTotalPoints(Long userId, int delta) {
         jdbcTemplate.update("UPDATE users SET total_points = total_points + ? WHERE id = ?", delta, userId);
+    }
+
+    /** Serialize score ledger writes in a short database transaction, after external validation. */
+    public void lockForCheckIn(Long userId) {
+        jdbcTemplate.queryForObject("SELECT id FROM users WHERE id = ? FOR UPDATE", Long.class, userId);
+    }
+
+    /** Background CF updates must not overwrite passwords, roles, points or personal information. */
+    public void updateCodeforcesRatings(Long userId, String handle, Integer rating, Integer maxRating) {
+        jdbcTemplate.update(
+                "UPDATE users SET codeforces_rating = ?, max_rating = ? WHERE id = ? AND codeforces_handle = ?",
+                rating, maxRating, userId, handle
+        );
     }
 
     public List<User> findAll() {

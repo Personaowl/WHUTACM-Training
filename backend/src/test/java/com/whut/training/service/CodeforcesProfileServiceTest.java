@@ -25,6 +25,24 @@ import static org.mockito.Mockito.when;
 class CodeforcesProfileServiceTest {
 
     @Test
+    void unavailableCodeforcesDoesNotTriggerARefreshOnEveryPagePoll() {
+        UserRepository users = mock(UserRepository.class);
+        CodeforcesApiService api = mock(CodeforcesApiService.class);
+        CodeforcesProfileSnapshotRepository snapshots = mock(CodeforcesProfileSnapshotRepository.class);
+        CodeforcesRatingHistoryRepository history = mock(CodeforcesRatingHistoryRepository.class);
+        User user = new User(8L, "member", null, "password", UserRole.USER);
+        user.setCodeforcesHandle("audit-handle");
+        when(users.findById(8L)).thenReturn(Optional.of(user));
+        CodeforcesProfileService service = new CodeforcesProfileService(users, api, snapshots, history, 30, Runnable::run);
+
+        service.getOverview(8L);
+        service.getOverview(8L);
+        service.getOverview(8L);
+
+        verify(api, org.mockito.Mockito.times(1)).getUserSubmissions("audit-handle", 10000);
+    }
+
+    @Test
     void firstOverviewReturnsBasicDataWithoutWaitingForCodeforces() throws Exception {
         UserRepository userRepository = mock(UserRepository.class);
         CodeforcesApiService apiService = mock(CodeforcesApiService.class);

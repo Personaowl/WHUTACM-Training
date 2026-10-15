@@ -204,9 +204,10 @@ public class CodeforcesApiService {
         SubmissionLookup lookup = findSubmission(
                 encodedHandle, submissionId, CHECK_IN_RECENT_SUBMISSION_COUNT
         );
-        return lookup.successful()
-                ? Optional.ofNullable(lookup.submissionStatus())
-                : Optional.empty();
+        if (!lookup.successful()) {
+            throw new com.whut.training.exception.BusinessException(503, "Codeforces 暂时不可用或校验排队超时，请稍后重试");
+        }
+        return Optional.ofNullable(lookup.submissionStatus());
     }
 
     private SubmissionLookup findSubmission(String encodedHandle, Long submissionId, int count) {

@@ -106,7 +106,7 @@ export default function AtCoderAbcPanel() {
       <div className="border-b border-border bg-[#f8fafc] p-5">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div>
-            <h2 className="m-0 text-xl font-bold text-text-primary">每周 ABC 完成检查</h2>
+            <h3 className="m-0 text-xl font-bold text-text-primary">AtCoder ABC 完成情况</h3>
             <p className="m-0 mt-1 text-xs text-text-secondary">官方历史确认参赛，正式比赛时段内 AC 达到要求后记为完成。</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">

@@ -8,7 +8,6 @@ import com.whut.training.domain.dto.AtCoderBindingStartRequest;
 import com.whut.training.domain.dto.CodeforcesBindingStartRequest;
 import com.whut.training.domain.dto.CodeforcesOverview;
 import com.whut.training.domain.dto.DailyHeatmapItem;
-import com.whut.training.domain.dto.FunCheckInItem;
 import com.whut.training.domain.dto.PublicUserProfile;
 import com.whut.training.domain.dto.UserUpdateRequest;
 import com.whut.training.domain.dto.UserRegisterRequest;
@@ -18,7 +17,6 @@ import com.whut.training.exception.BusinessException;
 import com.whut.training.repository.DailyProblemRepository;
 import com.whut.training.service.UserService;
 import com.whut.training.service.CodeforcesProfileService;
-import com.whut.training.service.FunCheckInService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,7 +34,6 @@ public class UserController {
     private final UserService userService;
     private final DailyProblemRepository dailyProblemRepository;
     private final CodeforcesProfileService codeforcesProfileService;
-    private final FunCheckInService funCheckInService;
 
     /**
      * 创建用户控制器。
@@ -46,13 +43,11 @@ public class UserController {
     public UserController(
             UserService userService,
             DailyProblemRepository dailyProblemRepository,
-            CodeforcesProfileService codeforcesProfileService,
-            FunCheckInService funCheckInService
+            CodeforcesProfileService codeforcesProfileService
     ) {
         this.userService = userService;
         this.dailyProblemRepository = dailyProblemRepository;
         this.codeforcesProfileService = codeforcesProfileService;
-        this.funCheckInService = funCheckInService;
     }
 
     /**
@@ -208,24 +203,6 @@ public class UserController {
         if (days < 1) days = 180;
         if (days > 365) days = 365;
         return ApiResponse.ok(dailyProblemRepository.findHeatmapForUser(id, days));
-    }
-
-    /** 获取独立趣味签到历史，不与每日一题状态混用。 */
-    @GetMapping("/{id}/fun-check-ins")
-    public ApiResponse<List<FunCheckInItem>> funCheckInHistory(
-            @PathVariable Long id,
-            @RequestParam(defaultValue = "365") int days
-    ) {
-        requireSelf(id);
-        int safeDays = Math.max(1, Math.min(days, 365));
-        return ApiResponse.ok(funCheckInService.history(id, safeDays));
-    }
-
-    /** 手动签到并抽取当日运势；同一天重复请求返回同一签。 */
-    @PostMapping("/{id}/fun-check-ins/today")
-    public ApiResponse<FunCheckInItem> funCheckInToday(@PathVariable Long id) {
-        requireSelf(id);
-        return ApiResponse.ok(funCheckInService.checkIn(id));
     }
 
     private void requireSelf(Long id) {

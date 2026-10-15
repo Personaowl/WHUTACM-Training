@@ -15,10 +15,11 @@
 | 题单 | 用户创建一级专题题单；管理员发布全站共享题单；每日题和自主练习均可一键加入 |
 | Codeforces 数据 | 查看自己及其他成员公开的 Rating、做题数、比赛记录和彩色标签分布图 |
 | 近期比赛 | 聚合 Codeforces、AtCoder、牛客、洛谷比赛信息，展示受公开数据源可用性影响 |
-| 首页 | 训练概况、CF 概览、排行榜、训练热力图；手动打卡与每日抽签，打卡日历以弹窗查看 |
+| 首页 | 训练概况、CF 概览、排行榜、训练热力图及每日题训练入口 |
 | 排行榜 | 按总积分排序，分页展示，不包含超级管理员 |
 | 推题 | 用户提交题目、管理员审核、推题池管理、每日推送与历史记录 |
-| 训练看板 | 查看现役队员每日题、CF 数据及 AtCoder ABC 完成情况，展示姓名、学院、班级等资料 |
+| 训练看板 | “每日一题”“每周一赛”“周训练记录”三个子页面，支持完成情况统计、成员资料展示、情况说明审核及当周状态调整 |
+| 我的周训练 | 周一至周日汇总自己的每日题与 ABC 记录；切换历史周，提交特殊情况说明，查看管理员意见与处理记录 |
 | Excel 导出 | 最近一周、一个月或全部记录；按选项导出每日题与 CF Rated 比赛；ABC 周赛也支持导出 |
 | 用户管理 | 按账号、展示名称、姓名或学院搜索，管理现役身份；超级管理员可调整角色及重置其他非超级管理员用户密码 |
 
@@ -31,12 +32,25 @@
 - 每日积分取当天完成题目的最高分，**不将 Easy 和 Hard 相加**。先完成 1200 分 Easy，再完成 1900 分 Hard，当天总分为 1900，第二次新增 700 分。
 - CF 题库缓存题目元数据，不保存题面、测试数据或用户代码；目前不包含 Gym 题目。
 
-### 头像、趣味打卡与 ABC
+### 头像与 ABC
 
 - 头像仅支持自行上传。浏览器裁剪压缩后，图片以 data image 保存在数据库，不依赖 CF 头像服务器；升级时清理旧外部头像地址，保留已上传图片。
-- 手动趣味打卡与每日题校验是独立功能。签文来自平台内置内容库，不依赖第三方运势 API。
 - 训练热力图使用平台每日题记录，并非 CF 全部做题数据。
 - AtCoder ABC 在开赛时冻结现役名单；参赛记录来自官方公开 History，赛时 AC 来自 AtCoder Problems。默认要求正式比赛期间至少 AC 1 题，支持配置、豁免与重试。数据源异常时重试，避免直接误判缺席。
+- 管理员进入“训练看板”默认显示“每日一题”（`/admin/training/daily`）；切换到“每周一赛”（`/admin/training/weekly`）后查看 ABC 历史场次、同步结果、调整规则及管理豁免。页面按需加载，Excel 导出默认勾选当前训练类型，也可组合导出。综合周记录及说明审核见 `/admin/training/records`。
+
+### 周训练记录与特殊情况处理
+
+- 选手入口为“我的周训练”（`/weekly-training`），个人接口始终使用当前登录用户身份，不能查询其他选手的说明；管理员通过训练看板统一查询。
+- 以 **Asia/Shanghai 时区的周一 00:00 至下周一 00:00** 为一周，日期选择器会归到对应周一；支持前后周及历史日期查询，不允许查询未来周。
+- 每天至少完成一道平台每日题计 1 天，Easy/Hard 和重抽记录不重复计天，周目标为 7 天；周赛沿用 ABC 的正式参赛及最低 AC 规则，周内多场 ABC 任一场达标即可。单场既有豁免仍生效。
+- 本周尚未结束且未完成全部要求时显示“进行中”。历史周中，ABC 未同步、数据异常或未发现场次显示“待确认”，不直接认定缺席；确实无赛等情况可由管理员核实后调整周状态。
+- 自动统计始终读取本地每日题与 ABC 数据，查看周记录不会即时逐人访问外部网站。既有 ABC 同步任务或管理员“同步结果”更新数据后，可刷新周记录。
+- 选手可提交/更新最多 2000 字的特殊情况说明，更新后重新进入待审核。管理员可同意并设置“已达标 / 已豁免 / 未达标”，或恢复自动判定，也可不同意并给出意见。所有处理意见对本人可见。
+- 人工状态只作用于该成员的该周，不改题目、比赛原始记录或积分。重新提交说明或不同意说明不会悄悄撤销此前人工状态；需要撤销时管理员显式选择“恢复自动判定”。
+- 说明、审核和状态调整均留存操作记录，界面展示最近 20 条。保存使用事务及版本校验，避免两个管理员重复处理，或旧页面覆盖选手新提交的说明。
+- 新功能启用后定期保存当周现役名单，已有周记录在退役后仍可查看。启用前的历史只能基于现存记录和当前现役名单汇总，无法还原过去未记录的入队/退役日期。
+- 后端启动时自动新增 `weekly_training_record`、`weekly_training_audit` 表，不删除旧数据。上线前正常备份；迁移时完整导出业务库会一并包含周记录与审核历史。原有 Excel 导出仍导出原始每日题/比赛记录，不包含人工周状态及私人情况说明。
 
 ## 权限
 
@@ -124,6 +138,7 @@ mvn -f backend/pom.xml clean verify
 cd frontend
 npm ci
 npm audit --audit-level=high
+npm test
 npm run build
 ```
 
@@ -181,6 +196,393 @@ systemctl list-timers whut-acm-backup.timer --all
 
 健康接口应返回 HTTP 200，且 `status`、`database` 为 `UP`。继续保留每日数据库备份并定期验证恢复；源码迁移不会搬迁或删除服务器数据库。
 
+## 新服务器部署（Ubuntu 24.04，无 Docker）
+
+下面命令在 **Linux 服务器的 root SSH 终端**运行，普通用户先执行 <code>sudo -i</code>，不要直接粘贴进本地 PowerShell。示例中的 <code>OLD_SERVER_IP</code>、<code>NEW_SERVER_IP</code>、<code>acm.example.com</code> 和密码执行前必须替换。
+
+建议 2 核 4 GB 起步，使用 Java 21、Node.js 22、MySQL 8.0。迁移时与旧机保持相同 MySQL 主版本，先运行旧机当前发布的代码版本，迁移稳定后再升级。
+
+### 1. 安装环境
+
+~~~bash
+apt update
+apt install -y openjdk-21-jdk maven mysql-server nginx git curl xz-utils rsync openssl certbot python3-certbot-nginx
+systemctl enable --now mysql nginx
+~~~
+
+Node.js 使用官方 Node 22 二进制，并验证 SHA256；整个括号块一起执行，任一步失败会停止：
+
+~~~bash
+(
+  set -euo pipefail
+  case "$(uname -m)" in
+    x86_64) node_arch=x64 ;;
+    aarch64) node_arch=arm64 ;;
+    *) echo "Unsupported architecture"; exit 1 ;;
+  esac
+  node_stage="$(mktemp -d)"
+  cd "$node_stage"
+  curl -fsSLO https://nodejs.org/dist/latest-v22.x/SHASUMS256.txt
+  node_suffix="-linux-$node_arch.tar.xz"
+  node_archive="$(awk -v suffix="$node_suffix" \
+    'substr($2, length($2)-length(suffix)+1) == suffix { print $2; exit }' SHASUMS256.txt)"
+  test -n "$node_archive"
+  curl -fsSLO "https://nodejs.org/dist/latest-v22.x/$node_archive"
+  awk -v filename="$node_archive" '$2 == filename' SHASUMS256.txt | sha256sum -c -
+  mkdir -p /opt/node22
+  tar -xJf "$node_archive" -C /opt/node22 --strip-components=1
+  ln -sf /opt/node22/bin/node /usr/local/bin/node
+  ln -sf /opt/node22/bin/npm /usr/local/bin/npm
+  ln -sf /opt/node22/bin/npx /usr/local/bin/npx
+)
+java -version
+mvn -version
+node -v
+mysql --version
+~~~
+
+期望 Java 21、Node v22.x、MySQL 8.0。MySQL 仅监听本机，检查 Ubuntu MySQL 配置；云平台防火墙和系统防火墙放行实际 SSH 端口、80、443，不对公网开放 8080/3306。
+
+### 2. 拉代码，准备用户和目录
+
+~~~bash
+git clone --branch mty-dev https://github.com/Personaowl/WHUTACM-Training.git /srv/whut-training-team
+cd /srv/whut-training-team
+git log -1 --oneline
+id whut-acm >/dev/null 2>&1 || useradd --system --home /opt/whut-acm --shell /usr/sbin/nologin whut-acm
+install -d -o whut-acm -g whut-acm -m 750 /opt/whut-acm /var/log/whut-acm
+install -d -o www-data -g www-data -m 755 /var/www/whut-acm
+install -d -m 700 /etc/whut-acm
+~~~
+
+迁移时先按旧机成功发布日志确认运行中的提交，再在新机检出该提交构建；源码 HEAD 不一定等于正在运行的 JAR。私有仓库为新机单独配置只读 Deploy Key，不复制个人 SSH 私钥。
+
+### 3. 创建数据库和应用账号
+
+新机运行 <code>mysql</code> 进入控制台（Ubuntu 默认 root 通常使用本机 socket；密码认证使用 <code>mysql -u root -p</code>）。执行以下 SQL，密码改为独立随机密码，可用 <code>openssl rand -hex 24</code> 生成：
+
+~~~sql
+CREATE DATABASE whut_training CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'whut_acm'@'127.0.0.1' IDENTIFIED BY '替换成至少16位随机密码';
+GRANT ALL PRIVILEGES ON whut_training.* TO 'whut_acm'@'127.0.0.1';
+EXIT;
+~~~
+
+只授权本项目数据库。启动会自动建表/补结构，因此应用需要库内 DDL 权限，无需全局管理员权限。上面用于新服务器；已有同名库时先核实用途。
+
+**迁移数据时先停在这里：新后端不要启动，先完成下文数据库恢复，再继续。**
+
+### 4. 设置生产环境变量
+
+全新安装：
+
+~~~bash
+install -m 600 /srv/whut-training-team/deploy/whut-acm.env.example /etc/whut-acm/whut-acm.env
+nano /etc/whut-acm/whut-acm.env
+~~~
+
+也可通过 VS Code Remote SSH 编辑。迁移时从旧机配置复制，勿用模板覆盖已经恢复的生产文件。
+
+| 配置 | 内容 |
+| --- | --- |
+| SPRING_PROFILES_ACTIVE | prod |
+| SERVER_ADDRESS / SERVER_PORT | 127.0.0.1 / 8080 |
+| MYSQL_URL | 模板中的本机 JDBC 地址，库名与恢复目标一致 |
+| MYSQL_USERNAME / MYSQL_PASSWORD | 新机创建的数据库账号和至少 16 位独立随机密码 |
+| SUPERADMIN_USERNAME / SUPERADMIN_PASSWORD | 非默认管理员名及至少 16 位密码；迁移时沿用旧机设置 |
+| CORS_ALLOWED_ORIGINS | 实际 HTTPS 域名，多个用逗号分隔，如 https://acm.example.com,https://www.acm.example.com |
+| LOGGING_FILE_PATH | /var/log/whut-acm |
+| Token TTL | 可沿用模板中的 7200 / 21600 秒 |
+
+管理员名迁移时要保持一致，否则可能自动新建另一个超级管理员。已有账号密码由数据库哈希决定，修改初始化环境变量不会重置它。生产校验不接受默认/过短密码和本机 HTTP CORS。
+
+环境文件为 systemd <code>KEY=value</code> 格式；特殊字符按 EnvironmentFile 规则加引号，推荐使用 hex 随机密码减少转义问题。真实文件不能提交 Git 或公开。
+
+### 5. 构建和启动
+
+每个构建命令成功后再继续：
+
+~~~bash
+cd /srv/whut-training-team
+mvn -f backend/pom.xml clean verify
+cd frontend
+npm ci
+npm run build
+cd ..
+install -o whut-acm -g whut-acm -m 750 \
+  backend/target/training-backend-0.0.1-SNAPSHOT.jar \
+  /opt/whut-acm/training-backend.jar
+rsync -a frontend/dist/ /var/www/whut-acm/
+chown -R www-data:www-data /var/www/whut-acm
+install -m 644 deploy/systemd/whut-acm.service /etc/systemd/system/whut-acm.service
+systemctl daemon-reload
+systemctl enable --now whut-acm
+journalctl -u whut-acm -n 60 --no-pager
+~~~
+
+JAR 版本号变化时按实际产物名调整。systemd 使用低权限用户运行；勿另开一个手动 Java 进程占用 8080。初始化完成后检查：
+
+~~~bash
+systemctl status whut-acm --no-pager -l
+curl -i --max-time 10 http://127.0.0.1:8080/api/health
+~~~
+
+应返回 HTTP 200，且 status、database 均为 UP；刚启动时需等待初始化完成。
+
+### 6. 配置 Nginx 和 HTTPS
+
+全新域名先配置 HTTP 站点用于签发证书。通过编辑器新建 <code>/etc/nginx/sites-available/whut-acm</code>，替换下面域名：
+
+~~~nginx
+server {
+    listen 80;
+    listen [::]:80;
+    server_name acm.example.com www.acm.example.com;
+    root /var/www/whut-acm;
+    index index.html;
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+~~~
+
+~~~bash
+ln -s /etc/nginx/sites-available/whut-acm /etc/nginx/sites-enabled/whut-acm
+nginx -t
+systemctl reload nginx
+~~~
+
+已有启用链接无需重复创建。同一配置只能在 sites-enabled 或 conf.d 启用一份，避免重复 server 或限流区定义。
+
+将实际使用域名的 A 记录指向新 IP；已有 AAAA 也须更新为可用的新 IPv6，或移除旧 AAAA。公网 80/443 通畅后：
+
+~~~bash
+certbot certonly --nginx -d acm.example.com -d www.acm.example.com
+~~~
+
+不使用 www 就删除相应参数。成功后换为完整生产模板：
+
+~~~bash
+cp /etc/nginx/sites-available/whut-acm /etc/nginx/sites-available/whut-acm.http-backup
+cp /srv/whut-training-team/deploy/nginx/whut-acm.conf.example /etc/nginx/sites-available/whut-acm
+nano /etc/nginx/sites-available/whut-acm
+~~~
+
+替换所有示例域名；server_name 中加入实际使用的 www。证书路径以 <code>certbot certificates</code> 为准（证书名可能带 -0001），保留 API 代理、限流与静态文件配置。
+
+~~~bash
+nginx -t
+systemctl reload nginx
+systemctl enable --now certbot.timer
+certbot renew --dry-run
+curl -i https://acm.example.com/api/health
+~~~
+
+**迁移现有域名不要提前切公网 DNS**：优先复制仍有效的旧证书和当前 Nginx 配置，用下文 curl --resolve 测新机，再在最终数据恢复后切换。域名相同且证书有效可沿用，不需反复申请。
+
+### 7. 运维与验收
+
+每日 MySQL 备份至少保留 14 天，并留一份异机备份，定期在临时库恢复验证。发布脚本、备份脚本和 timer 是旧机手工安装文件，**不在 Git 仓库，clone 不会自动带来**，迁移方法见下节。
+
+未安装一键脚本时：先备份数据库和旧运行产物，再按第 5 步构建安装、重启后端并验健康。不要把旧机上存在的命令当成新机自带命令。
+
+功能验收包含：登录、头像、绑定信息、每日题与历史、题单、推题、排行榜、管理看板和 Excel 导出。确认 Nginx/MySQL/后端、备份 timer 及证书续期正常。
+
+## 数据迁移到另一台服务器（推荐短暂停机）
+
+### 要迁移哪些内容
+
+| 内容 | 来源与处理 |
+| --- | --- |
+| 用户、密码哈希、角色、个人资料、绑定信息 | MySQL 的 whut_training 业务库 |
+| 头像、题单、每日题/积分、推题和 ABC | 同一业务库；当前头像为 data image，没有独立 uploads 目录 |
+| 程序 | 按旧机运行提交从 Git 获取构建；数据库不在 Git 中 |
+| 环境变量及数据库备份凭据 | /etc/whut-acm/，包含秘密，须安全传输 |
+| 证书、私钥及续期配置 | /etc/letsencrypt/ |
+| 实际 Nginx 配置及额外 include | /etc/nginx/sites-available/whut-acm 及实际引用的自定义文件 |
+| 发布/备份脚本和 timer | /usr/local/sbin/ 中相关脚本和 /etc/systemd/system/ 中的自定义单元 |
+| 日志、旧备份 | 可按需归档，不是恢复业务必需数据 |
+| 进程内缓存/校验任务 | 不迁移；先等待在途任务完成，重启后缓存重建 |
+
+不要直接复制运行中的 /var/lib/mysql，也不要迁移 mysql 系统库。只导出业务库，在新机重新创建账号和权限。[MySQL 8.0 官方备份说明](https://dev.mysql.com/doc/refman/8.0/en/mysqldump.html)。
+
+推荐：**新机准备 → 演练 → 旧机停写 → 最终备份 → 新机恢复 → 验证 → 切 DNS → 验收**。先演练估算维护窗口；当前小规模项目用停写迁移比双机同步更易维护。
+
+### 1. 盘点与准备
+
+旧机运行：
+
+~~~bash
+mysql --version
+systemctl cat whut-acm
+systemctl cat whut-acm-backup.service whut-acm-backup.timer
+ls -l /usr/local/sbin/deploy-whut-acm /usr/local/sbin/backup-whut-acm-db
+git -C /srv/whut-training-team log -1 --oneline
+~~~
+
+结合成功发布日志确认运行版本，检查 Nginx 额外安全规则。新机完成上文环境、代码构建、建空库，后端暂不启动；域名提前降低 TTL（如 300 秒，并等待原 TTL 过去）。可以先用预备备份恢复到独立演练库；最终库不要混入测试数据。
+
+### 2. 提前复制配置和脚本
+
+在**新机 root 终端**执行；scp 使用非默认 SSH 端口时加 -P 实际端口。需要有旧机 SSH 登录权限，不能直连时通过自己的电脑中转。
+
+~~~bash
+install -d -m 700 /root/whut-migration
+scp -rp root@OLD_SERVER_IP:/etc/whut-acm /root/whut-migration/
+(
+  set -euo pipefail
+  ssh root@OLD_SERVER_IP 'tar -C /etc -czf - letsencrypt' | tar -C /root/whut-migration -xzf -
+)
+scp root@OLD_SERVER_IP:/etc/nginx/sites-available/whut-acm /root/whut-migration/whut-acm.nginx
+scp root@OLD_SERVER_IP:/usr/local/sbin/deploy-whut-acm /root/whut-migration/
+scp root@OLD_SERVER_IP:/usr/local/sbin/backup-whut-acm-db /root/whut-migration/
+scp root@OLD_SERVER_IP:/etc/systemd/system/whut-acm-backup.service /root/whut-migration/
+scp root@OLD_SERVER_IP:/etc/systemd/system/whut-acm-backup.timer /root/whut-migration/
+~~~
+
+缺少文件时先检查实际路径；额外 Nginx include、续期 hook 也需盘点。证书目录通过 tar 保留符号链接（scp -r 会跟随符号链接，不适合保留证书目录结构）。暂存目录含密码/私钥，不能公开。非默认 SSH 端口还需给上面的 ssh 命令加 -p 实际端口。
+
+~~~bash
+cp -a /root/whut-migration/whut-acm/. /etc/whut-acm/
+chmod 700 /etc/whut-acm
+chmod 600 /etc/whut-acm/whut-acm.env
+nano /etc/whut-acm/whut-acm.env
+~~~
+
+改为新机数据库账号/密码，沿用旧管理员初始化名称、域名和其余生产设置；备份凭据文件也改为新机密码。新机尚无证书目录时：
+
+~~~bash
+cp -a /root/whut-migration/letsencrypt /etc/
+~~~
+
+新机已有 /etc/letsencrypt 时先备份并有选择合并，不直接覆盖；复制完整目录才能保留 live 到 archive 的符号链接和续期配置。
+
+### 3. 旧机维护窗口：停写并最终导出
+
+本步在**旧机**执行，会中断 API。先通知成员暂停使用，等在途校验完成。只停应用，不停 MySQL：
+
+~~~bash
+systemctl stop whut-acm
+systemctl is-active whut-acm
+~~~
+
+确认 inactive 后继续。其他程序若也写这个库，必须一起停写；保持旧后端停止直到切换完成。
+
+整个括号块一起执行：
+
+~~~bash
+(
+  set -euo pipefail
+  umask 077
+  install -d -m 700 /root/whut-migration-final
+  mysqldump -u root \
+    --single-transaction --quick --default-character-set=utf8mb4 \
+    --no-tablespaces --set-gtid-purged=OFF \
+    --routines --events --triggers \
+    whut_training | gzip > /root/whut-migration-final/whut_training.sql.gz
+  cd /root/whut-migration-final
+  gzip -t whut_training.sql.gz
+  sha256sum whut_training.sql.gz > whut_training.sql.gz.sha256
+  ls -lh whut_training.sql.gz
+)
+~~~
+
+默认使用 Ubuntu root socket 认证；root 需密码时改为 mysqldump -u root -p，交互输入，不在命令中写明文密码。必须确认整块无错误；pipefail 防止 mysqldump 失败却得到正常 gzip 空包。导出期间不要改表、建表或发布。
+
+### 4. 新机传输与恢复
+
+在**新机**执行：
+
+~~~bash
+scp root@OLD_SERVER_IP:/root/whut-migration-final/whut_training.sql.gz /root/whut-migration/
+scp root@OLD_SERVER_IP:/root/whut-migration-final/whut_training.sql.gz.sha256 /root/whut-migration/
+cd /root/whut-migration
+sha256sum -c whut_training.sql.gz.sha256
+gzip -t whut_training.sql.gz
+mysql -NBe "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='whut_training';"
+~~~
+
+校验失败停止并重新传输。最后一条应为 0（库存在且无表），新后端未启动。**已有表先核实备份；以下 SQL 恢复会重建同名表，不能直接覆盖业务库。** 应恢复到新建空库，改用其他库名时同步修改 JDBC 地址。
+
+~~~bash
+(
+  set -euo pipefail
+  gzip -dc /root/whut-migration/whut_training.sql.gz | mysql -u root --default-character-set=utf8mb4 whut_training
+)
+~~~
+
+不得使用 --force 跳过 SQL 错误。业务库 dump 不含 MySQL 账号，前面必须已单独建账号授权。
+
+如果新机 root 使用密码认证：先用编辑器创建 /root/whut-migration/mysql-root.cnf（权限 600），内容如下，填写实际密码，不写入 Git：
+
+~~~ini
+[client]
+user=root
+password=实际root密码
+~~~
+
+然后把导入命令中的 mysql -u root 替换为 mysql --defaults-extra-file=/root/whut-migration/mysql-root.cnf（选项必须放在 mysql 后第一位）。可先运行 mysql --defaults-extra-file=/root/whut-migration/mysql-root.cnf -e "SELECT 1;" 测试认证，避免在导入管道里交互输入。其他验库命令也使用同一认证文件。
+
+在旧机和新机分别运行以下 SQL 对比精确行数、积分总和，并按实际表补查题单、推题等重要数据：
+
+~~~bash
+mysql whut_training -e "SHOW TABLES; SELECT COUNT(*) AS users, COALESCE(SUM(total_points),0) AS points FROM users; SELECT COUNT(*) AS daily_records FROM user_daily_status; SELECT COUNT(*) AS problems FROM cf_problem;"
+~~~
+
+原账号密码哈希、绑定、头像随库保留，用户无需重新注册。首次启动前对比最直观；启动后定时任务或表结构升级可能改变部分记录。
+
+### 5. 新机启动与切换前验证
+
+恢复完成才按上文安装 JAR、前端、环境和 systemd，然后启动。使用从旧机复制的实际 Nginx 配置：
+
+~~~bash
+install -m 644 /root/whut-migration/whut-acm.nginx /etc/nginx/sites-available/whut-acm
+~~~
+
+若未启用则创建 sites-enabled 链接；证书、目录、额外 include/hook 都要存在，nginx -t 成功再 reload。不要同时启用模板和旧站点两份配置。
+
+在电脑或能访问新机的终端，用真实域名绕过 DNS 测新 IP，不加 -k：
+
+~~~bash
+curl -i --resolve acm.example.com:443:NEW_SERVER_IP https://acm.example.com/
+curl -i --resolve acm.example.com:443:NEW_SERVER_IP https://acm.example.com/api/health
+~~~
+
+浏览器验收可临时在电脑 hosts 将域名指向新 IP，结束移除此项。检查原账号登录、头像、积分和关键功能。DNS 切换前仅自己验收，不让成员使用新机；一旦产生需要保留的新数据，不能再用旧备份覆盖。
+
+### 6. 切换域名，恢复运维任务
+
+将主域名及实际使用的 www A 记录改为新 IP，同时处理 AAAA、CDN 回源和云防火墙。DNS 传播期间旧后端继续停止，旧 IP 上的用户可能暂时遇到维护错误；不能为恢复访问而重新开放旧库写入。若要兼容旧 DNS 缓存，可另配旧 Nginx 代理至新机。
+
+检查暂存脚本的 origin、分支、目录、健康等待时间和备份凭据后安装：
+
+~~~bash
+install -m 750 /root/whut-migration/deploy-whut-acm /usr/local/sbin/deploy-whut-acm
+install -m 750 /root/whut-migration/backup-whut-acm-db /usr/local/sbin/backup-whut-acm-db
+install -m 644 /root/whut-migration/whut-acm-backup.service /etc/systemd/system/whut-acm-backup.service
+install -m 644 /root/whut-migration/whut-acm-backup.timer /etc/systemd/system/whut-acm-backup.timer
+install -d -m 700 /var/backups/whut-acm/mysql /var/backups/whut-acm/releases
+systemctl daemon-reload
+systemctl enable --now whut-acm-backup.timer
+systemctl start whut-acm-backup.service
+journalctl -u whut-acm-backup.service -n 30 --no-pager
+systemctl enable --now certbot.timer
+certbot renew --dry-run
+~~~
+
+脚本的额外目录、依赖按实际内容补齐。检查证书 renew 配置和 hook 路径；定时器不会随证书文件自动迁移。
+
+确认正常后旧机执行 <code>systemctl disable whut-acm</code>，防止旧机重启后再次写旧库。保留旧机和最终 dump 一段观察期（例如 7 天），验收后再下线；新机备份至少异机保存一份。
+
+### 7. 回退原则
+
+- 新机**还没有业务新写入**：停新后端，DNS 切回旧 IP，旧机执行 <code>systemctl enable --now whut-acm</code>。
+- 新机**已接受业务写入**：不能直接切回旧库。先暂停新机写入、备份新库，决定将最新数据恢复回旧机，或修好新机继续运行；直接切回会丢失新数据。
+- 保留原 dump、校验和及旧库，不通过清库或跳过 SQL 错误强行继续。
+- 真正要求接近不停机时再考虑 MySQL 主从/增量切换，目前推荐先演练的停写迁移。
+
+证书签发、续期可对照 [Certbot 官方 Nginx 指南](https://certbot.eff.org/instructions?ws=nginx&os=snap)。
+
 ## 性能与会话
 
 - 每日题校验采用异步任务，前端轮询结果；CF 请求统一限速，默认启动间隔 2.1 秒，校验优先于普通资料刷新和后台同步。外部服务慢或多人同时校验时仍可能排队。
@@ -188,12 +590,31 @@ systemctl list-timers whut-acm-backup.timer --all
 - 默认 Access Token 为 2 小时，Refresh Token 为 6 小时；正常登录会话最长 6 小时，到期需重新登录。生产环境可通过模板中的 TTL 变量调整。
 - CF、AtCoder、牛客、洛谷和 AtCoder Problems 是外部数据源，异常时可能暂时无法刷新或校验。
 
+### 上线稳定性加固（2026-10-15）
+
+- 已移除独立每日签到、抽签和签到日历的页面、接口、服务及资源；每日题校验与训练热力图继续保留。旧库的 user_fun_check_in 表仅留作历史存档，不再使用，也不会在升级时自动删除。
+- 注册支持选填姓名、学院、班级；已有账号无需补填。个人中心通过“修改个人资料”弹窗编辑，取消不保存，选填项可修改或清空。
+
+- 每日题校验与记账分离：外部 API 请求结束后，独立短事务同时写入题位完成状态、当天积分和累计积分；按用户行加锁，避免并发重复计分和部分写入。
+- 普通资料保存不更新累计积分，后台 CF 刷新仅更新对应账号的 Rating 字段，避免过期资料覆盖密码、头像、资料或积分。
+- 登录不再等待 CF 请求；令牌续期在事务中一次性消费旧令牌并创建新会话，失败时回滚。过期会话改为定时清理，并增加过期时间索引。
+- 前端续期后同步界面与存储的令牌；临时超时、限流或服务端故障不会直接清除登录。跨标签页登录状态变化会同步，新登录也不会被迟到的刷新响应覆盖。
+- CF 单次排队及执行等待默认最多 30 秒，超时会取消尚未执行的任务；后台资料刷新失败后冷却 60 秒。外部服务异常与提交编号不存在分别提示。
+- 失败的校验任务允许立即重试，进行中的同一请求继续合并；保留任务总量有上限，避免无限占用内存。
+- Nginx 模板增加入口 HTML 重新验证与敏感点文件拦截。旧服务器需核对后手动合并站点配置并执行 nginx -t、reload；仅拉代码/发布 JAR 不会自动安装 Nginx 配置。
+- 前端新增 npm test，无需额外测试框架，并纳入 CI；后端增加并发记账、部分写入回滚、令牌续期失败回滚等回归测试。数据库测试使用 H2 MySQL 模式，不能替代目标 MySQL 上的验收或真实服务器压测。
+
+### 依赖审计状态
+
+2026-10-15 对锁文件运行 npm audit --registry=https://registry.npmjs.org，仍报告 16 个受影响包（15 high、1 moderate，包括间接依赖）。尝试兼容范围内更新未清除这些告警；不能将“测试及构建通过”解释为“依赖安全审计通过”。现有 CI 的高危审计门槛仍保留，当前会在该步骤失败，需要逐项核对上游修复版本或评估替代依赖后再解除发布阻碍。
+
+其中既包含 Axios 的条件性请求处理问题，也包含构建工具链的解析/资源耗尽问题；实际影响需结合使用路径判断。当前生产方案仅由 Nginx 提供静态产物，不将 Vite 开发服务器对公网部署，也不在服务端用 Axios 处理用户提供的 URL；这些部署限制不等于漏洞已经修复。相关上游记录：[Axios](https://github.com/advisories/GHSA-vh66-26gq-q6x8)、[braces](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)、[source-map-js](https://github.com/advisories/GHSA-68fv-2mgg-jv7q)。
+
 ## 文档索引
 
 - [生产部署说明](docs/deployment.md)
 - [接口设计](docs/api-design.md)
 - [数据库设计](docs/db-design.md)
-- [前端设计需求](require.md)
 - [历史待办](docs/todolist.md)
 
 接口与数据库文档可能包含早期设计，具体行为以当前代码和配置为准。

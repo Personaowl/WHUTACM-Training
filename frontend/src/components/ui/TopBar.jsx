@@ -7,6 +7,7 @@ import UserAvatar from "./UserAvatar";
 const PAGE_NAMES = {
   "/": "首页",
   "/daily": "每日一题",
+  "/weekly-training": "我的周训练",
   "/contests": "近期比赛",
   "/leaderboard": "排行榜",
   "/practice": "自主练习",
@@ -15,6 +16,9 @@ const PAGE_NAMES = {
   "/profile": "个人中心",
   "/account-binding": "账号绑定",
   "/admin/training": "训练看板",
+  "/admin/training/daily": "训练看板 / 每日一题",
+  "/admin/training/weekly": "训练看板 / 每周一赛",
+  "/admin/training/records": "训练看板 / 周训练记录",
   "/admin/daily": "题目管理",
   "/admin/users": "用户管理",
   "/admin/push": "推题审核",

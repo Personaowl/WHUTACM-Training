@@ -12,6 +12,7 @@ import com.whut.training.exception.BusinessException;
 import com.whut.training.repository.DailyProblemRepository;
 import com.whut.training.service.CodeforcesApiService;
 import com.whut.training.service.DailyProblemService;
+import com.whut.training.service.DailyCheckInRecorder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -23,7 +24,6 @@ import org.slf4j.LoggerFactory;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -39,10 +39,9 @@ public class DailyProblemServiceImpl implements DailyProblemService {
 
     private final DailyProblemRepository dailyProblemRepository;
     private final CodeforcesApiService codeforcesApiService;
-    private final com.whut.training.repository.UserRepository userRepository;
     private final TimeProvider timeProvider;
     private final Object generationLock = new Object();
-    private final ConcurrentHashMap<Long, Object> userCheckinLocks = new ConcurrentHashMap<>();
+    private final DailyCheckInRecorder checkInRecorder;
     private final AtomicBoolean problemSyncInProgress = new AtomicBoolean(false);
     private final int defaultMinRating;
     private final int defaultMaxRating;
@@ -56,8 +55,8 @@ public class DailyProblemServiceImpl implements DailyProblemService {
     public DailyProblemServiceImpl(
             DailyProblemRepository dailyProblemRepository,
             CodeforcesApiService codeforcesApiService,
-            com.whut.training.repository.UserRepository userRepository,
             TimeProvider timeProvider,
+            DailyCheckInRecorder checkInRecorder,
             @Value("${app.daily-problem.min-rating:1200}") int defaultMinRating,
             @Value("${app.daily-problem.max-rating:2000}") int defaultMaxRating,
             @Value("${app.daily-problem.no-repeat-days:90}") int noRepeatDays,
@@ -69,8 +68,8 @@ public class DailyProblemServiceImpl implements DailyProblemService {
     ) {
         this.dailyProblemRepository = dailyProblemRepository;
         this.codeforcesApiService = codeforcesApiService;
-        this.userRepository = userRepository;
         this.timeProvider = timeProvider;
+        this.checkInRecorder = checkInRecorder;
         this.defaultMinRating = defaultMinRating;
         this.defaultMaxRating = defaultMaxRating;
         this.noRepeatDays = noRepeatDays;
@@ -210,7 +209,7 @@ public class DailyProblemServiceImpl implements DailyProblemService {
                 .getSubmissionStatus(codeforcesHandle, submissionId)
                 .orElseThrow(() -> new BusinessException(
                         400,
-                        "非该用户提交记录，或提交ID不存在（submissionId=" + submissionId + "）"
+                        "未在该用户最近30条提交中找到此ID，请确认账号与提交编号（submissionId=" + submissionId + "）"
                 ));
         com.whut.training.domain.entity.DailyProblemSlot matchedSlot = activeSlots.stream()
                 .filter(slot -> sameProblem(submissionStatus, slot.contestId(), slot.problemIndex()))
@@ -243,47 +242,10 @@ public class DailyProblemServiceImpl implements DailyProblemService {
             newScore = 0;
         }
 
-        Object userLock = userCheckinLocks.computeIfAbsent(user.getId(), k -> new Object());
-        synchronized (userLock) {
-            String type = matchedSlot == null ? "DAILY" : matchedSlot.slot().toUpperCase();
-            String slot = matchedSlot == null ? "daily" : matchedSlot.slot();
-            String problemKey = matchedSlot == null ? single.problemKey() : matchedSlot.problemKey();
-
-            var existingSlotOpt = dailyProblemRepository.findUserDailySlotStatus(user.getId(), today, problemKey);
-            int slotScore = existingSlotOpt
-                    .map(com.whut.training.domain.entity.UserDailyStatus::score)
-                    .map(oldScore -> Math.max(oldScore, newScore))
-                    .orElse(newScore);
-            dailyProblemRepository.saveUserDailySlotStatus(
-                    user.getId(),
-                    today,
-                    slot,
-                    problemKey,
-                    submissionId,
-                    submissionStatus.verdict(),
-                    slotScore
-            );
-
-            var existingDayOpt = dailyProblemRepository.findUserDailyStatus(user.getId(), today);
-            int oldDayScore = existingDayOpt
-                    .map(com.whut.training.domain.entity.UserDailyStatus::score)
-                    .orElse(0);
-            int nextDayScore = Math.max(
-                    oldDayScore,
-                    dailyProblemRepository.maxUserDailySlotScore(user.getId(), today)
-            );
-            dailyProblemRepository.upsertUserDailyStatus(
-                    user.getId(),
-                    today,
-                    submissionId,
-                    submissionStatus.verdict(),
-                    nextDayScore
-            );
-            if (nextDayScore > oldDayScore) {
-                userRepository.incrementTotalPoints(user.getId(), nextDayScore - oldDayScore);
-            }
-            return new CheckInResultResponse(type, true, submissionId, submissionStatus.verdict(), nextDayScore);
-        }
+        String slot = matchedSlot == null ? "daily" : matchedSlot.slot();
+        String problemKey = matchedSlot == null ? single.problemKey() : matchedSlot.problemKey();
+        return checkInRecorder.record(user.getId(), today, slot, problemKey, submissionId,
+                submissionStatus.verdict(), newScore);
     }
 
     /**
