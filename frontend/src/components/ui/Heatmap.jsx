@@ -79,7 +79,7 @@ function Heatmap({ data = [], totalAllTime = 0 }) {
 function HeatmapStat({ value, unit, label }) {
   return (
     <div className="heatmap-cf-stat">
-      <strong>{Number(value || 0).toLocaleString()} <span>{unit}</span></strong>
+      <strong>{value == null ? "—" : Number(value || 0).toLocaleString()} <span>{unit}</span></strong>
       <small>{label}</small>
     </div>
   );

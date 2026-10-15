@@ -53,6 +53,8 @@ superAdmin:
   password: superadmin123
 
 app:
+  security:
+    allow-insecure-http: "${ALLOW_INSECURE_HTTP:false}"
   cors:
     allowed-origins: "${CORS_ALLOWED_ORIGINS:http://localhost:5173}"
   home:

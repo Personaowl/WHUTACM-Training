@@ -241,42 +241,6 @@ a {
   mask-image: linear-gradient(to bottom, black, transparent 72%);
 }
 
-.particle-field {
-  position: fixed;
-  inset: var(--topbar-height) 0 0 var(--sidebar-collapsed);
-  z-index: 0;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.particle-field span {
-  position: absolute;
-  width: 5px;
-  height: 5px;
-  border: 1px solid rgba(17, 17, 17, 0.26);
-  animation: particle-drift 13s ease-in-out infinite alternate;
-}
-
-.particle-field span:nth-child(1) { left: 8%; top: 16%; }
-.particle-field span:nth-child(2) { left: 17%; top: 72%; animation-delay: -6s; border-radius: 50%; }
-.particle-field span:nth-child(3) { left: 28%; top: 34%; animation-delay: -3s; }
-.particle-field span:nth-child(4) { left: 39%; top: 82%; animation-delay: -9s; border-radius: 50%; }
-.particle-field span:nth-child(5) { left: 51%; top: 18%; animation-delay: -2s; }
-.particle-field span:nth-child(6) { left: 61%; top: 62%; animation-delay: -7s; border-radius: 50%; }
-.particle-field span:nth-child(7) { left: 74%; top: 29%; animation-delay: -4s; }
-.particle-field span:nth-child(8) { left: 86%; top: 75%; animation-delay: -10s; border-radius: 50%; }
-.particle-field span:nth-child(9) { left: 93%; top: 12%; animation-delay: -5s; }
-.particle-field span:nth-child(10) { left: 44%; top: 47%; animation-delay: -11s; border-radius: 50%; }
-.particle-field span:nth-child(11) { left: 67%; top: 88%; animation-delay: -1s; }
-.particle-field span:nth-child(12) { left: 23%; top: 91%; animation-delay: -8s; border-radius: 50%; }
-.particle-field span:nth-child(13) { left: 81%; top: 48%; animation-delay: -4s; }
-.particle-field span:nth-child(14) { left: 4%; top: 46%; animation-delay: -12s; border-radius: 50%; }
-
-@keyframes particle-drift {
-  from { transform: translate3d(0, 0, 0) rotate(0deg); opacity: 0.18; }
-  to { transform: translate3d(18px, -24px, 0) rotate(90deg); opacity: 0.56; }
-}
-
 .app-frame {
   position: relative;
   z-index: 1;
@@ -301,7 +265,7 @@ a {
 }
 
 .app-content > div {
-  animation: page-enter 360ms cubic-bezier(.2, .75, .25, 1) both;
+  animation: page-enter 180ms cubic-bezier(.2, .75, .25, 1) both;
 }
 
 @keyframes page-enter {
@@ -576,9 +540,8 @@ a {
   align-items: center;
   justify-content: space-between;
   padding: 0 30px;
-  background: rgba(255, 255, 255, 0.82);
+  background: #fff;
   border-bottom: 1px solid var(--line);
-  backdrop-filter: blur(18px);
 }
 
 .topbar-title,
@@ -728,10 +691,9 @@ a {
 
 /* Existing page surfaces receive a consistent component treatment */
 .app-main .bg-white.border {
-  background: rgba(255, 255, 255, 0.91);
+  background: #fff;
   border-color: var(--line);
   box-shadow: 0 1px 0 rgba(17, 17, 17, 0.03), 0 10px 34px rgba(17, 17, 17, 0.035);
-  backdrop-filter: blur(8px);
 }
 
 .app-main article.bg-white,

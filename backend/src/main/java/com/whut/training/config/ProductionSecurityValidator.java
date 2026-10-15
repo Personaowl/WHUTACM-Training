@@ -5,6 +5,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Set;
@@ -23,17 +25,20 @@ public class ProductionSecurityValidator {
     private final String superAdminUsername;
     private final String superAdminPassword;
     private final String allowedOrigins;
+    private final boolean allowInsecureHttp;
 
     public ProductionSecurityValidator(
             @Value("${spring.datasource.password}") String mysqlPassword,
             @Value("${superAdmin.username}") String superAdminUsername,
             @Value("${superAdmin.password}") String superAdminPassword,
-            @Value("${app.cors.allowed-origins}") String allowedOrigins
+            @Value("${app.cors.allowed-origins}") String allowedOrigins,
+            @Value("${app.security.allow-insecure-http:false}") boolean allowInsecureHttp
     ) {
         this.mysqlPassword = mysqlPassword;
         this.superAdminUsername = superAdminUsername;
         this.superAdminPassword = superAdminPassword;
         this.allowedOrigins = allowedOrigins;
+        this.allowInsecureHttp = allowInsecureHttp;
     }
 
     @PostConstruct
@@ -49,12 +54,27 @@ public class ProductionSecurityValidator {
                 .map(String::trim)
                 .filter(value -> !value.isBlank())
                 .toArray(String[]::new);
-        if (origins.length == 0 || Arrays.stream(origins).anyMatch(origin ->
-                "*".equals(origin)
-                        || !origin.startsWith("https://")
-                        || origin.contains("localhost")
-                        || origin.contains("127.0.0.1"))) {
-            throw new IllegalStateException("CORS_ALLOWED_ORIGINS must contain only explicit HTTPS production origins");
+        if (origins.length == 0 || Arrays.stream(origins).anyMatch(origin -> !isAllowedOrigin(origin))) {
+            throw new IllegalStateException("CORS_ALLOWED_ORIGINS requires explicit HTTPS origins; temporary HTTP IPv4 origins require ALLOW_INSECURE_HTTP=true");
+        }
+    }
+
+    private boolean isAllowedOrigin(String origin) {
+        try {
+            URI uri = new URI(origin);
+            String host = uri.getHost();
+            if (host == null || host.contains("*") || host.toLowerCase(Locale.ROOT).contains("localhost")
+                    || host.startsWith("127.") || "[::1]".equals(host) || "0.0.0.0".equals(host)
+                    || uri.getRawUserInfo() != null || uri.getRawQuery() != null || uri.getRawFragment() != null
+                    || (uri.getRawPath() != null && !uri.getRawPath().isEmpty())
+                    || uri.getPort() == 0 || uri.getPort() > 65535) return false;
+            if ("https".equalsIgnoreCase(uri.getScheme())) return true;
+            if (!allowInsecureHttp || !"http".equalsIgnoreCase(uri.getScheme())
+                    || !host.matches("(?:0|[1-9]\\d{0,2})(?:\\.(?:0|[1-9]\\d{0,2})){3}")) return false;
+            int[] octets = Arrays.stream(host.split("\\.")).mapToInt(Integer::parseInt).toArray();
+            return octets[0] > 0 && octets[0] < 224 && Arrays.stream(octets).allMatch(value -> value <= 255);
+        } catch (URISyntaxException | IllegalArgumentException ex) {
+            return false;
         }
     }
 

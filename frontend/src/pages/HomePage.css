@@ -5,6 +5,9 @@
   color: var(--ink);
 }
 
+.home-load-error { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 18px; color: #943e3e; background: #fff6f5; border: 1px solid #eed9d5; border-radius: 13px; font-size: 14px; }
+.home-load-error p { margin: 0; }
+
 .home-page .home-profile-panel {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

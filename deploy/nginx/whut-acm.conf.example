@@ -24,6 +24,13 @@ server {
     index index.html;
     client_max_body_size 1m;
 
+    # Compress static text assets as well as HTML; images and fonts are already compressed.
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_comp_level 4;
+    gzip_types text/css text/javascript application/javascript image/svg+xml;
+
     add_header X-Content-Type-Options nosniff always;
     add_header X-Frame-Options DENY always;
     add_header Referrer-Policy strict-origin-when-cross-origin always;

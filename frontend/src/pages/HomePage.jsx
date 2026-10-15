@@ -20,6 +20,7 @@ import {
   Trophy,
 } from "lucide-react";
 import CodeforcesOverview from "../components/profile/CodeforcesOverview";
+import { getCurrentUserPoints } from "../utils/home.js";
 import "./HomePage.css";
 
 export default function HomePage() {
@@ -30,9 +31,11 @@ export default function HomePage() {
   const [heatmapLoading, setHeatmapLoading] = useState(true);
   const [error, setError] = useState("");
   const [heatmapError, setHeatmapError] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
+    setData(null);
     setLoading(true);
     setHeatmapLoading(Boolean(user?.id));
     setError("");
@@ -72,19 +75,22 @@ export default function HomePage() {
     }
 
     return () => { cancelled = true; };
-  }, [user?.id]);
+  }, [user?.id, reloadKey]);
 
   useEffect(() => {
     if (!data?.problemPoolInitializing) return undefined;
 
     let requesting = false;
+    let cancelled = false;
     const timer = window.setInterval(async () => {
-      if (requesting) return;
+      if (requesting || document.visibilityState !== "visible") return;
       requesting = true;
       try {
         const overview = await getHomeOverview(10);
-        setData(overview);
-        setError("");
+        if (!cancelled) {
+          setData(overview);
+          setError("");
+        }
       } catch {
         // Keep the current overview visible and retry while the pool is initializing.
       } finally {
@@ -92,30 +98,11 @@ export default function HomePage() {
       }
     }, 3000);
 
-    return () => window.clearInterval(timer);
-  }, [data?.problemPoolInitializing]);
-
-  if (loading) {
-    return (
-      <div className="stack-y-4">
-        <h1 className="text-lg font-semibold">首页</h1>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <CardSkeleton />
-          <CardSkeleton />
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-error">{error}</p>
-      </div>
-    );
-  }
+    return () => { cancelled = true; window.clearInterval(timer); };
+  }, [data?.problemPoolInitializing, user?.id]);
 
   const { totalUsers, topUsers, todayProblem, todayPushProblem, dailySubmissionSummary } = data || {};
+  const myPoints = getCurrentUserPoints(data, user?.id);
 
   const todayProblems = Array.isArray(todayProblem) ? todayProblem : (todayProblem ? [todayProblem] : []);
 
@@ -140,17 +127,26 @@ export default function HomePage() {
           </Link>
         </div>
 
-        <dl className="home-stats" aria-label="训练概览">
-          <StatCard icon={Trophy} label="我的积分" value={user?.totalPoints ?? 0} />
-          <StatCard icon={Send} label="今日提交" value={dailySubmissionSummary?.todaySubmissions ?? 0} />
-          <StatCard icon={Activity} label="近 7 日活跃" value={totalUsers ?? 0} />
+        <dl className="home-stats" aria-label="训练概览" aria-busy={loading}>
+          <StatCard icon={Trophy} label="我的积分" value={myPoints} />
+          <StatCard icon={Send} label="今日提交" value={data ? dailySubmissionSummary?.todaySubmissions ?? 0 : null} />
+          <StatCard icon={Activity} label="近 7 日活跃" value={data ? totalUsers ?? 0 : null} />
         </dl>
       </header>
+
+      {error && (
+        <div className="home-load-error" role="alert">
+          <p>{error}，请稍后重试。</p>
+          <button type="button" className="button-ghost" onClick={() => setReloadKey((key) => key + 1)}>重新加载</button>
+        </div>
+      )}
 
       <div className="home-training-grid">
         <section className="home-section home-daily-section" aria-labelledby="home-daily-title">
           <SectionHeading id="home-daily-title" title="今日训练" to="/daily" linkText="查看每日一题" />
-          {todayProblems.length > 0 ? (
+          {loading ? <div aria-label="正在加载今日题目"><CardSkeleton /><CardSkeleton /></div> : error ? (
+            <div className="home-empty-state">今日题目暂时无法加载</div>
+          ) : todayProblems.length > 0 ? (
             <div className="home-problem-grid">
               {todayProblems.map((problem, index) => (
                 <ProblemCard
@@ -198,7 +194,7 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="cf-heatmap-card">
-            <Heatmap data={heatmapData} totalAllTime={user?.totalPoints ?? 0} />
+            <Heatmap data={heatmapData} totalAllTime={myPoints} />
           </div>
         )}
       </section>
@@ -206,7 +202,7 @@ export default function HomePage() {
       <div className="render-lazy home-community-grid">
           <section className="home-section home-push-section">
             <SectionHeading title="今日推题" to="/push" linkText="更多推题" />
-            {todayPushProblem ? (
+            {loading ? <CardSkeleton /> : error ? <div className="home-empty-state">推题暂时无法加载</div> : todayPushProblem ? (
               <div className="home-push-content">
                 <span className="home-content-label"><Send size={15} aria-hidden="true" /> 来自训练伙伴的推荐</span>
                 <h3>
@@ -238,7 +234,7 @@ export default function HomePage() {
 
           <section className="home-section home-leaderboard-section">
             <SectionHeading title="训练排行" to="/leaderboard" linkText="完整排行" />
-            {topUsers && topUsers.length > 0 ? (
+            {loading ? <CardSkeleton /> : error ? <div className="home-empty-state">排行暂时无法加载</div> : topUsers && topUsers.length > 0 ? (
               <ol className="home-leaderboard">
                 {topUsers.map((item, idx) => (
                   <li key={item.userId ?? item.id}>
@@ -294,5 +290,5 @@ function SectionHeading({ id, title, subtitle, to, linkText }) {
 }
 
 function formatNumber(value) {
-  return Number(value ?? 0).toLocaleString("zh-CN");
+  return value == null ? "—" : Number(value).toLocaleString("zh-CN");
 }

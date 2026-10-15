@@ -154,8 +154,9 @@ npm run build
 - [环境变量模板](deploy/whut-acm.env.example)：复制到 `/etc/whut-acm/whut-acm.env`，填写实际数据库凭据、管理员凭据与域名。
 - [systemd 服务](deploy/systemd/whut-acm.service)：管理后端服务。
 - [Nginx 配置](deploy/nginx/whut-acm.conf.example)：静态资源、API 代理与 HTTPS。
+- [临时 HTTP/IP 配置](deploy/nginx/whut-acm-http.conf.example)：先通过公网 IPv4 访问，之后再替换为 HTTPS 配置。
 
-生产环境必须使用 `prod` profile 和独立数据库账号。数据库及超级管理员密码至少 16 位，CORS 配置明确的 HTTPS 域名，不能沿用开发凭据。真实环境变量文件和备份不要提交到 Git。
+生产环境必须使用 `prod` profile 和独立数据库账号。数据库及超级管理员密码至少 16 位，默认只允许明确的 HTTPS 来源，不能沿用开发凭据。临时 HTTP/IP 必须显式设置 `ALLOW_INSECURE_HTTP=true` 并填写准确的 IPv4 来源，不能使用 `*`；这不是加密措施，密码和令牌仍会明文传输。真实环境变量文件和备份不要提交到 Git。
 
 现有服务器目录约定：
 
@@ -202,6 +203,8 @@ systemctl list-timers whut-acm-backup.timer --all
 下面命令在 **Linux 服务器的 root SSH 终端**运行，普通用户先执行 <code>sudo -i</code>，不要直接粘贴进本地 PowerShell。示例中的 <code>OLD_SERVER_IP</code>、<code>NEW_SERVER_IP</code>、<code>acm.example.com</code> 和密码执行前必须替换。
 
 建议 2 核 4 GB 起步，使用 Java 21、Node.js 22、MySQL 8.0。迁移时与旧机保持相同 MySQL 主版本，先运行旧机当前发布的代码版本，迁移稳定后再升级。
+
+如果此次迁移要启用新增的临时 HTTP/IP 模式，目标代码必须包含 `ALLOW_INSECURE_HTTP` 功能；旧版本仅添加环境变量不会生效。先在演练库验证目标版本，再进行最终停写迁移，不要把不支持 HTTP 的旧版本与新配置混用。
 
 ### 1. 安装环境
 
@@ -292,10 +295,11 @@ nano /etc/whut-acm/whut-acm.env
 | MYSQL_USERNAME / MYSQL_PASSWORD | 新机创建的数据库账号和至少 16 位独立随机密码 |
 | SUPERADMIN_USERNAME / SUPERADMIN_PASSWORD | 非默认管理员名及至少 16 位密码；迁移时沿用旧机设置 |
 | CORS_ALLOWED_ORIGINS | 实际 HTTPS 域名，多个用逗号分隔，如 https://acm.example.com,https://www.acm.example.com |
+| ALLOW_INSECURE_HTTP | 默认 false；只有临时 HTTP/IP 阶段才设为 true，CORS 同时改成准确的 http://新服务器IPv4 |
 | LOGGING_FILE_PATH | /var/log/whut-acm |
 | Token TTL | 可沿用模板中的 7200 / 21600 秒 |
 
-管理员名迁移时要保持一致，否则可能自动新建另一个超级管理员。已有账号密码由数据库哈希决定，修改初始化环境变量不会重置它。生产校验不接受默认/过短密码和本机 HTTP CORS。
+管理员名迁移时要保持一致，否则可能自动新建另一个超级管理员。已有账号密码由数据库哈希决定，修改初始化环境变量不会重置它。临时 HTTP 开关也不会绕过强密码校验，不接受 localhost、回环地址、通配符或 HTTP 域名来源。
 
 环境文件为 systemd <code>KEY=value</code> 格式；特殊字符按 EnvironmentFile 规则加引号，推荐使用 hex 随机密码减少转义问题。真实文件不能提交 Git 或公开。
 
@@ -331,6 +335,8 @@ curl -i --max-time 10 http://127.0.0.1:8080/api/health
 应返回 HTTP 200，且 status、database 均为 UP；刚启动时需等待初始化完成。
 
 ### 6. 配置 Nginx 和 HTTPS
+
+还没绑定域名、先通过 IP 访问时，跳过本节，执行下一节的 HTTP/IP 方案。不要在没有证书时直接启用 HTTPS 模板。
 
 全新域名先配置 HTTP 站点用于签发证书。通过编辑器新建 <code>/etc/nginx/sites-available/whut-acm</code>，替换下面域名：
 
@@ -381,6 +387,53 @@ curl -i https://acm.example.com/api/health
 
 **迁移现有域名不要提前切公网 DNS**：优先复制仍有效的旧证书和当前 Nginx 配置，用下文 curl --resolve 测新机，再在最终数据恢复后切换。域名相同且证书有效可沿用，不需反复申请。
 
+### 6A. 暂时通过公网 IPv4 和 HTTP 访问
+
+此步骤在**新服务器**执行；数据库应已恢复，后端和前端也已按第 5 步安装。只开放实际 SSH 端口和 80，8080/3306 继续仅监听本机，不要为了访问网站放开数据库端口。公网 HTTP 无法防止窃听和篡改，请使用不与其他网站重复的密码，尽量缩短临时运行时间；限流、CORS 和强密码不能代替 HTTPS。
+
+编辑 `/etc/whut-acm/whut-acm.env`，将 `203.0.113.10` 替换成新服务器真实公网 IPv4（它只是文档示例，不可直接使用）：
+
+~~~dotenv
+SPRING_PROFILES_ACTIVE=prod
+SERVER_ADDRESS=127.0.0.1
+SERVER_PORT=8080
+CORS_ALLOWED_ORIGINS=http://203.0.113.10
+ALLOW_INSECURE_HTTP=true
+~~~
+
+保留真实的数据库密码和原超级管理员设置，不要用上面几行覆盖整个文件。来源不能带路径、结尾 `/` 或通配符；非 80 端口需写实际端口，但本模板使用 80。默认不设置开关或设为 false 时，HTTP 来源会让 prod 拒绝启动，这是预期保护。更改环境文件后：
+
+~~~bash
+chmod 600 /etc/whut-acm/whut-acm.env
+systemctl restart whut-acm
+journalctl -u whut-acm -n 60 --no-pager
+curl -i --max-time 10 http://127.0.0.1:8080/api/health
+~~~
+
+首次启动尚未就绪时等待后再检查。健康状态正常才继续。若站点配置已存在，先备份再修改；HTTP/IP 和 HTTPS 模板只能启用一份，不能在 sites-enabled 与 conf.d 重复启用，否则限流区会冲突。
+
+~~~bash
+cp /srv/whut-training-team/deploy/nginx/whut-acm-http.conf.example /etc/nginx/sites-available/whut-acm
+nano /etc/nginx/sites-available/whut-acm
+~~~
+
+把 `server_name NEW_SERVER_IP;` 改为真实 IP，例如 `server_name 203.0.113.10;`。该模板包含前端路由回退、API 代理、限流、敏感文件拦截及 JS/CSS 压缩，不需要证书，也不重定向 HTTPS。仅在启用链接不存在时执行：
+
+~~~bash
+ln -s /etc/nginx/sites-available/whut-acm /etc/nginx/sites-enabled/whut-acm
+~~~
+
+再执行（语法检查失败就不要重载）：
+
+~~~bash
+nginx -t && systemctl reload nginx
+curl -i http://203.0.113.10/api/health
+~~~
+
+浏览器访问 `http://新服务器IP/`，前后端通过同一 Nginx 来源访问，不要打开 Vite 5173 或公网 8080。如果之前发布脚本的健康检查/结束提示仍写旧域名，更新成新机的本地健康地址 `http://127.0.0.1:8080/api/health` 和网站 `http://新服务器IP`；不要只改终端提示却继续检查旧站。
+
+**之后切回域名 HTTPS：**按第 6 节配置 DNS、证书和 HTTPS Nginx，替换当前 HTTP 站点，不并行启用两个模板。将 CORS 改为实际 `https://域名`，设置 `ALLOW_INSECURE_HTTP=false`，重启后端并执行 `nginx -t` 后重载。重新验收登录、校验及证书续期。域名/协议变化后浏览器存储不会自动迁移，需要重新登录；建议修改 HTTP 阶段使用过的站内管理员密码。
+
 ### 7. 运维与验收
 
 每日 MySQL 备份至少保留 14 天，并留一份异机备份，定期在临时库恢复验证。发布脚本、备份脚本和 timer 是旧机手工安装文件，**不在 Git 仓库，clone 不会自动带来**，迁移方法见下节。
@@ -407,7 +460,7 @@ curl -i https://acm.example.com/api/health
 
 不要直接复制运行中的 /var/lib/mysql，也不要迁移 mysql 系统库。只导出业务库，在新机重新创建账号和权限。[MySQL 8.0 官方备份说明](https://dev.mysql.com/doc/refman/8.0/en/mysqldump.html)。
 
-推荐：**新机准备 → 演练 → 旧机停写 → 最终备份 → 新机恢复 → 验证 → 切 DNS → 验收**。先演练估算维护窗口；当前小规模项目用停写迁移比双机同步更易维护。
+推荐：**新机准备 → 演练 → 旧机停写 → 最终备份 → 通过电脑传输 → 新机恢复 → 验证 → IP 访问或切 DNS → 验收**。先演练估算维护窗口；当前小规模项目用停写迁移比双机同步更易维护。新机准备好再开始最终停写，避免整段安装时间都让旧站停机。
 
 ### 1. 盘点与准备
 
@@ -424,6 +477,8 @@ git -C /srv/whut-training-team log -1 --oneline
 结合成功发布日志确认运行版本，检查 Nginx 额外安全规则。新机完成上文环境、代码构建、建空库，后端暂不启动；域名提前降低 TTL（如 300 秒，并等待原 TTL 过去）。可以先用预备备份恢复到独立演练库；最终库不要混入测试数据。
 
 ### 2. 提前复制配置和脚本
+
+只迁移到新 IP、暂不绑定域名时，保留环境文件、发布/备份脚本和 timer 即可；旧证书及 HTTPS Nginx 配置可另行归档，不要直接启用。HTTP/IP 访问使用上文的独立模板。
 
 在**新机 root 终端**执行；scp 使用非默认 SSH 端口时加 -P 实际端口。需要有旧机 SSH 登录权限，不能直连时通过自己的电脑中转。
 
@@ -474,6 +529,7 @@ systemctl is-active whut-acm
 ~~~bash
 (
   set -euo pipefail
+  set -o noclobber
   umask 077
   install -d -m 700 /root/whut-migration-final
   mysqldump -u root \
@@ -488,15 +544,66 @@ systemctl is-active whut-acm
 )
 ~~~
 
-默认使用 Ubuntu root socket 认证；root 需密码时改为 mysqldump -u root -p，交互输入，不在命令中写明文密码。必须确认整块无错误；pipefail 防止 mysqldump 失败却得到正常 gzip 空包。导出期间不要改表、建表或发布。
+默认使用 Ubuntu root socket 认证；root 需密码时改为 mysqldump -u root -p，交互输入，不在命令中写明文密码。必须确认整块无错误；pipefail 防止 mysqldump 失败却得到正常 gzip 空包。文件已存在时会停止，换新的备份目录并同步修改后续路径，不要强制覆盖旧备份。导出期间不要改表、建表或发布。
 
 ### 4. 新机传输与恢复
 
-在**新机**执行：
+#### 4.1 通过自己的 Windows 电脑中转（推荐）
+
+旧机已经完成最终导出并保持停写后，在**自己电脑的 PowerShell**执行，而不是服务器终端。替换两个 IP；本地目录不放进 Git 仓库或云同步目录：
+
+~~~powershell
+$oldServer = "OLD_SERVER_IP"
+$newServer = "NEW_SERVER_IP"
+$migrationDir = Join-Path $env:USERPROFILE "whut-migration"
+New-Item -ItemType Directory -Force $migrationDir | Out-Null
+Set-Location $migrationDir
+
+scp "root@${oldServer}:/root/whut-migration-final/whut_training.sql.gz" .
+if ($LASTEXITCODE -ne 0) { throw "数据库下载失败，停止迁移" }
+scp "root@${oldServer}:/root/whut-migration-final/whut_training.sql.gz.sha256" .
+if ($LASTEXITCODE -ne 0) { throw "校验文件下载失败，停止迁移" }
+
+$expectedHash = ((Get-Content .\whut_training.sql.gz.sha256 -Raw).Trim() -split '\s+')[0]
+$actualHash = (Get-FileHash .\whut_training.sql.gz -Algorithm SHA256).Hash
+if ($expectedHash -notmatch '^[0-9a-fA-F]{64}$' -or $actualHash -ne $expectedHash) { throw "校验不一致，停止迁移" }
+
+ssh "root@$newServer" "install -d -m 700 /root/whut-migration"
+if ($LASTEXITCODE -ne 0) { throw "新服务器目录准备失败" }
+scp .\whut_training.sql.gz "root@${newServer}:/root/whut-migration/"
+if ($LASTEXITCODE -ne 0) { throw "数据库上传失败，停止迁移" }
+scp .\whut_training.sql.gz.sha256 "root@${newServer}:/root/whut-migration/"
+if ($LASTEXITCODE -ne 0) { throw "校验文件上传失败，停止迁移" }
+~~~
+
+本地重复下载会替换同名文件；已有需要保留的备份时使用新的本地目录。scp 传输的是压缩文件本身，不要通过 PowerShell 管道解压/转码 SQL。SSH 非默认端口：`ssh -p 端口`、`scp -P 端口`；两台服务器端口可以不同。
+
+第 2 节的配置也可通过电脑中转，例如：
+
+~~~powershell
+scp -r "root@${oldServer}:/etc/whut-acm" .
+scp "root@${oldServer}:/usr/local/sbin/deploy-whut-acm" .
+scp "root@${oldServer}:/usr/local/sbin/backup-whut-acm-db" .
+scp "root@${oldServer}:/etc/systemd/system/whut-acm-backup.service" .
+scp "root@${oldServer}:/etc/systemd/system/whut-acm-backup.timer" .
+~~~
+
+确认每条成功后，将需要的文件单独上传到 `root@新服务器IP:/root/whut-migration/`，再检查修改后安装。`whut-acm` 是目录，上传它使用 `scp -r`。环境文件及备份凭据含秘密，不要发到聊天或提交 Git；不要复制自己的 SSH 私钥给新服务器。
+
+#### 4.2 两台服务器能直连时的替代方法
+
+已通过电脑上传时**跳过以下两条 scp**。否则在**新机**执行：
 
 ~~~bash
 scp root@OLD_SERVER_IP:/root/whut-migration-final/whut_training.sql.gz /root/whut-migration/
 scp root@OLD_SERVER_IP:/root/whut-migration-final/whut_training.sql.gz.sha256 /root/whut-migration/
+~~~
+
+#### 4.3 新服务器校验与恢复
+
+先按新机部署第 3 步创建**空业务库和独立应用账号**；dump 不迁移 MySQL 用户和授权。后端保持停止。在**新机 Linux 终端**执行：
+
+~~~bash
 cd /root/whut-migration
 sha256sum -c whut_training.sql.gz.sha256
 gzip -t whut_training.sql.gz
@@ -534,6 +641,8 @@ mysql whut_training -e "SHOW TABLES; SELECT COUNT(*) AS users, COALESCE(SUM(tota
 
 ### 5. 新机启动与切换前验证
 
+只用 IP 时：完成数据核对后按新机部署第 4、5、6A 节设置环境、构建启动、启用 HTTP/IP Nginx。数据库与后端继续监听本机，浏览器访问 `http://新服务器IP/`；不需要 DNS、旧域名证书或 Certbot，暂时跳过本节下方的旧 HTTPS 配置和 `curl --resolve`，也跳过下一节的 DNS 切换操作。运维脚本与备份任务仍须恢复。
+
 恢复完成才按上文安装 JAR、前端、环境和 systemd，然后启动。使用从旧机复制的实际 Nginx 配置：
 
 ~~~bash
@@ -552,6 +661,8 @@ curl -i --resolve acm.example.com:443:NEW_SERVER_IP https://acm.example.com/api/
 浏览器验收可临时在电脑 hosts 将域名指向新 IP，结束移除此项。检查原账号登录、头像、积分和关键功能。DNS 切换前仅自己验收，不让成员使用新机；一旦产生需要保留的新数据，不能再用旧备份覆盖。
 
 ### 6. 切换域名，恢复运维任务
+
+先使用 IP 时，仅执行本节的脚本/备份 timer 恢复与验证；DNS 和证书步骤等绑定域名时再做。
 
 将主域名及实际使用的 www A 记录改为新 IP，同时处理 AAAA、CDN 回源和云防火墙。DNS 传播期间旧后端继续停止，旧 IP 上的用户可能暂时遇到维护错误；不能为恢复访问而重新开放旧库写入。若要兼容旧 DNS 缓存，可另配旧 Nginx 代理至新机。
 
@@ -586,10 +697,45 @@ certbot renew --dry-run
 
 ## 性能与会话
 
+- 首页积分来自当前请求认证读取的数据库用户，而不是登录时的浏览器缓存；个人积分不放入公共首页缓存，也不额外请求个人资料。首页统计、热力图和 CF 概览独立加载，单个接口慢不会阻塞整页。普通页面已取消持续背景粒子和卡片实时模糊，保留原有墨蓝色主题。
 - 每日题校验采用异步任务，前端轮询结果；CF 请求统一限速，默认启动间隔 2.1 秒，校验优先于普通资料刷新和后台同步。外部服务慢或多人同时校验时仍可能排队。
 - CF 资料和比赛信息使用缓存，资料刷新、比赛聚合和校验使用有界线程池；前端按路由拆分加载。
 - 默认 Access Token 为 2 小时，Refresh Token 为 6 小时；正常登录会话最长 6 小时，到期需重新登录。生产环境可通过模板中的 TTL 变量调整。
 - CF、AtCoder、牛客、洛谷和 AtCoder Problems 是外部数据源，异常时可能暂时无法刷新或校验。
+
+### 静态资源压缩与访问慢排查
+
+Nginx 默认只压缩 HTML 时，JS/CSS 仍可能原样传输。模板已为 HTTPS 站点增加静态文本压缩。**现有服务器需要手动合并到 `/etc/nginx/sites-available/whut-acm` 的 HTTPS `server {}` 内**；不要覆盖证书、域名、代理和安全规则，已有同名指令就修改原指令，不要重复添加：
+
+~~~nginx
+gzip on;
+gzip_vary on;
+gzip_min_length 1024;
+gzip_comp_level 4;
+gzip_types text/css text/javascript application/javascript image/svg+xml;
+~~~
+
+保存后仅在语法检查成功时重载：
+
+~~~bash
+nginx -t && systemctl reload nginx
+~~~
+
+在浏览器 Network 中找到当前实际主 JS 路径（文件名每次构建会变化），然后检查：
+
+~~~bash
+curl -I -H 'Accept-Encoding: gzip' https://你的域名/assets/实际文件名.js
+~~~
+
+应出现 `Content-Encoding: gzip` 及 `Vary: Accept-Encoding`。不要用旧文件名或仅检查首页 HTML 判断 JS 已压缩。该配置不需要数据库迁移，代码发布脚本也不会自动覆盖现有 Nginx 站点。
+
+区分网络和后端耗时可以运行：
+
+~~~bash
+curl -o /dev/null -sS --max-time 20 -w 'dns=%{time_namelookup} connect=%{time_connect} tls=%{time_appconnect} ttfb=%{time_starttransfer} total=%{time_total}\n' https://你的域名/api/health
+~~~
+
+这些字段是从请求开始累计的时间；TLS 阶段明显等待不等于 Java 接口慢。服务器上再对 `http://127.0.0.1:8080/api/health` 做本机检测，并结合浏览器 Network 的具体慢请求、`journalctl -u whut-acm` 与 `free -h`、`vmstat 1 5` 判断网络等待、接口排队或内存/CPU 压力。少量健康检查不能代替实际登录接口和并发压测。
 
 ### 上线稳定性加固（2026-10-15）
 

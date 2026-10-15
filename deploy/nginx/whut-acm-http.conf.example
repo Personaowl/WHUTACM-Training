@@ -1,0 +1,79 @@
+# Temporary public IPv4/HTTP deployment. Replace NEW_SERVER_IP before enabling.
+# Enable this OR the HTTPS template, never both (the rate-limit zone names overlap).
+limit_req_zone $binary_remote_addr zone=whut_api:10m rate=5r/s;
+limit_req_zone $binary_remote_addr zone=whut_auth:10m rate=10r/m;
+limit_req_zone $binary_remote_addr zone=whut_refresh:10m rate=60r/m;
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name NEW_SERVER_IP;
+    server_tokens off;
+
+    root /var/www/whut-acm;
+    index index.html;
+    client_max_body_size 1m;
+    limit_req_status 429;
+
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_comp_level 4;
+    gzip_types text/css text/javascript application/javascript image/svg+xml;
+
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Frame-Options DENY always;
+    add_header Referrer-Policy strict-origin-when-cross-origin always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+    add_header Content-Security-Policy "default-src 'self'; img-src 'self' data: https:; font-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'" always;
+
+    proxy_http_version 1.1;
+    proxy_set_header Host 127.0.0.1:8080;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $remote_addr;
+    proxy_set_header X-Forwarded-Host $http_host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Port $server_port;
+    proxy_set_header Forwarded "";
+    proxy_set_header X-Forwarded-Prefix "";
+    proxy_set_header Connection "";
+    proxy_read_timeout 60s;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location = /index.html {
+        expires -1;
+        try_files $uri =404;
+    }
+
+    location ~ (^|/)\.(?!well-known/) {
+        return 404;
+    }
+
+    location = /api/auth/login {
+        limit_req zone=whut_auth burst=5 nodelay;
+        proxy_pass http://127.0.0.1:8080;
+    }
+
+    location = /api/users/register {
+        limit_req zone=whut_auth burst=3 nodelay;
+        proxy_pass http://127.0.0.1:8080;
+    }
+
+    location = /api/auth/refresh {
+        limit_req zone=whut_refresh burst=20 nodelay;
+        proxy_pass http://127.0.0.1:8080;
+    }
+
+    location /api/ {
+        limit_req zone=whut_api burst=30 nodelay;
+        proxy_pass http://127.0.0.1:8080;
+    }
+
+    location ~* \.(?:css|js|png|jpg|jpeg|webp|gif|svg|woff2)$ {
+        expires 7d;
+        try_files $uri =404;
+    }
+}

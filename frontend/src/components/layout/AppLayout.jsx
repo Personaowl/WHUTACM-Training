@@ -43,11 +43,6 @@ export default function AppLayout() {
   return (
     <div className="app-shell">
       <div className="ambient-grid" aria-hidden="true" />
-      <div className="particle-field" aria-hidden="true">
-        {Array.from({ length: 14 }, (_, index) => (
-          <span key={index} style={{ "--particle-index": index }} />
-        ))}
-      </div>
       <Sidebar
         collapsed={sidebarCollapsed}
         mobileOpen={mobileMenuOpen}

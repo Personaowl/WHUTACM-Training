@@ -12,7 +12,7 @@ cd ../frontend && npm ci && npm audit --audit-level=high && npm run build
 ```
 
 生产库必须使用独立的非 root MySQL 账号。不要把真实密码写入仓库，也不要沿用开发环境默认账号。
-生产模式会在启动时校验安全配置：MySQL 与超级管理员密码必须至少 16 位，超级管理员用户名不能使用默认值，CORS 只能配置明确的 HTTPS 域名。校验失败时应用会拒绝启动。
+生产模式会在启动时校验安全配置：MySQL 与超级管理员密码必须至少 16 位，超级管理员用户名不能使用默认值，CORS 默认只允许明确的 HTTPS 来源。临时 HTTP/IP 必须显式设置 `ALLOW_INSECURE_HTTP=true` 并使用准确的 `http://IPv4` 来源；这不会提供传输加密，也不会绕过强密码校验。具体操作见 README 的“6A. 暂时通过公网 IPv4 和 HTTP 访问”。校验失败时应用会拒绝启动。
 
 ## 2. 准备目录与账号
 
@@ -40,6 +40,8 @@ curl http://127.0.0.1:8080/api/health
 生产 profile 缺少 `MYSQL_*`、`SUPERADMIN_*` 或 `CORS_ALLOWED_ORIGINS` 时会拒绝启动，避免意外使用开发密码。
 
 ## 4. Nginx 与 HTTPS
+
+暂未绑定域名时使用 `deploy/nginx/whut-acm-http.conf.example`，按 README 的 HTTP/IP 步骤启用；不要在没有证书时直接启用下面的 HTTPS 模板。两份模板只能启用一份。
 
 修改 `deploy/nginx/whut-acm.conf.example` 中的域名后安装到 `/etc/nginx/conf.d/whut-acm.conf`。首次签发证书前先临时移除 443 证书段，使用 Certbot 签发后恢复完整配置。
 

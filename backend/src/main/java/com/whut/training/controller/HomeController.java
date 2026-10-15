@@ -1,6 +1,9 @@
 package com.whut.training.controller;
 
-import com.whut.training.domain.dto.HomeOverview;
+import com.whut.training.context.UserContext;
+import com.whut.training.domain.dto.HomeOverviewResponse;
+import com.whut.training.domain.entity.User;
+import com.whut.training.exception.BusinessException;
 import com.whut.training.service.HomeService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,7 +21,10 @@ public class HomeController {
     }
 
     @GetMapping
-    public HomeOverview overview(@RequestParam(name = "top", defaultValue = "10") int top) {
-        return homeService.getOverview(top);
+    public HomeOverviewResponse overview(@RequestParam(name = "top", defaultValue = "10") int top) {
+        User user = UserContext.getCurrentUser();
+        if (user == null) throw new BusinessException(401, "unauthorized");
+        // Authentication has already read this user from the database, so no extra query is needed.
+        return HomeOverviewResponse.from(homeService.getOverview(top), user);
     }
 }
