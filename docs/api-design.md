@@ -1,457 +1,172 @@
-# 接口设计文档（前后端对接）
+# 接口参考
 
-## 1. 基础信息
-- 后端地址：`http://localhost:8080`
-- API 前缀：`/api`
-- 鉴权请求头：
-  - `Authorization: Bearer <accessToken>`
-  - `X-Refresh-Token: <refreshToken>`
+[文档索引](README.md) · [功能与权限](features.md) · [数据库](db-design.md)
 
-统一响应结构：
+按 2026-10-20 的当前源码核对。本文是已有接口的对接说明，不是待实现设计；精确字段以 [Controller](../backend/src/main/java/com/whut/training/controller/) 与 [DTO](../backend/src/main/java/com/whut/training/domain/dto/) 为准。生产环境在网站同源下请求 `/api`，本地开发由 Vite 代理到 8080。
+
+## 1. 响应、认证与错误
+
+除下面注明的例外，成功响应为：
+
 ```json
-{
-  "code": 200,
-  "message": "success",
-  "data": {}
-}
+{"code":200,"message":"success","data":{}}
 ```
 
-说明：
-- 业务是否成功请以 `code === 200` 判断。
-- 当前项目大多数错误会返回 `HTTP 200 + code/message`，少量场景可能返回 `401`。
+- 普通业务接口由全局异常处理返回对应 HTTP 状态及 `{code,message,data}`：400 参数/业务条件不符，401 登录失效，403 权限不足，404 不存在，409 冲突，500 内部错误，503 外部服务/队列暂不可用。不能只检查 HTTP 200，也不能假设所有错误都包在 HTTP 200 中。
+- **首页成功响应直接返回对象，没有外层 code/data；Excel 成功响应为二进制文件。** Nginx 拦截或限流响应也不保证是 JSON。
+- 除健康检查、注册和登录外，通常要求 `Authorization: Bearer <accessToken>`。刷新和注销不经过 Access Token 拦截器，但必须提供有效的 `X-Refresh-Token`。
+- 管理员指 `ADMIN` 或 `SUPER_ADMIN`；超管指 `SUPER_ADMIN`。角色与 `REGULAR / ACTIVE_TEAM` 成员身份独立。
+- 默认访问令牌 2 小时、整个登录会话最长 6 小时；刷新返回新双令牌并消费旧刷新令牌，不延长首次登录的绝对期限。生产可配置 TTL。
+- `/api/dev` 调试控制器是例外：部分失败直接返回业务失败对象，HTTP 状态不一定同步。仅用于隔离开发环境，不用它模拟生产错误协议。
 
-## 2. 鉴权分级
+### 无需 Access Token 的接口
 
-免鉴权接口：
-- `GET /api/health`
-- `POST /api/users/register`
-- `POST /api/auth/login`
+| 方法与路径 | 请求 / 返回 |
+| --- | --- |
+| GET /api/health | 数据库探测；成功 data 包含 time、status、database |
+| POST /api/users/register | 见下方注册字段；返回 User，不自动签发令牌 |
+| POST /api/auth/login | JSON：username、password；返回 LoginResponse |
+| POST /api/auth/refresh | 必填 X-Refresh-Token；返回 accessToken、refreshToken |
+| POST /api/auth/logout | 必填 X-Refresh-Token，可带 Authorization；注销会话，返回空 data |
 
-登录鉴权接口：
-- `POST /api/auth/logout`
-- `POST /api/auth/refresh`
-- `GET /api/users`
-- `GET /api/users/{id}`
-- `PATCH /api/users/{id}`
-- `GET /api/users/{user_id}/daily-heatmap`
-- `GET /api/daily-problem/today`
-- `POST /api/daily-problem/check-in`
-- `GET /api/daily-problem/history`
-- `GET /api/practice/tags`
-- `POST /api/practice/draw`
-- `GET /api/problem-lists`
-- `POST /api/problem-lists`
-- `POST /api/push`
-- `GET /api/push`
-- `POST /api/push/{id}/submit`
-- `GET /api/push/{id}/submissions`
+注册必填 `username`（最多 50 字符）、`displayName`（最多 50）、`password`（8～64）。选填 `email`（有效邮箱、最多 255）、`realName`（最多 100）、`college`、`className`（各最多 150）。登录名不是 CF Handle，注册不访问 CF。
 
-管理员接口（需 ADMIN）：
-- `POST /api/admin/users`
-- `POST /api/admin/daily-problem/regenerate`
-- `POST /api/admin/daily-problem/redraw`
-- `POST /api/admin/push/{id}/approve`
-- `POST /api/admin/push/{id}/reject`
-- `POST /api/admin/push/{id}/promote`
-- `GET /api/roles`
+LoginResponse 包含 `id, username, email, role, uid, codeforcesRating, maxRating, online, lastOnlineTimeSeconds, avatarUrl, codeforcesHandle, pendingCodeforcesHandle, codeforcesBindingStartedAtSeconds, displayName, accessToken, refreshToken`。不要假定登录响应还包含全部个人资料；完整资料另取用户接口。
 
-超管理员接口（需 SUPER_ADMIN）：
-- `PUT /api/admin/users/{id}/role`
+## 2. 用户、头像与绑定
 
-## 3. 用户接口
+| 方法与路径 | 权限 | 参数 / 说明 |
+| --- | --- | --- |
+| GET /api/users | 管理员 | 按 ID 排序的用户列表；没有后端关键词分页搜索参数，管理页在前端筛选 |
+| GET /api/users/{id} | 本人或管理员 | 完整 User 资料，不输出密码或 AtCoder 验证码 |
+| PATCH /api/users/{id} | 本人或超管 | UserUpdateRequest；普通管理员不能修改他人账号资料 |
+| GET /api/users/{id}/public-profile | 已登录 | PublicUserProfile，给其他成员查看的安全资料 |
+| GET /api/users/{id}/codeforces-overview | 已登录 | CF 统计快照；缓存/异步刷新，不保证请求时即时抓取完毕 |
+| POST /api/users/{id}/codeforces-overview/refresh | 本人或管理员 | 请求刷新 CF 快照 |
+| GET /api/users/{id}/daily-heatmap | 本人或管理员 | days 默认 180，最大 365；返回 date、score、colorLevel 列表，不是 CF 全量做题数据 |
+| POST /api/users/{id}/codeforces-binding/start | 仅本人 | JSON：handle；返回验证题目、开始和截止时间等信息 |
+| POST /api/users/{id}/codeforces-binding/finish | 仅本人 | 无请求体，验证后返回 User |
+| POST /api/users/{id}/atcoder-binding/start | 仅本人 | JSON：handle；返回临时 Affiliation 验证码等信息 |
+| POST /api/users/{id}/atcoder-binding/finish | 仅本人 | 无请求体，验证后返回 User |
 
-### 3.1 注册
-- `POST /api/users/register`
-- `Content-Type: application/json`
+资料更新字段：`username, email, password, displayName, realName, college, className, avatar, bio, showProblemTags`。不修改密码时应**省略 password**，不要发送空字符串（DTO 要求非空值长度 8～64）。头像传 `avatar` 而不是 `avatarUrl`，只接受 PNG/JPEG/WebP 的 Base64 data image，字符串最多 700000 字符，不接受外部 URL。前端负责裁剪压缩。
 
-请求示例：
-```json
-{
-  "username": "alice-account",
-  "displayName": "Alice",
-  "password": "123456"
-}
-```
+公开资料只包含 `id, displayName, avatarUrl, bio, memberType, codeforcesHandle, atcoderHandle, codeforcesRating, maxRating, totalPoints`，不包含登录账号、邮箱、姓名、学院、班级或审核说明。
 
-说明：
-- `username` 是唯一登录账号，`displayName` 是对外展示的用户名。
-- 注册成功并登录后，通过独立绑定接口验证 Codeforces 账号所有权。
+CF 绑定窗口为 120 秒，要求验证窗口内向 CF 1A 提交 Compilation Error；AtCoder 窗口为 600 秒，临时修改 Affiliation，成功后可恢复。绑定接口不会代替用户向外部平台提交或修改设置。
 
-### 3.2 登录
-- `POST /api/auth/login`
+## 3. 每日题与自主练习
 
-返回字段包含：
-- 用户信息（`id/username/email/role/uid/codeforcesRating/maxRating/online/lastOnlineTimeSeconds/avatarUrl/displayName/bio/totalPoints`）
-- `accessToken`
-- `refreshToken`
+以下均要求登录，只操作当前用户记录。
 
-### 3.3 刷新令牌
-- `POST /api/auth/refresh`
-- Header：`X-Refresh-Token`
+| 方法与路径 | 参数 / 返回 |
+| --- | --- |
+| GET /api/daily-problem/today | data 为 problems、checkedIn、score；problems 为当前有效题位，checkedIn 表示任意题位完成，score 为当天最高分 |
+| POST /api/daily-problem/check-in | JSON：正整数 submissionId；**返回异步任务**而非直接返回最终校验结果 |
+| GET /api/daily-problem/check-in/{jobId} | 查询自己的任务；别人任务 403，不存在/已清理任务 404 |
+| GET /api/daily-problem/history | days 默认 0，非正数取全部现存范围（实现下限 2020-01-01）；不展开重抽旧题为额外题位 |
+| POST /api/practice/draw | 可选 JSON：minRating、maxRating、tags；返回 drawId、problem |
+| GET /api/practice/tags | 可选标签列表 |
+| GET /api/practice/history | limit 默认 20；个人抽题记录 |
+| DELETE /api/practice/{drawId} | 删除自己的抽题记录 |
 
-### 3.4 登出
-- `POST /api/auth/logout`
-- Header：`Authorization` + `X-Refresh-Token`
+任务字段为 `jobId, status, message, errorCode, result`。状态为 `PENDING / RUNNING / SUCCEEDED / FAILED`；失败任务通常仍由任务查询接口成功返回，必须检查 status/errorCode。成功 result 为 `type, accepted, submissionId, verdict, score`，其中 score 是**当前当天总分**，不是此次新增积分。
 
-### 3.5 获取用户信息
-- `GET /api/users/{id}`
-- 权限：仅本用户或管理员可查看。普通用户查看他人信息返回 403。
+校验要求绑定账号最近 30 条提交中存在该 ID、匹配目标日期当前有效题、verdict 为 OK；不扩大查询或回退全量。当前实现**没有额外比较提交创建时间与当天零点/题目生成时间**，也没有历史补卡日期请求参数；异步任务在创建时固定目标日期。计分和重抽规则见 [功能说明](features.md)。
 
-### 3.6 修改个人信息
-- `PATCH /api/users/{id}`
-- `Content-Type: application/json`
-- 权限：仅本用户或管理员可修改。
+任务存在于单进程内存中；进行中同一用户/日期/提交请求合并，成功结果 10 分钟内复用，失败可重试。已结束任务保留约 1 小时，定时清理；重启后任务 ID 失效，数据库已完成的计分不受影响。
 
-请求体：
-```json
-{
-  "username": "new_username",
-  "email": "new@example.com",
-  "password": "newpass123",
-  "displayName": "Alice",
-  "avatar": "https://...",
-  "bio": "Hello world"
-}
-```
+练习页面提供 800～3500、步长 100 的选项，这是**前端选项范围**，不是后端严格百位枚举校验。省略上下限时后端默认 1200～2000；tags 最多 5 个、同时匹配。练习不校验提交、不计积分，没有 practice check-in 接口。
 
-说明：
-- `password` 可不传或传空字符串（表示不修改密码）。非空密码长度需 `>= 8`。
-- `displayName` / `avatar` / `bio` 新增字段，可局部更新。
-- 修改 `username` 只修改站内登录名，不影响已绑定的 Codeforces Handle。
+## 4. 题单
 
-### 3.7 用户每日提交热图
-- `GET /api/users/{user_id}/daily-heatmap?days=180`
-- 返回：`[{date, score, colorLevel}]`
-- `colorLevel` 为 0-4，由得分相对强度自动计算。
-- 权限：本用户或管理员。
+前缀 `/api/problem-lists`，均需登录。可读自己的题单及管理员共享题单；**修改/删除始终仅限创建者，管理员也不能编辑别人的题单**。
 
-### 3.8 开始绑定 Codeforces
-- `POST /api/users/{id}/codeforces-binding/start`
-- 权限：只能操作当前登录用户。
+| 方法与路径 | 请求 / 返回 |
+| --- | --- |
+| GET /api/problem-lists | 可见题单摘要列表 |
+| GET /api/problem-lists/{id} | 题单摘要与条目 |
+| POST /api/problem-lists | name（必填，最多 80）、description（最多 500）、shared |
+| PATCH /api/problem-lists/{id} | 同创建字段；shared=true 仅管理员可用 |
+| DELETE /api/problem-lists/{id} | 删除题单及条目 |
+| POST /api/problem-lists/{id}/items | 添加条目 |
+| PATCH /api/problem-lists/{id}/items/{itemId} | 更新条目 |
+| DELETE /api/problem-lists/{id}/items/{itemId} | 删除条目 |
 
-请求体：
-```json
-{
-  "handle": "tourist"
-}
-```
+条目字段：`title, link, note, problemKey, rating, tags`。link 必填有效 HTTP/HTTPS 地址；本地题库能识别 CF 题目时可补充元数据，否则须提供 title。同一题单重复链接返回 409。题单仅一级分类，没有嵌套文件夹。
 
-服务端记录验证开始时间。用户须在 2 分钟内使用该 Handle 向
-`https://codeforces.com/contest/1/problem/A` 提交一份产生
-`COMPILATION_ERROR` 的代码。
+## 5. 首页、排行榜与比赛
 
-### 3.9 完成 Codeforces 绑定
-- `POST /api/users/{id}/codeforces-binding/finish`
-- 权限：只能操作当前登录用户。
+| 方法与路径 | 权限 | 参数 / 返回 |
+| --- | --- | --- |
+| GET /api/home | 已登录 | top 默认 10，服务限制 1～50；直接返回 HomeOverviewResponse |
+| GET /api/leaderboard | 已登录 | page 默认 1、limit 默认 10（最大 100）；data：items、total、page、limit |
+| GET /api/contests/upcoming | 已登录 | CF / AtCoder / 牛客 / 洛谷的比赛聚合列表 |
 
-服务端读取该 Handle 最近的提交；若发现验证开始后产生的 1A 编译错误提交，
-则保存绑定关系并同步 Codeforces rating、头像等资料。
+首页字段：`totalUsers, topUsers, todayProblem, todayPushProblem, dailySubmissionSummary, problemPoolInitializing, currentUserId, currentUserPoints`。历史命名 totalUsers 表示**过去 7 天有每日题记录的活跃用户数**，不是全部注册数。dailySubmissionSummary 包含 todaySubmissions、todayCheckedInUsers。currentUserPoints 为当前认证用户的数据库积分，不混入共享概览缓存。
 
-## 4. 每日一题与练习题接口
+排行榜只提供总积分排名，排除 SUPER_ADMIN。兼容参数 type 默认 total，当前不切换其他榜单，不能据此推断存在周榜/月榜。
 
-### 4.1 获取今日题（多题位 easy/hard）
-- `GET /api/daily-problem/today`
-- 返回示例：
-```json
-{
-  "code": 200,
-  "data": {
-    "problems": [
-      {
-        "type": "EASY",
-        "date": "2026-05-23",
-        "problemKey": "1234-A",
-        "contestId": 1234,
-        "problemIndex": "A",
-        "name": "Problem Name",
-        "rating": 1500,
-        "tags": "dp,greedy",
-        "sourceUrl": "https://codeforces.com/..."
-      },
-      {
-        "type": "HARD",
-        "date": "2026-05-23",
-        "problemKey": "5678-D",
-        "contestId": 5678,
-        "problemIndex": "D",
-        "name": "Hard Problem",
-        "rating": 1900,
-        "tags": "graph",
-        "sourceUrl": "https://codeforces.com/..."
-      }
-    ],
-    "checkedIn": false,
-    "score": 0
-  }
-}
-```
-- `checkedIn` 表示用户当日是否已打卡（任意 slot 通过即可）。
-- `score` 为当日当前最高得分（取 max rating）。
+## 6. 推题与解答
 
-### 4.2 每日题打卡（计分）
-- `POST /api/daily-problem/check-in`
-- 请求体：
-```json
-{
-  "submissionId": 123456789
-}
-```
+| 方法与路径 | 权限 / 说明 |
+| --- | --- |
+| POST /api/push | 已登录；title、link 必填，description 可选；默认进入 PENDING |
+| GET /api/push | 普通用户取已推送项，管理员取全部 |
+| GET /api/push/today | 今日推题；无数据时 data=null；必要时从审核池懒发布 |
+| GET /api/push/mine | 当前用户提交的推题 |
+| GET /api/push/history | 已登录；推送历史 |
+| POST /api/push/{id}/submit | 已登录；submissionLink 必填、resultDescription 可选；提交解答记录，不自动验 AC |
+| GET /api/push/{id}/submissions | 普通用户仅自己的解答，管理员全部 |
+| POST /api/admin/push/{id}/approve | 管理员；审核通过 |
+| POST /api/admin/push/{id}/reject | 管理员；拒绝 |
+| POST /api/admin/push/{id}/promote | 管理员；提升池中顺序 |
+| DELETE /api/admin/push/{id} | 管理员；只允许删除未发布的 APPROVED 项 |
+| GET /api/admin/push/pool | 管理员；已审核、未推送题池 |
 
-接口立即返回异步任务，不会让 HTTP 请求线程等待 Codeforces 限流队列：
-```json
-{
-  "jobId": "8f9d...",
-  "status": "PENDING",
-  "message": "校验任务已进入队列",
-  "errorCode": null,
-  "result": null
-}
-```
-- `GET /api/daily-problem/check-in/{jobId}` 查询任务；终态为 `SUCCEEDED` 或 `FAILED`。
-- 相同用户和提交 ID 在 10 分钟内复用同一任务，任务结果在内存保留 1 小时。
-- 任务在提交时固定训练日期，因此排队跨过零点也不会误校验下一日题目。
+推题状态为 PENDING / APPROVED / REJECTED / PUBLISHED。链接允许省略协议并补 HTTPS，最终须为有效 HTTP/HTTPS URL，不接受带用户名密码的 URL。解答接口仍存在，不能与已移除的自主练习校验混淆。
 
-规则：
-- 校验该提交是否属于当前用户且对应今日题（easy 或 hard slot）。
-- 一次打卡只读取一次提交记录，再在本地匹配 easy/hard，避免重复调用 Codeforces。
-- 仅 `verdict=OK` 记分；记分值为题目 `rating`。
-- 同一用户同一天可多次打卡，取 max rating 为当日得分。
-- 已被重抽（`is_redrawn=true`）的 slot 不计入。
-- 打卡积分通过 per-user 同步锁保证并发安全。
-- Codeforces 请求由全局优先队列统一节流，交互式打卡优先于后台资料刷新。
+## 7. 管理、训练看板与导出
 
-### 4.3 每日题历史
-- `GET /api/daily-problem/history?days=0`
-- `days=0` 或不传表示查询全部历史记录。
-- 返回示例：
-```json
-[
-  {
-    "date": "2026-05-23",
-    "slot": "easy",
-    "problemKey": "1234-A",
-    "name": "Problem Name",
-    "rating": 1500,
-    "sourceUrl": "https://...",
-    "isRedrawn": false,
-    "checkedIn": true,
-    "submissionId": 123456789,
-    "verdict": "OK",
-    "score": 1500
-  }
-]
-```
+| 方法与路径 | 权限 / 参数 |
+| --- | --- |
+| POST /api/admin/users | 管理员；username、email、password、role 必填；普通 ADMIN 只能创建 USER，超管可创建高权限账号 |
+| PUT /api/admin/users/{id}/role | 超管；JSON：role；写审计，不能降级最后一位超管 |
+| PUT /api/admin/users/{id}/member-type | 管理员；JSON：memberType=REGULAR 或 ACTIVE_TEAM |
+| POST /api/admin/users/{id}/reset-password | 超管；其他非超管账号重置为 123456 并注销其会话 |
+| GET /api/roles | 管理员；角色名称/代码/描述列表 |
+| POST /api/admin/daily-problem/redraw | 管理员；query：slot=easy/hard，date 可选默认今天，confirm 默认 false |
+| POST /api/admin/daily-problem/regenerate | 管理员；兼容旧单题 daily_problem 的重新生成，返回单个 ProblemView，**不是同时重抽 Easy/Hard** |
+| GET /api/admin/training-dashboard | 管理员；现役成员每日题等训练统计 |
+| POST /api/admin/training-dashboard/export | 管理员；返回 .xlsx 文件，见下方选项 |
+| GET /api/admin/atcoder-abc | 管理员；可选 contestId |
+| POST /api/admin/atcoder-abc/refresh | 管理员；可选 contestId，刷新跟踪数据 |
+| PATCH /api/admin/atcoder-abc/setting | 管理员；JSON：minimumAcCount（0～8）、graceHours（1～168），可选 query contestId |
+| PATCH /api/admin/atcoder-abc/{contestId}/members/{userId}/exemption | 管理员；JSON：exempted、reason（最多 500） |
 
-### 4.4 自主抽题（不计分）
-- `POST /api/practice/draw`
-- 请求体（可选）：
-```json
-{
-  "minRating": 1200,
-  "maxRating": 1600,
-  "tags": ["dp", "greedy"]
-}
-```
-- 多个标签采用 AND 语义，题目必须同时包含全部所选标签；最多选择 5 个。
-- `GET /api/practice/tags` 返回当前本地题库中已去重、排序的可用标签。
+redraw 的 confirm 当前不改变补记行为，不代表确认后重算历史积分。兼容 regenerate 仍有界面入口；若要更换双题位，应使用对应 redraw，而不是把旧单题接口当作双题位重建。
 
-自主练习仅记录抽题历史，不进行提交校验；提交校验只保留在每日一题。
+导出 JSON 字段为 `range, includeDaily, includeCodeforcesContests, includeAtCoderContests`，至少选择一种。range 为 WEEK / MONTH / ALL，空或未知值按 WEEK；WEEK 指含今天最近 7 天、MONTH 指含今天最近 30 天，**不是自然周/月**。CF Rated 数据来自同步记录，ABC 来自已跟踪场次；导出不包含自主练习、私人情况说明或人工周状态。成功响应 Content-Type 为 XLSX，文件名见 Content-Disposition。
 
-### 4.5 管理员重生成今日题
-- `POST /api/admin/daily-problem/regenerate`
+## 8. 周训练与情况说明
 
-### 4.6 管理员单题重抽
-- `POST /api/admin/daily-problem/redraw?slot=easy|hard&confirm=false`
-- `slot` 必填（easy/hard），`confirm` 保留扩展。
-- 旧题标记 `is_redrawn=true`，新题插入；已打卡的旧题记录保留且计分有效。
+| 方法与路径 | 权限 / 请求 |
+| --- | --- |
+| GET /api/weekly-training/me | 已登录；可选 query week=YYYY-MM-DD，仅本人 |
+| POST /api/weekly-training/me/explanation | 该周名册成员；必填 query week；JSON：content（1～2000）、version（非负） |
+| GET /api/admin/weekly-training | 管理员；可选 query week |
+| POST /api/admin/weekly-training/{userId}/review | 管理员；必填 query week；JSON：action、status、note、version |
 
-## 5. 排行榜接口
+week 归一到上海时区该周周一，不能选未来周。返回 WeeklyTrainingReport：weekStart、weekEnd（周日）、today、members。成员包含每日完成、比赛结果、automaticStatus、manualStatus、effectiveStatus、explanation、version 和最近 20 条 history。
 
-- `GET /api/leaderboard?limit=10&page=1&type=total`
-- 返回：
-```json
-{
-  "code": 200,
-  "data": {
-    "items": [
-      {
-        "userId": 1,
-        "username": "alice",
-        "totalPoints": 3500,
-        "lastCheckinAt": "2026-05-23T10:30:00"
-      }
-    ],
-    "total": 100,
-    "page": 1,
-    "limit": 10
-  }
-}
-```
-- `limit` 默认 10，最大 100。
-- `page` 默认 1（1-based）。
-- 排序规则：`total_points DESC, last_checkin_at DESC`。
+- 自动状态：COMPLETED / IN_PROGRESS / PENDING / INCOMPLETE；manualStatus 为 AUTO / COMPLETED / EXEMPT / INCOMPLETE。
+- 说明审核状态：NONE / PENDING / APPROVED / REJECTED。
+- action 为 APPROVE / REJECT / ADJUST；note 必填 1～2000 字。APPROVE、ADJUST 需提供有效 status，AUTO 表示恢复自动判定。
+- APPROVE / REJECT 只处理待审核说明；有待审核说明时不能直接 ADJUST。过期 version 或重复处理返回 409，先刷新再操作。
+- 本人查询无对应名册时 members 可为空；管理员查全体。权限与统计细则见功能文档，不公开他人说明。
 
-## 6. 首页聚合接口
+## 9. 开发能力探测与已移除接口
 
-- `GET /api/home?top=10`
-- 返回示例：
-```json
-{
-  "totalUsers": 120,
-  "topUsers": [ ... ],
-  "todayProblem": [ ... ],
-  "todayPushProblem": { ... },
-  "dailySubmissionSummary": {
-    "todaySubmissions": 45,
-    "todayCheckedInUsers": 30
-  }
-}
-```
-- `todayProblem` 为今日多题位（easy/hard）列表。
-- `todayPushProblem` 为当日推送题目（无推送时为 null）。
-- `dailySubmissionSummary` 包含当日总提交数和打卡用户数。
+`GET /api/dev/status` 仍需登录：dev profile 返回 active=true，其他 profile 返回 active=false，正常返回而非 500。仅 dev 下存在 GET/POST /api/dev/time、POST /api/dev/time/reset、POST /api/dev/check-in；可调时间及跳过 CF 校验，**不具有生产管理接口的权限边界，不能在公网启用 dev**。
 
-## 7. 推题系统接口
-
-### 7.1 提交推题
-- `POST /api/push`
-- 请求体：
-```json
-{
-  "title": "Interesting Problem",
-  "link": "https://codeforces.com/...",
-  "description": "A nice dp problem"
-}
-```
-- `title` 和 `link` 必填，`description` 可选。
-
-### 7.2 查看推题池
-- `GET /api/push`
-- 普通用户仅看到已审批（APPROVED）的题目，管理员看到全部。
-
-### 7.3 提交推题解答
-- `POST /api/push/{id}/submit`
-- 请求体：
-```json
-{
-  "submissionLink": "https://codeforces.com/...",
-  "resultDescription": "Solved using dp"
-}
-```
-- `submissionLink` 必填。
-
-### 7.4 查看推题提交
-- `GET /api/push/{id}/submissions`
-- 管理员查看该题所有提交，普通用户仅看到自己的提交。
-
-### 7.5 管理员审批
-- `POST /api/admin/push/{id}/approve`
-
-### 7.6 管理员拒绝
-- `POST /api/admin/push/{id}/reject`
-
-### 7.7 管理员提升
-- `POST /api/admin/push/{id}/promote`
-- 将该题提升至推题队列最前。
-
-## 8. 个人与共享题单接口
-
-- `GET /api/problem-lists`：返回当前用户自己的题单，以及管理员发布的全站共享题单。
-- `GET /api/problem-lists/{id}`：读取自己的题单或共享题单详情。
-- `POST /api/problem-lists`：创建一级题单。
-- `PATCH /api/problem-lists/{id}`：题单创建者修改名称、简介和共享状态。
-- `DELETE /api/problem-lists/{id}`：题单创建者删除题单及其全部题目。
-- `POST /api/problem-lists/{id}/items`：向自己的题单添加题目。
-- `PATCH /api/problem-lists/{id}/items/{itemId}`：修改题目快照。
-- `DELETE /api/problem-lists/{id}/items/{itemId}`：从题单移除题目。
-
-创建/修改题单请求体：
-```json
-{
-  "name": "区间 DP",
-  "description": "经典模型与易错题",
-  "shared": false
-}
-```
-
-添加题目请求体：
-```json
-{
-  "link": "https://codeforces.com/problemset/problem/607/B",
-  "title": "",
-  "problemKey": "",
-  "rating": null,
-  "tags": "",
-  "note": "重点理解状态转移"
-}
-```
-
-- 题单只有一级，不允许嵌套子题单。
-- 普通用户的题单仅自己可见；`ADMIN`、`SUPER_ADMIN` 可将自己创建的题单设为 `shared=true`，供所有登录成员只读查看。
-- 只有创建者可以修改题单和其中的题目，包括管理员也不能修改他人的共享题单。
-- 每日题、自主练习结果及其历史记录复用 `POST /api/problem-lists/{id}/items` 快捷加入题单；前端也支持在弹窗内新建个人题单后立即加入。
-- 标准 Codeforces 链接会自动识别题号，并尝试从本地 `cf_problem` 补全标题、Rating 与标签；其他 OJ 链接需要填写标题。
-
-## 9. 角色管理接口
-
-### 9.1 查询角色列表
-- `GET /api/roles`
-- 权限：管理员及以上。
-- 返回基于枚举的角色列表：`[{name, code, description}]`。
-
-### 9.2 修改用户角色（超管理员）
-- `PUT /api/admin/users/{id}/role`
-- 权限：仅 SUPER_ADMIN。
-- 请求体：
-```json
-{
-  "role": "ADMIN"
-}
-```
-- 有效值：`USER`, `ADMIN`, `SUPER_ADMIN`。
-- 操作记录写入 `role_change_log` 表。
-
-### 9.3 现役队员训练看板
-- `GET /api/admin/training-dashboard`
-- 权限：`ADMIN`、`SUPER_ADMIN`。
-- 返回内容：现役人数、今日完成数、近 7 天活跃人数和打卡率、7 日趋势，以及每位现役队员的每日题、自主练习、积分和本地 Codeforces 快照摘要。
-- 该接口只读取数据库中的本地快照，不会在管理员打开看板时逐个请求 Codeforces。
-
-### 9.4 导出现役队员训练数据
-- `POST /api/admin/training-dashboard/export`
-- 权限：`ADMIN`、`SUPER_ADMIN`。
-- 请求体：
-```json
-{
-  "range": "WEEK",
-  "includeDaily": true,
-  "includeCodeforcesContests": true,
-  "includeAtCoderContests": true
-}
-```
-- `range` 可选 `WEEK`（最近 7 天）、`MONTH`（最近 30 天）、`ALL`（全部本地历史）。
-- 三个 `include*` 字段至少选择一个。接口返回 `.xlsx` 文件，其中始终包含“成员汇总”，并按选择增加“每日一题”“CF Rating比赛”“AtCoder ABC”工作表。
-- CF 比赛明细读取本地完整 Rating 历史；首次导出发现旧账号尚无历史时，会按成员自动调用 `user.rating` 补齐。成员在个人页刷新 Codeforces 资料时也会同步更新完整比赛历史。
-
-### 9.5 AtCoder 账号绑定
-- `POST /api/users/{id}/atcoder-binding/start`：本人提交 `{ "handle": "AtCoder用户名" }`，返回验证码和 10 分钟有效期。
-- 用户将验证码填写到 AtCoder 个人设置的 `Affiliation` 并保存。
-- `POST /api/users/{id}/atcoder-binding/finish`：本人完成验证并绑定；同一 AtCoder Handle 不能被多个站内账号绑定。
-
-### 9.6 AtCoder ABC 管理看板
-- `GET /api/admin/atcoder-abc?contestId=abc460`：查看指定或最近一场 ABC 的现役成员完成情况。
-- `POST /api/admin/atcoder-abc/refresh?contestId=abc460`：立即重新同步比赛结果。
-- `PATCH /api/admin/atcoder-abc/setting`：设置最低赛时 AC 数和赛后最终判定等待小时数。
-- `PATCH /api/admin/atcoder-abc/{contestId}/members/{userId}/exemption`：设置或取消单场豁免；设置豁免时必须填写原因。
-- 权限：`ADMIN`、`SUPER_ADMIN`。
-
-判定状态：`UPCOMING`（待比赛）、`PENDING`（等待同步）、`COMPLETED`（参赛且 AC 达标）、`PARTICIPATED`（参赛但 AC 未达标）、`ABSENT`（等待期结束后仍无参赛历史）、`UNBOUND`（未绑定）、`EXEMPT`（已豁免）、`DATA_ERROR`（数据源异常，自动重试）。
-
-## 10. 常见业务错误码
-- `400` 参数错误、提交不匹配题目、文件格式不支持等
-- `401` 未登录、token 无效或过期
-- `403` 权限不足（非管理员、非本人）
-- `404` 资源不存在
-- `409` 今日已打卡
-- `500` 服务端异常
-- `503` Codeforces 拉题失败
+独立签到/签文的 fun-check-ins 接口与自主练习提交校验已移除。平台每日题 check-in 是保留的训练校验功能，不应一起删除。

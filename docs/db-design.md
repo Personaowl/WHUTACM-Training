@@ -1,225 +1,124 @@
-# 库表设计
+# 数据库结构与数据流
 
-当前后端使用 MySQL 8 + InnoDB，核心表如下。
+[文档索引](README.md) · [接口参考](api-design.md) · [数据迁移](migration.md)
 
-> 数据库初始化由 `MySqlInitializer` 完成，Repository 使用 `JdbcTemplate` 和 MySQL 的 `ON DUPLICATE KEY UPDATE`。项目不迁移旧 SQLite 数据。
+按 2026-10-20 当前 [MySqlInitializer](../backend/src/main/java/com/whut/training/config/MySqlInitializer.java) 和 [Repository](../backend/src/main/java/com/whut/training/repository/) 核对。下文说明表用途、关键字段及约束；完整类型、默认值和建表 SQL 以初始化器为准，避免在文档复制一份容易失效的 DDL。
 
-## 1) `users`（用户表）
-| 字段名 | 类型 | 约束 | 说明 |
-| --- | --- | --- | --- |
-| id | BIGINT | PK AUTO_INCREMENT | 用户主键 |
-| username | VARCHAR(64) | NOT NULL, UNIQUE | 站内登录账号 |
-| email | TEXT | NULL | 邮箱 |
-| password | TEXT | NOT NULL | 密码（当前为明文，后续应改哈希） |
-| role | TEXT | NULL | `USER` / `ADMIN` / `SUPER_ADMIN` |
-| uid | INTEGER | NULL | 从 Codeforces 头像 URL 解析出的 uid |
-| codeforces_rating | INTEGER | NULL | CF 当前 rating |
-| max_rating | INTEGER | NULL | CF 历史最高 rating |
-| is_online | INTEGER | NULL | 在线状态（0/1） |
-| last_online_time_seconds | INTEGER | NULL | 最近在线时间（Unix 秒） |
-| avatar_url | TEXT | NULL | 头像地址 |
-| total_points | INTEGER | NOT NULL DEFAULT 0 | 用户总积分（每日一题累计） |
-| display_name | TEXT | NULL | 展示昵称 |
-| bio | TEXT | NULL | 个人简介 |
+## 1. 存储与初始化
 
-## 2) `cf_problem`（Codeforces 题库缓存）
-| 字段名 | 类型 | 约束 | 说明 |
-| --- | --- | --- | --- |
-| id | BIGINT | PK AUTO_INCREMENT | 主键 |
-| problem_key | TEXT | NOT NULL, UNIQUE | 题目键（`contestId-index`） |
-| contest_id | INTEGER | NOT NULL | 比赛 ID |
-| problem_index | TEXT | NOT NULL | 题号（A/B/C...） |
-| name | TEXT | NOT NULL | 题目标题 |
-| rating | INTEGER | NULL | 题目难度 |
-| tags | TEXT | NULL | 标签，逗号分隔 |
-| is_interactive | INTEGER | NOT NULL DEFAULT 0 | 是否交互题 |
-| source_contest_id | INTEGER | NULL | 来源 contest（非空通常需过滤） |
-| solved_count | INTEGER | NULL | 通过人数 |
-| source_url | TEXT | NOT NULL | 题目链接 |
-| last_synced_at | TEXT | NOT NULL | 最后同步时间 |
+- 业务库默认名 whut_training，可通过 MYSQL_URL 修改。当前使用 MySQL、InnoDB、utf8mb4_unicode_ci 和 JdbcTemplate，不使用 ORM、SQLite 或 Redis。
+- 推荐服务器 MySQL 8.0；开发用 compose.yaml 实际固定 mysql:8.4。迁移时优先同版本恢复演练，不能把二者当作相同版本或直接复制数据目录。
+- 启动创建缺失表，并执行代码中列出的补字段、补索引和修正 SQL；**CREATE TABLE IF NOT EXISTS 不代表自动对齐任意旧表结构**，当前没有 Flyway/Liquibase 的版本化迁移体系。
+- 当前初始化器创建下列 **22 张表**；旧库可能还有已废弃的表，数量不能作为迁移成功的唯一判据。
+- ID 通常为 BIGINT 自增，周记录及 ABC 关系表使用复合主键。代码未声明外键级联约束，关联完整性与删除流程由应用维护，不能假设删父记录会自动删子记录。
+- date / week_start 等业务日期为 VARCHAR(10) 的 YYYY-MM-DD；多数过程时间为 VARCHAR(64) 的 ISO 字符串；部分创建时间为 TIMESTAMP，外部平台时间为 BIGINT Unix 秒。恢复必须保留这些语义，业务周按 Asia/Shanghai 计算。
 
-## 3) `daily_problem`（每日题快照，兼容旧单题）
-| 字段名 | 类型 | 约束 | 说明 |
-| --- | --- | --- | --- |
-| id | BIGINT | PK AUTO_INCREMENT | 主键 |
-| date | TEXT | NOT NULL, UNIQUE | 日期（YYYY-MM-DD） |
-| problem_key | TEXT | NOT NULL | 题目键 |
-| contest_id | INTEGER | NOT NULL | 比赛 ID |
-| problem_index | TEXT | NOT NULL | 题号 |
-| name | TEXT | NOT NULL | 标题 |
-| rating | INTEGER | NULL | 难度 |
-| tags | TEXT | NULL | 标签 |
-| source_url | TEXT | NOT NULL | 链接 |
-| generated_at | TEXT | NOT NULL | 生成时间 |
-| generated_by | TEXT | NOT NULL | 生成来源（scheduler/api/admin） |
+## 2. 用户与认证（2 表）
 
-## 4) `daily_problem_slot`（每日多题位，当前主表）
-| 字段名 | 类型 | 约束 | 说明 |
-| --- | --- | --- | --- |
-| id | BIGINT | PK AUTO_INCREMENT | 主键 |
-| date | TEXT | NOT NULL | 日期 |
-| slot | TEXT | NOT NULL | 题位（easy/hard） |
-| problem_key | TEXT | NOT NULL | 题目键 |
-| contest_id | INTEGER | NOT NULL | 比赛 ID |
-| problem_index | TEXT | NOT NULL | 题号 |
-| name | TEXT | NOT NULL | 标题 |
-| rating | INTEGER | NULL | 难度 |
-| tags | TEXT | NULL | 标签 |
-| source_url | TEXT | NOT NULL | 链接 |
-| generated_at | TEXT | NOT NULL | 生成时间 |
-| generated_by | TEXT | NOT NULL | 生成来源 |
-| is_redrawn | INTEGER | NOT NULL DEFAULT 0 | 是否已被重抽 |
+### users
 
-索引：
-- `idx_daily_problem_slot_date` on `(date)`
+| 字段组 | 字段与含义 |
+| --- | --- |
+| 主键与账号 | id；username VARCHAR(64) 非空且唯一；email VARCHAR(255) 可空；password VARCHAR(255) 为 BCrypt 哈希，不是明文 |
+| 权限与身份 | role：USER / ADMIN / SUPER_ADMIN；member_type 默认 REGULAR，现役为 ACTIVE_TEAM，两者独立 |
+| 个人资料 | display_name VARCHAR(100)、real_name VARCHAR(100)、college / class_name VARCHAR(150)、bio TEXT；学校信息选填 |
+| 头像 | avatar_url LONGTEXT 保存自行上传的 data image；avatar_customized 标记；默认头像由前端展示，不保存 CF 外部图片地址 |
+| 平台积分与偏好 | total_points INT 默认 0；show_problem_tags 默认 1 |
+| CF 快照 | uid、codeforces_rating、max_rating、is_online、last_online_time_seconds；uid 是兼容 CF 信息，不是站内用户主键 |
+| CF 绑定 | codeforces_handle（唯一，可空）、pending_codeforces_handle、codeforces_binding_started_at_seconds |
+| AtCoder 绑定 | atcoder_handle（唯一，可空）、pending_atcoder_handle、atcoder_binding_token、atcoder_binding_started_at_seconds、atcoder_verified_at_seconds |
 
-## 5) `user_daily_status`（每日题打卡记录）
-| 字段名 | 类型 | 约束 | 说明 |
-| --- | --- | --- | --- |
-| id | BIGINT | PK AUTO_INCREMENT | 主键 |
-| user_id | INTEGER | NOT NULL | 用户 ID |
-| date | TEXT | NOT NULL | 日期 |
-| submission_id | INTEGER | NOT NULL | Codeforces 提交 ID |
-| verdict | TEXT | NOT NULL | 判题结果 |
-| checked_at | TEXT | NOT NULL | 校验时间 |
-| score | INTEGER | NOT NULL DEFAULT 1 | 得分（由题目 rating 决定） |
+关键索引包括 username / 两平台 Handle 的唯一索引，以及 total_points、member_type 索引。接口 DTO 的输入上限可能比存储字段更严格；不要仅按数据库长度推导注册参数。
 
-唯一约束：`(user_id, date)`，保证每日仅一次打卡记录（可被更高分覆盖）。
+初始化超级管理员仅在配置的用户名不存在时创建；修改环境变量密码不重设已有用户密码。注册不依赖 CF，头像上传也不依赖 CF；兼容 uid 仍可能从 CF 资料解析，不用于用户登录或头像加载。
 
-## 6) `user_practice_draw`（自主抽题记录，不计分）
-| 字段名 | 类型 | 约束 | 说明 |
-| --- | --- | --- | --- |
-| id | BIGINT | PK AUTO_INCREMENT | 抽题记录 ID |
-| user_id | INTEGER | NOT NULL | 用户 ID |
-| draw_date | TEXT | NOT NULL | 抽题日期 |
-| problem_key | TEXT | NOT NULL | 题目键 |
-| contest_id | INTEGER | NOT NULL | 比赛 ID |
-| problem_index | TEXT | NOT NULL | 题号 |
-| name | TEXT | NOT NULL | 标题 |
-| rating | INTEGER | NULL | 难度 |
-| tags | TEXT | NULL | 标签 |
-| source_url | TEXT | NOT NULL | 链接 |
-| drawn_at | TEXT | NOT NULL | 抽题时间 |
-| submission_id | INTEGER | NULL | 用户提交 ID |
-| verdict | TEXT | NULL | 判题结果 |
-| checked_at | TEXT | NULL | 校验时间 |
+新建/修改密码使用 BCrypt；极早期库若仍存明文，登录服务仅在成功登录该账号后升级为哈希，不能据此假定所有历史行早已升级。
 
-注：自主练习提交校验已停止使用；`submission_id`、`verdict`、`checked_at` 仅保留用于兼容已有历史数据，新抽题不会再写入这些字段。
+### auth_token_session
 
-## 7) `auth_token_session`（认证会话）
-| 字段名 | 类型 | 约束 | 说明 |
-| --- | --- | --- | --- |
-| id | BIGINT | PK AUTO_INCREMENT | 主键 |
-| user_id | INTEGER | NOT NULL | 用户 ID |
-| access_token | TEXT | NOT NULL, UNIQUE | 访问令牌 |
-| refresh_token | TEXT | NOT NULL, UNIQUE | 刷新令牌 |
-| access_expired_at_seconds | INTEGER | NOT NULL | access token 过期时间 |
-| refresh_expired_at_seconds | INTEGER | NOT NULL | refresh token 过期时间 |
-| created_at_seconds | INTEGER | NOT NULL | 创建时间 |
+- 字段：id、user_id、access_token、refresh_token、access_expired_at_seconds、refresh_expired_at_seconds、created_at_seconds。
+- 两个 token 列各有唯一约束；**新签发令牌保存 SHA-256 摘要**。Repository 为兼容旧会话仍会按原值/摘要查询，不意味着旧数据库中必然全已转换。
+- 过期时间为 Unix 秒，created_at_seconds 沿用首次登录时间。默认 Access 2 小时，会话总长 6 小时；刷新旋转令牌但不续长绝对期限。
+- 按用户与过期时间建立索引，定时清除过期会话。会话持久化，所以正常重启不会像内存 token 一样全部丢失；主动退出、超管重置密码或到期会失效。当前普通资料接口修改密码不会自动撤销其他会话，不能把两种操作混为一谈。
 
-## 8) `push_pool`（推题池）
-| 字段名 | 类型 | 约束 | 说明 |
-| --- | --- | --- | --- |
-| id | BIGINT | PK AUTO_INCREMENT | 主键 |
-| title | TEXT | NOT NULL | 题目标题 |
-| link | TEXT | NOT NULL | 题目链接 |
-| description | TEXT | NULL | 题目描述 |
-| submitter_id | INTEGER | NOT NULL | 提交者用户 ID |
-| status | TEXT | NOT NULL DEFAULT 'PENDING' | 状态：PENDING/APPROVED/PUBLISHED/REJECTED |
-| sort_order | INTEGER | NULL | 排序序号（越小越靠前） |
-| created_at | DATETIME | NULL | 创建时间 |
-| approved_by | INTEGER | NULL | 审批者用户 ID |
-| approved_at | DATETIME | NULL | 审批时间 |
+## 3. 题库、每日题与练习（6 表）
 
-索引：`idx_push_pool_status` on `(status)`
+| 表 | 主要字段 | 主键 / 唯一性与用途 |
+| --- | --- | --- |
+| cf_problem | id、problem_key、contest_id、problem_index、name、rating、tags、is_interactive、source_contest_id、solved_count、source_url、last_synced_at | problem_key 唯一，通常为 contestId-index；有 rating 和比赛题号索引；仅题目元数据，不存题面、测试数据、代码 |
+| daily_problem | id、date、problem_key、contest_id、problem_index、name、rating、tags、source_url、generated_at、generated_by | date 唯一；兼容旧单题快照和 regenerate 接口，仍被代码使用，不能当废表删除 |
+| daily_problem_slot | id、date、slot、problem_key、contest_id、problem_index、name、rating、tags、source_url、generated_at、generated_by、is_redrawn | date 索引；当前 Easy/Hard 主表，重抽将旧行 is_redrawn=1；没有 (date,slot) 唯一键，因为保留历次题目 |
+| user_daily_status | id、user_id、date、submission_id、verdict、checked_at、score | (user_id,date) 唯一；每日汇总最高分，不是每题一行；有 user_id 和 (date,user_id) 索引 |
+| user_daily_slot_status | id、user_id、date、slot、problem_key、submission_id、verdict、checked_at、score | (user_id,date,problem_key) 唯一；保留题级完成；有 (user_id,date)、problem_key、(date,user_id) 索引 |
+| user_practice_draw | id、user_id、draw_date、problem_key、contest_id、problem_index、name、rating、tags、source_url、drawn_at、submission_id、verdict、checked_at | (user_id,draw_date) 索引；仅个人抽题历史，后三个校验字段为旧兼容字段，不代表仍提供练习校验 |
 
-## 9) `push_submissions`（推题解答提交）
-| 字段名 | 类型 | 约束 | 说明 |
-| --- | --- | --- | --- |
-| id | BIGINT | PK AUTO_INCREMENT | 主键 |
-| push_id | INTEGER | NOT NULL | 推题 ID |
-| user_id | INTEGER | NOT NULL | 提交用户 ID |
-| submission_link | TEXT | NOT NULL | 解答链接 |
-| result_description | TEXT | NULL | 解答描述 |
-| created_at | DATETIME | NULL | 提交时间 |
+每日题计分数据流：
 
-## 10) `daily_push`（每日推送记录）
-| 字段名 | 类型 | 约束 | 说明 |
-| --- | --- | --- | --- |
-| id | BIGINT | PK AUTO_INCREMENT | 主键 |
-| date | TEXT | NOT NULL, UNIQUE | 日期 |
-| push_id | INTEGER | NOT NULL | 推题 ID |
+1. CF 外部校验在数据库事务之外完成。
+2. DailyCheckInRecorder 在短事务中锁 users 对应行，保存题级完成情况。
+3. 取已有当天分与全部题级完成分的最大值，更新 user_daily_status。
+4. 只将新旧当天分的正差额累加到 users.total_points，避免 Easy + Hard 重复累加。
+5. 历史页面仅呈现每个日期/题位的当前有效题，不把旧重抽行展开成更多每日题；旧完成数据保留用于积分与审计。
 
-## 11) `role_change_log`（角色变更审计日志）
-| 字段名 | 类型 | 约束 | 说明 |
-| --- | --- | --- | --- |
-| id | BIGINT | PK AUTO_INCREMENT | 主键 |
-| target_user_id | INTEGER | NOT NULL | 被修改用户 ID |
-| changed_by | INTEGER | NOT NULL | 操作者用户 ID |
-| from_role | TEXT | NULL | 原角色 |
-| to_role | TEXT | NOT NULL | 新角色 |
-| changed_at | DATETIME | NULL | 变更时间 |
+初始化器会将重复有效题位中较旧的行标为已重抽，保留最大 id 的有效行。当前有效题位约束由应用选择、锁和修正 SQL 维护，**不是数据库唯一约束**；多实例部署不能仅依赖进程锁保证它。
 
-## 12) `cf_rating_change`（Codeforces Rating 比赛历史）
-| 字段名 | 类型 | 约束 | 说明 |
-| --- | --- | --- | --- |
-| id | BIGINT | PK AUTO_INCREMENT | 主键 |
-| user_id | BIGINT | NOT NULL | 站内用户 ID |
-| contest_id | BIGINT | NOT NULL | Codeforces 比赛 ID |
-| contest_name | VARCHAR(255) | NULL | 比赛名称 |
-| contest_rank | INTEGER | NULL | 比赛排名 |
-| old_rating | INTEGER | NULL | 赛前 Rating |
-| new_rating | INTEGER | NULL | 赛后 Rating |
-| rating_change | INTEGER | NULL | Rating 变化 |
-| rating_update_time_seconds | BIGINT | NULL | Rating 更新时间（Unix 秒） |
-| contest_url | VARCHAR(500) | NULL | 比赛链接 |
+热力图读取 user_daily_status 的每日 score，色阶 0～4 按请求区间的最高分换算；不是独立签到记录，也不是 CF 全部提交数据。历史数据不会随默认 historyRetentionDays=0 自动删除。
 
-唯一约束：`(user_id, contest_id)`；成员刷新 Codeforces 资料时按用户替换同步完整历史。
+## 4. 推题与权限审计（4 表）
 
-## 13) `problem_list`（个人与共享题单）
-| 字段名 | 类型 | 约束 | 说明 |
-| --- | --- | --- | --- |
-| id | BIGINT | PK AUTO_INCREMENT | 题单 ID |
-| owner_user_id | BIGINT | NOT NULL | 创建者用户 ID |
-| name | VARCHAR(80) | NOT NULL | 一级题单名称 |
-| description | VARCHAR(500) | NULL | 题单简介 |
-| is_shared | TINYINT(1) | NOT NULL DEFAULT 0 | 是否全站共享，仅管理员可设为 1 |
-| created_at | TIMESTAMP | NOT NULL | 创建时间 |
-| updated_at | TIMESTAMP | NOT NULL | 最近更新时间 |
+| 表 | 主要字段 | 约束与用途 |
+| --- | --- | --- |
+| push_pool | id、title、link、description、submitter_id、status、sort_order、created_at、approved_by、approved_at | status 索引；PENDING / APPROVED / REJECTED / PUBLISHED |
+| push_submissions | id、push_id、user_id、submission_link、result_description、created_at | push_id、user_id 索引；用户解答记录，非 CF 自动判题结果 |
+| daily_push | id、date、push_id | date 唯一；记录每天发布的推题 |
+| role_change_log | id、target_user_id、changed_by、from_role、to_role、changed_at | target_user_id 索引；角色调整审计，不是通用所有管理操作日志 |
 
-## 14) `problem_list_item`（题单题目快照）
-| 字段名 | 类型 | 约束 | 说明 |
-| --- | --- | --- | --- |
-| id | BIGINT | PK AUTO_INCREMENT | 条目 ID |
-| list_id | BIGINT | NOT NULL | 所属题单 ID |
-| title | VARCHAR(255) | NOT NULL | 保存时的题目标题 |
-| link | VARCHAR(1000) | NOT NULL | 题目链接 |
-| note | VARCHAR(1000) | NULL | 创建者备注 |
-| problem_key | VARCHAR(64) | NULL | Codeforces 题目键 |
-| rating | INTEGER | NULL | 保存时的 Rating |
-| tags | TEXT | NULL | 保存时的标签快照 |
-| sort_order | INTEGER | NOT NULL DEFAULT 0 | 题单内顺序 |
-| created_at | TIMESTAMP | NOT NULL | 加入时间 |
+启动时会将已存在 daily_push 中但仍为 APPROVED 的推题修正为 PUBLISHED。完整迁移时应保留推题、解答和每日发布关系，不只复制题池。
 
-## 默认账号
+## 5. CF 统计（2 表）
 
-系统启动时仅自动创建 SUPER_ADMIN 账号（账密见 `application.yml` 的 `superAdmin` 配置项）。
-普通 ADMIN 账号需用户自行注册后由超管提升权限。
+| 表 | 主要字段 | 约束与用途 |
+| --- | --- | --- |
+| cf_profile_snapshot | user_id、codeforces_handle、payload_json LONGTEXT、synced_at | user_id 主键、Handle 索引；持久化统计快照，配合进程内缓存先读后后台刷新 |
+| cf_rating_change | id、user_id、contest_id、contest_name、contest_rank、old_rating、new_rating、rating_change、rating_update_time_seconds、contest_url | (user_id,contest_id) 唯一；时间和 (user_id,时间) 索引；支持 Rated 比赛查询和导出 |
 
-## 15) AtCoder 周赛跟踪
+CF 概览统计最多读取最近 10000 条提交，不能宣称覆盖任意大账号全部历史。每日题校验的“最近 30 条”是另一个独立查询，不影响上述概览上限。
 
-`users` 新增账号绑定字段：`atcoder_handle`、`pending_atcoder_handle`、`atcoder_binding_token`、`atcoder_binding_started_at_seconds`、`atcoder_verified_at_seconds`；`atcoder_handle` 建唯一索引。
+## 6. 一级题单（2 表）
 
-### `atcoder_contest`
-保存 ABC 场次、开始/结束时间、官方链接、成员名单冻结状态、同步状态和最近同步时间。
+| 表 | 主要字段 | 约束与用途 |
+| --- | --- | --- |
+| problem_list | id、owner_user_id、name VARCHAR(80)、description VARCHAR(500)、is_shared、created_at、updated_at | owner_user_id、(is_shared,updated_at) 索引；无 parent_id，不支持嵌套 |
+| problem_list_item | id、list_id、title VARCHAR(255)、link VARCHAR(1000)、note VARCHAR(1000)、problem_key、rating、tags、sort_order、created_at | (list_id,sort_order,id)、problem_key 索引；同题单重复链接由服务检查，未建唯一键 |
 
-### `atcoder_requirement_member`
-按比赛冻结当时的现役成员名单和 AtCoder Handle 快照，记录是否必需、是否豁免及豁免原因。唯一键为 `(contest_id, user_id)`。
+仅创建者可编辑/删除题单和条目；管理员可以把自己的题单共享给所有已登录成员。删除题单时由 Repository 删除关联条目，不依赖外键级联。
 
-### `atcoder_participation`
-保存成员的官方参赛记录、名次、Performance、Rating、赛时 AC 数、题目 ID、判定状态、数据源错误和检查时间。唯一键为 `(contest_id, user_id)`。
+## 7. 周训练与说明审核（2 表）
 
-### `atcoder_tracking_setting`
-单例配置表，保存最低赛时 AC 数、赛后最终判定等待小时数及最后修改管理员。
+| 表 | 主要字段 | 约束与用途 |
+| --- | --- | --- |
+| weekly_training_record | week_start、user_id、explanation、submitted_at、review_status、review_note、reviewed_by、reviewed_at、manual_status、version、created_at | (week_start,user_id) 主键；(user_id,week_start) 索引；保存当周名册、私人说明与人工覆盖 |
+| weekly_training_audit | id、week_start、user_id、actor_id、action、message、result_status、created_at | (week_start,user_id,id)、(user_id,week_start,id) 索引；界面查询最近 20 条操作历史 |
 
-现役名单在赛前保持动态更新，并在比赛开赛时冻结，避免漏掉赛前新转为现役的成员，也避免赛后身份变化改写历史要求。未绑定成员保留在快照中；之后完成绑定时查询会回退到当前已验证 Handle，使该场仍可继续同步。外部数据源失败使用 `DATA_ERROR`，不会直接写为 `ABSENT`。
+review_status 默认 NONE，可为 PENDING / APPROVED / REJECTED；manual_status 空值代表 AUTO，非空为 COMPLETED / EXEMPT / INCOMPLETE。version 用于并发审核冲突检查，保存时配合事务与行锁。
+
+每天与 ABC 的自动状态来自本地原始表聚合，不把整份每周报表重复落库。人工覆盖只改变该周最终状态，不改原始完成记录或积分。名册捕获后即使成员退役仍可查该周；启用前未记录的历史身份无法完整还原。
+
+## 8. ABC 跟踪（4 表）
+
+| 表 | 主要字段 | 约束与用途 |
+| --- | --- | --- |
+| atcoder_contest | contest_id、name、start_time_seconds、end_time_seconds、contest_url、member_snapshot_frozen、sync_status、discovered_at、last_sync_at | contest_id 主键；开赛时间、同步状态索引 |
+| atcoder_requirement_member | contest_id、user_id、atcoder_handle_snapshot、required、exempted、exemption_reason、frozen_at | (contest_id,user_id) 主键、user_id 索引；参赛要求与豁免名册 |
+| atcoder_participation | contest_id、user_id、participated、contest_rank、performance、is_rated、old_rating、new_rating、ac_count、solved_problem_ids、compliance_status、source_error、checked_at | (contest_id,user_id) 主键；用户和完成状态索引 |
+| atcoder_tracking_setting | id、minimum_ac_count、grace_hours、updated_at、updated_by | 单例 id=1，默认至少 AC 1 题、宽限 24 小时 |
+
+同步状态与成员完成状态不是同一枚举：场次有 UPCOMING / SYNCED / FINALIZED；成员有 UNBOUND / UPCOMING / PENDING / COMPLETED / PARTICIPATED / ABSENT / DATA_ERROR，豁免从名册叠加。比赛开赛后首次处理时冻结现役名单；服务停机期间无法精确还原真实开赛瞬间名单。
+
+## 9. 兼容数据与迁移边界
+
+- 旧 user_fun_check_in 表若存在只作历史存档；当前不创建、不读写，也不会自动删除。不应将它写为现行签到模块。
+- daily_problem 与练习历史中的旧校验字段仍有兼容意义，不因页面删减就直接删表/列。
+- 库内头像、说明、会话摘要和所有业务数据都随完整业务库备份迁移；没有单独的头像 uploads 目录。备份包含私人信息与认证材料，须限制权限、异机保存。
+- 进程内校验任务、请求队列和缓存不在数据库里，重启/迁移后重建。
+- 不要在生产手工按本文重建表，也不要清库“修复结构”。准确操作见 [部署](deployment.md) 与 [停写迁移](migration.md)；上线前备份，在演练库验证目标版本的初始化修正。
