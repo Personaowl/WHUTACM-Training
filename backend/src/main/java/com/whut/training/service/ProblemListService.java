@@ -39,6 +39,7 @@ public class ProblemListService implements ProblemListUseCase {
     }
 
     public List<ProblemListSummary> listVisible(User currentUser) {
+        repository.ensureCommunity(requireUser(currentUser).getId());
         return repository.findVisible(requireUser(currentUser).getId());
     }
 
@@ -52,6 +53,7 @@ public class ProblemListService implements ProblemListUseCase {
     public ProblemListDetail create(User currentUser, ProblemListSaveRequest request) {
         User user = requireUser(currentUser);
         boolean shared = requestedShared(request);
+        if (shared && !isAdmin(user)) throw new BusinessException(403, "仅管理员可以发布共享题单");
         Long id = repository.createList(
                 user.getId(),
                 request.name().trim(),
@@ -68,6 +70,7 @@ public class ProblemListService implements ProblemListUseCase {
         repository.lockList(listId);
         ProblemListSummary existing = requireOwner(listId, user);
         boolean shared = requestedShared(request);
+        if (shared && !existing.shared() && !isAdmin(user)) throw new BusinessException(403, "仅管理员可以发布共享题单");
         if (existing.shared() && !shared && repository.hasOtherContributors(listId, user.getId())) {
             throw new BusinessException(409, "该共享题单已有其他成员贡献，不能改为私有");
         }
@@ -96,7 +99,8 @@ public class ProblemListService implements ProblemListUseCase {
     public ProblemListItemView addItem(User currentUser, Long listId, ProblemListItemRequest request) {
         User user = requireUser(currentUser);
         repository.lockList(listId);
-        requireVisible(listId, user);
+        ProblemListSummary list = requireVisible(listId, user);
+        if (!list.owner() && !list.collaborative()) throw new BusinessException(403, "该题单仅供阅读");
         ResolvedProblem problem = resolveProblem(request);
         if (repository.itemLinkExists(listId, problem.link(), null)) {
             throw new BusinessException(409, "该题目已经在当前题单中");
@@ -188,6 +192,7 @@ public class ProblemListService implements ProblemListUseCase {
     private ProblemListSummary requireOwner(Long listId, User user) {
         ProblemListSummary list = repository.findById(listId, user.getId())
                 .orElseThrow(() -> new BusinessException(404, "problem list not found"));
+        if (list.collaborative()) throw new BusinessException(403, "公共题单不能修改或删除");
         if (!list.owner()) throw new BusinessException(403, "only the owner can modify this problem list");
         return list;
     }
@@ -201,10 +206,16 @@ public class ProblemListService implements ProblemListUseCase {
         ProblemListSummary list = requireVisible(listId, user);
         ProblemListItemView item = repository.findItem(listId, itemId)
                 .orElseThrow(() -> new BusinessException(404, "problem list item not found"));
-        boolean moderator = list.shared() && (user.getRole() == UserRole.ADMIN || user.getRole() == UserRole.SUPER_ADMIN);
-        if (!list.owner() && !moderator && !user.getId().equals(item.addedBy())) {
+        boolean allowed = list.collaborative()
+                ? isAdmin(user) || user.getId().equals(item.addedBy())
+                : list.owner();
+        if (!allowed) {
             throw new BusinessException(403, "只能修改自己添加的题目");
         }
+    }
+
+    private static boolean isAdmin(User user) {
+        return user.getRole() == UserRole.ADMIN || user.getRole() == UserRole.SUPER_ADMIN;
     }
 
     private static User requireUser(User user) {

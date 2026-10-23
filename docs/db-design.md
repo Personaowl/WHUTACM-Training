@@ -102,7 +102,7 @@ CF 概览统计最多读取最近 10000 条提交，不能宣称覆盖任意大�
 | problem_list | id、owner_user_id、name VARCHAR(80)、description VARCHAR(500)、is_shared、created_at、updated_at | owner_user_id、(is_shared,updated_at) 索引；无 parent_id，不支持嵌套 |
 | problem_list_item | id、list_id、added_by BIGINT、title VARCHAR(255)、link VARCHAR(1000)、note VARCHAR(1000)、problem_key、rating、tags、sort_order、created_at | (list_id,sort_order,id)、problem_key 索引；同题单重复链接由服务检查，未建唯一键 |
 
-所有成员可创建共享题单并添加题目；added_by 记录贡献者。升级会给旧条目补为题单创建者。条目由贡献者、题单创建者或共享题单管理员维护；题单元数据与整单删除仅创建者可操作，有他人贡献不能改为私有。写操作在事务中锁题单行后检查重复链接与权限。删除题单时由 Repository 删除关联条目，不依赖外键级联。
+problem_list 新增可空唯一列 community_key。值 community 的唯一系统题单供全员投稿，首次读取列表时 INSERT IGNORE 创建，其 owner_user_id 仅为存储兼容字段、不授予该用户额外权限；元数据不可修改/删除。其他旧题单该列均为 NULL，is_shared=1 只表示只读分享，只有创建者维护。added_by 仅在公共投稿中授予作者修改权限；管理员可维护公共投稿但不能修改他人只读分享。写操作在事务中锁题单行后检查权限及重复链接。升级不删除/搬迁旧题目，完整备份即可迁移。
 
 ## 7. 周训练与说明审核（2 表）
 

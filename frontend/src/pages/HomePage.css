@@ -15,10 +15,10 @@
   gap: 24px;
   padding: 28px 30px 0;
   overflow: hidden;
-  background: linear-gradient(110deg, #f0f5f9, #fff 56%);
-  border: 1px solid var(--line);
+  background: #fff;
+  border: 1px solid #dfe5e9;
   border-radius: 22px;
-  box-shadow: 0 6px 24px rgb(19 34 56 / 3%);
+  box-shadow: 0 5px 22px #1a334405;
 }
 
 .home-profile-identity {

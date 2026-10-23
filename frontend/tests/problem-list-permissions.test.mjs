@@ -9,7 +9,7 @@ test("personal and shared pages select their own lists", () => {
 });
 
 test("shared contributors edit only their own problems; owner and admin moderate", () => {
-  const list = { owner: false, shared: true };
+  const list = { owner: false, shared: true, collaborative: true };
   assert.equal(canEditProblem(list, { addedBy: 2 }, 2), true);
   assert.equal(canEditProblem(list, { addedBy: 3 }, 2), false);
   assert.equal(canEditProblem(list, { addedBy: 3 }, 2, true), true);
@@ -17,4 +17,10 @@ test("shared contributors edit only their own problems; owner and admin moderate
   assert.equal(canEditProblem({ owner: false, shared: false }, { addedBy: 2 }, 2, true), false);
   assert.equal(canEditProblem(list, { addedBy: null }, 2), false);
   assert.equal(canEditProblem(list, { addedBy: 2 }, null), false);
+});
+
+test("published lists stay read-only even for admins and past contributors", () => {
+  const list = { owner: false, shared: true, collaborative: false };
+  assert.equal(canEditProblem(list, { addedBy: 2 }, 2, true), false);
+  assert.equal(canEditProblem(list, { addedBy: 2 }, 2), false);
 });

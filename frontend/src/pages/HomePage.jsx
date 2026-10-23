@@ -113,7 +113,6 @@ export default function HomePage() {
         <div className="home-profile-identity">
           <UserAvatar user={user} size={76} />
           <div>
-            <span className="home-profile-eyebrow">我的训练空间</span>
             <h1>{user?.displayName || user?.username || "训练者"}</h1>
             <p title={user?.username}>@{user?.username || "guest"}</p>
           </div>
@@ -160,7 +159,7 @@ export default function HomePage() {
           ) : (
             <div className="home-empty-state" role="status">
               {data?.problemPoolInitializing ? (
-                <><LoaderCircle className="animate-spin" size={22} aria-hidden="true" /><p>题库初始化中，今日题目即将就绪</p></>
+                <><LoaderCircle className="animate-spin" size={22} aria-hidden="true" /><p>正在初始化题库</p></>
               ) : (
                 <><Code2 size={26} aria-hidden="true" /><p>今日题目尚未生成</p><Link to="/practice">先去自主练习 <ArrowRight size={15} aria-hidden="true" /></Link></>
               )}
@@ -179,9 +178,9 @@ export default function HomePage() {
             </section>
           )}
           <nav className="home-shortcuts" aria-label="训练快捷入口">
-            <Link to="/upsolve"><ListTodo size={19} aria-hidden="true" /><span>补题计划<small>记录待补题目，逐题完成</small></span><ArrowUpRight size={16} aria-hidden="true" /></Link>
-            <Link to="/weekly-training"><CalendarDays size={19} aria-hidden="true" /><span>我的周训练<small>回顾本周完成情况</small></span><ArrowUpRight size={16} aria-hidden="true" /></Link>
-            <Link to="/practice"><Code2 size={19} aria-hidden="true" /><span>自主练习<small>按难度挑选下一题</small></span><ArrowUpRight size={16} aria-hidden="true" /></Link>
+            <Link to="/upsolve"><ListTodo size={19} aria-hidden="true" /><span>补题计划</span><ArrowUpRight size={16} aria-hidden="true" /></Link>
+            <Link to="/weekly-training"><CalendarDays size={19} aria-hidden="true" /><span>我的周训练</span><ArrowUpRight size={16} aria-hidden="true" /></Link>
+            <Link to="/practice"><Code2 size={19} aria-hidden="true" /><span>自主练习</span><ArrowUpRight size={16} aria-hidden="true" /></Link>
           </nav>
         </aside>
       </div>
@@ -203,12 +202,11 @@ export default function HomePage() {
 
       <div className="render-lazy home-community-grid">
           <section className="home-section home-shared-section">
-            <SectionHeading title="共享题单" to="/shared-problem-lists" linkText="浏览题单" />
-            <div className="home-empty-state">
-              <Send size={26} aria-hidden="true" />
-              <p>把值得一做的题目分享给训练伙伴</p>
-              <Link to="/shared-problem-lists">查看与添加题目 <ArrowRight size={15} aria-hidden="true" /></Link>
-            </div>
+            <SectionHeading title="题单" />
+            <nav className="home-library-links" aria-label="题单入口">
+              <Link to="/problem-lists"><BookOpen size={19} /><span>我的题单</span><ArrowUpRight size={16} /></Link>
+              <Link to="/shared-problem-lists"><Send size={19} /><span>共享题单</span><ArrowUpRight size={16} /></Link>
+            </nav>
           </section>
 
           <section className="home-section home-leaderboard-section">

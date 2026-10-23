@@ -23,8 +23,9 @@ import {
   updateProblemList,
   updateProblemListItem,
 } from "../api/problemList";
-import { canEditProblem, visibleProblemLists } from "../utils/problemListPermissions";
+import { canAddProblem, canEditProblem, visibleProblemLists } from "../utils/problemListPermissions";
 import EmptyState from "../components/ui/EmptyState";
+import AddToProblemListButton from "../components/ui/AddToProblemListButton";
 
 const EMPTY_LIST_FORM = { name: "", description: "", shared: false };
 const EMPTY_PROBLEM_FORM = {
@@ -53,8 +54,8 @@ export default function ProblemListsPage({ sharedOnly = false }) {
   const [editingProblem, setEditingProblem] = useState(null);
   const [problemForm, setProblemForm] = useState(EMPTY_PROBLEM_FORM);
 
-  const myLists = useMemo(() => lists.filter((item) => item.owner), [lists]);
-  const sharedLists = useMemo(() => lists.filter((item) => item.shared && !item.owner), [lists]);
+  const myLists = useMemo(() => lists.filter((item) => sharedOnly ? item.collaborative : item.owner), [lists, sharedOnly]);
+  const sharedLists = useMemo(() => lists.filter((item) => item.shared && !item.collaborative), [lists]);
 
   async function loadLists(preferredId) {
     const response = await listProblemLists();
@@ -190,7 +191,7 @@ export default function ProblemListsPage({ sharedOnly = false }) {
 
   async function submitProblem(event) {
     event.preventDefault();
-    if (!detail || (!detail.list.owner && !detail.list.shared)) return;
+    if (!detail || !canAddProblem(detail.list)) return;
     setSaving(true);
     setError("");
     const payload = {
@@ -231,9 +232,9 @@ export default function ProblemListsPage({ sharedOnly = false }) {
         <div>
           <h1 className="m-0 text-2xl font-bold tracking-tight text-text-primary">{sharedOnly ? "共享题单" : "我的题单"}</h1>
         </div>
-        <button type="button" className="button-primary inline-flex items-center gap-2" onClick={openCreateList}>
+        {(!sharedOnly || isAdmin) && <button type="button" className="button-primary inline-flex items-center gap-2" onClick={openCreateList}>
           <FolderPlus size={16} />创建题单
-        </button>
+        </button>}
       </header>
 
       {error && (
@@ -244,9 +245,9 @@ export default function ProblemListsPage({ sharedOnly = false }) {
       )}
 
       <section className="grid gap-3 sm:grid-cols-3">
-        <StatCard label="我的题单" value={myLists.length} icon={FolderOpen} />
-        <StatCard label="我的题目" value={myLists.reduce((sum, item) => sum + item.problemCount, 0)} icon={FileText} />
-        <StatCard label="共享题单" value={lists.filter((item) => item.shared).length} icon={Globe2} />
+        <StatCard label={sharedOnly ? "公共投稿" : "我的题单"} value={sharedOnly ? myLists.reduce((sum,item)=>sum+item.problemCount,0) : myLists.length} icon={FolderOpen} />
+        <StatCard label={sharedOnly ? "专题题单" : "收藏题目"} value={sharedOnly ? sharedLists.length : myLists.reduce((sum, item) => sum + item.problemCount, 0)} icon={FileText} />
+        <StatCard label="题目总数" value={lists.reduce((sum,item)=>sum+item.problemCount,0)} icon={Globe2} />
       </section>
 
       <section className="grid min-h-[560px] gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
@@ -258,7 +259,7 @@ export default function ProblemListsPage({ sharedOnly = false }) {
           ) : (
             <>
               <ListGroup
-                title="我的题单"
+                title={sharedOnly ? "公共题单" : "我的题单"}
                 items={myLists}
                 selectedId={selectedId}
                 onSelect={setSelectedId}
@@ -267,7 +268,7 @@ export default function ProblemListsPage({ sharedOnly = false }) {
               {sharedOnly && <>
               <div className="my-3 border-t border-border" />
               <ListGroup
-                title="成员共享"
+                title="专题分享 · 只读"
                 items={sharedLists}
                 selectedId={selectedId}
                 onSelect={setSelectedId}
@@ -292,14 +293,14 @@ export default function ProblemListsPage({ sharedOnly = false }) {
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="m-0 text-xl font-bold text-text-primary">{detail.list.name}</h2>
-                      <VisibilityBadge shared={detail.list.shared} />
+                      <VisibilityBadge shared={detail.list.shared} collaborative={detail.list.collaborative} />
                     </div>
                     {detail.list.description && <p className="m-0 mt-2 max-w-3xl text-sm leading-6 text-text-secondary">{detail.list.description}</p>}
                     <p className="m-0 mt-3 text-[11px] text-text-secondary">
-                      创建者：{detail.list.ownerDisplayName || detail.list.ownerUsername} · {detail.list.problemCount} 道题
+                      {!detail.list.collaborative && `${detail.list.ownerDisplayName || detail.list.ownerUsername} · `}{detail.list.problemCount} 道题
                     </p>
                   </div>
-                  {detail.list.owner && (
+                  {detail.list.owner && !detail.list.collaborative && (
                     <div className="flex items-center gap-2">
                       <button type="button" onClick={openEditList} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-border bg-white px-3 text-xs font-bold hover:bg-bg-secondary">
                         <Pencil size={14} />编辑
@@ -315,7 +316,7 @@ export default function ProblemListsPage({ sharedOnly = false }) {
               <div className="p-5 sm:p-6">
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <h3 className="m-0 text-base font-bold text-text-primary">题目</h3>
-                  {(detail.list.owner || detail.list.shared) && (
+                  {canAddProblem(detail.list) && (
                     <button type="button" onClick={openAddProblem} className="button-primary inline-flex items-center gap-2">
                       <Plus size={15} />添加题目
                     </button>
@@ -355,6 +356,7 @@ export default function ProblemListsPage({ sharedOnly = false }) {
         form={listForm}
         setForm={setListForm}
         sharedOnly={sharedOnly}
+        isAdmin={isAdmin}
         saving={saving}
         error={error}
         onSubmit={submitList}
@@ -404,7 +406,7 @@ function ListGroup({ title, items, selectedId, onSelect, empty }) {
                 <strong className="truncate text-sm text-text-primary">{item.name}</strong>
                 {item.shared ? <Globe2 size={13} className="shrink-0 text-[#2b6f9e]" /> : <LockKeyhole size={13} className="shrink-0 text-text-secondary" />}
               </span>
-              <small className="mt-1 block truncate text-[10px] text-text-secondary">{item.problemCount} 道题 · {item.owner ? "我创建的" : item.ownerDisplayName || item.ownerUsername}</small>
+              <small className="mt-1 block truncate text-xs text-text-secondary">{item.problemCount} 道题{!item.collaborative && ` · ${item.owner ? "我创建的" : item.ownerDisplayName || item.ownerUsername}`}</small>
             </button>
           ))}
         </div>
@@ -413,9 +415,10 @@ function ListGroup({ title, items, selectedId, onSelect, empty }) {
   );
 }
 
-function VisibilityBadge({ shared }) {
+function VisibilityBadge({ shared, collaborative }) {
+  if (collaborative) return <span className="list-mode-badge">公共投稿</span>;
   return shared ? (
-    <span className="inline-flex items-center gap-1 rounded-full bg-[#e7f3fb] px-2 py-1 text-[10px] font-bold text-[#245b8f]"><Globe2 size={11} />全站共享</span>
+    <span className="inline-flex items-center gap-1 rounded-full bg-[#e7f3fb] px-2 py-1 text-[10px] font-bold text-[#245b8f]"><Globe2 size={11} />只读分享</span>
   ) : (
     <span className="inline-flex items-center gap-1 rounded-full bg-bg-secondary px-2 py-1 text-[10px] font-bold text-text-secondary"><LockKeyhole size={11} />仅自己</span>
   );
@@ -434,11 +437,11 @@ function ProblemRow({ problem, index, editable, onEdit, onDelete }) {
                 <span className="truncate">{problem.title}</span><ExternalLink size={13} className="shrink-0" />
               </a>
               <div className="mt-1 flex flex-wrap items-center gap-2 text-[10px] text-text-secondary">
-                {problem.addedBy != null && <span>添加者：成员 #{problem.addedBy}</span>}
                 {problem.problemKey && <span className="font-mono font-bold">{problem.problemKey}</span>}
                 {problem.rating != null && <span>Rating {problem.rating}</span>}
               </div>
             </div>
+            <AddToProblemListButton problem={problem} compact initialNote={problem.note || ""} />
             {editable && (
               <div className="flex shrink-0 items-center gap-1">
                 <button type="button" onClick={onEdit} className="rounded-lg p-2 text-text-secondary hover:bg-white hover:text-text-primary" aria-label="编辑题目"><Pencil size={14} /></button>
@@ -471,16 +474,16 @@ function DialogFrame({ open, onOpenChange, title, description, children }) {
   );
 }
 
-function ListEditorDialog({ open, onOpenChange, editing, form, setForm, sharedOnly, saving, error, onSubmit }) {
+function ListEditorDialog({ open, onOpenChange, editing, form, setForm, sharedOnly, isAdmin, saving, error, onSubmit }) {
   return (
     <DialogFrame open={open} onOpenChange={onOpenChange} title={editing ? "编辑题单" : "创建题单"} description="题单就是一级分类，例如“区间 DP”或“暑假补题”。">
       <form className="mt-5 stack-y-4" onSubmit={onSubmit}>
         <Field label="题单名称"><input required maxLength={80} value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} placeholder="例如：区间 DP" className="form-input" /></Field>
         <Field label="简介（可选）"><textarea maxLength={500} rows={3} value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} placeholder="记录这个题单的训练目标或使用说明" className="form-input resize-none" /></Field>
-        {!sharedOnly && (
+        {!sharedOnly && isAdmin && (
           <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-bg-secondary p-3">
             <input type="checkbox" checked={form.shared} onChange={(event) => setForm((current) => ({ ...current, shared: event.target.checked }))} className="mt-0.5 h-4 w-4 accent-[#17324f]" />
-            <span><strong className="block text-sm text-text-primary">共享给所有成员</strong><small className="mt-1 block text-[11px] leading-4 text-text-secondary">所有登录成员都可添加题目；贡献者可修改自己的题目，创建者及管理员可维护。</small></span>
+            <span><strong className="block text-sm text-text-primary">发布为只读题单</strong></span>
           </label>
         )}
         {error && <p role="alert" className="text-sm text-error">{error}</p>}

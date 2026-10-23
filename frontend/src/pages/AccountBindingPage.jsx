@@ -177,7 +177,6 @@ export default function AccountBindingPage() {
       <header className="page-heading">
         <div>
           <h1 className="page-title">账号绑定</h1>
-          <p>集中管理竞赛平台身份；各平台已接入的训练功能以卡片说明为准。</p>
         </div>
         <div className="binding-summary" aria-label="绑定状态">
           <ShieldCheck size={19} />
@@ -196,7 +195,7 @@ export default function AccountBindingPage() {
           message={cfMessage}
           success={cfMessage.includes("成功") || cfMessage.includes("已开始")}
         >
-          <p className="binding-card-description">用于校验每日一题提交，并同步 Rating、比赛和做题数据。</p>
+          <p className="binding-card-description">每日题校验 · Rating · 比赛记录</p>
           <BindingInput
             value={cfHandle}
             onChange={setCfHandle}
@@ -225,7 +224,7 @@ export default function AccountBindingPage() {
           message={atCoderMessage}
           success={atCoderMessage.includes("成功") || atCoderMessage.includes("已开始")}
         >
-          <p className="binding-card-description">用于统计现役队员每周 ABC 的参赛状态与 AC 完成情况。</p>
+          <p className="binding-card-description">每周 ABC 参赛及 AC 记录</p>
           <BindingInput
             value={atCoderHandle}
             onChange={setAtCoderHandle}

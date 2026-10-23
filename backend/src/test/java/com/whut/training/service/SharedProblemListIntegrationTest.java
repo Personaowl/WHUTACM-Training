@@ -35,12 +35,15 @@ class SharedProblemListIntegrationTest {
         assertThatThrownBy(action::run).isInstanceOfSatisfying(BusinessException.class,
                 ex -> assertThat(ex.getCode()).isEqualTo(403));
     }
+    private Long community(User user) {
+        return service.listVisible(user).stream().filter(ProblemListSummary::collaborative).findFirst().orElseThrow().id();
+    }
 
     @Test void membersContributeWithoutReviewAndCannotEditOthersContributions() {
         User owner = user("shared-owner", UserRole.USER);
         User author = user("shared-author", UserRole.USER);
         User viewer = user("shared-viewer", UserRole.USER);
-        Long id = service.create(owner, new ProblemListSaveRequest("共享", null, true)).list().id();
+        Long id = community(owner);
         var item = service.addItem(author, id, problem("one"));
         assertThat(item.addedBy()).isEqualTo(author.getId());
         assertThat(service.get(viewer, id).problems()).hasSize(1);
@@ -52,7 +55,7 @@ class SharedProblemListIntegrationTest {
         assertThatThrownBy(() -> service.addItem(viewer, id, problem("edited")))
                 .isInstanceOfSatisfying(BusinessException.class, ex -> assertThat(ex.getCode()).isEqualTo(409));
         assertThatThrownBy(() -> service.update(owner, id, new ProblemListSaveRequest("私有", null, false)))
-                .isInstanceOfSatisfying(BusinessException.class, ex -> assertThat(ex.getCode()).isEqualTo(409));
+                .isInstanceOfSatisfying(BusinessException.class, ex -> assertThat(ex.getCode()).isEqualTo(403));
         service.deleteItem(author, id, item.id());
         assertThat(service.get(viewer, id).problems()).isEmpty();
     }
@@ -61,9 +64,9 @@ class SharedProblemListIntegrationTest {
         User owner = user("moderation-owner", UserRole.USER);
         User author = user("moderation-author", UserRole.USER);
         User admin = user("moderation-admin", UserRole.ADMIN);
-        Long id = service.create(owner, new ProblemListSaveRequest("公共", null, true)).list().id();
+        Long id = community(owner);
         var item = service.addItem(author, id, problem("two"));
-        service.updateItem(owner, id, item.id(), problem("owner-edit"));
+        forbidden(() -> service.updateItem(owner, id, item.id(), problem("owner-edit")));
         service.updateItem(admin, id, item.id(), problem("admin-edit"));
         service.deleteItem(admin, id, item.id());
         Long privateId = service.create(owner, new ProblemListSaveRequest("私人", null, false)).list().id();
@@ -75,7 +78,7 @@ class SharedProblemListIntegrationTest {
     @Test void authenticatedHttpApiSupportsCollaborationAndOldPushEndpointsAreGone() throws Exception {
         User owner = user("api-list-owner", UserRole.USER);
         User author = user("api-list-author", UserRole.USER);
-        Long id = service.create(owner, new ProblemListSaveRequest("HTTP共享", null, true)).list().id();
+        Long id = community(owner);
         long now = System.currentTimeMillis() / 1000;
         sessions.save(new AuthTokenSessionRepository.AuthTokenSession(author.getId(),
                 "shared-api-access", "shared-api-refresh", now + 3600, now + 7200, now));
@@ -90,7 +93,7 @@ class SharedProblemListIntegrationTest {
 
     @Test void linksRejectScriptAndEmbeddedCredentials() {
         User owner = user("links-owner", UserRole.USER);
-        Long id = service.create(owner, new ProblemListSaveRequest("链接", null, true)).list().id();
+        Long id = community(owner);
         for (String link : new String[]{"javascript:alert(1)", "https://user:pass@example.com/a"}) {
             assertThatThrownBy(() -> service.addItem(owner, id,
                     new ProblemListItemRequest("unsafe", link, null, null, null, null)))

@@ -92,14 +92,14 @@ CF 绑定窗口为 120 秒，要求验证窗口内向 CF 1A 提交 Compilation E
 
 ## 4. 题单
 
-前缀 `/api/problem-lists`，均需登录。可读自己的题单及所有共享题单。任意登录成员可创建共享题单并向共享题单加题；题单名称/简介/删除仍仅限创建者，题目由添加者、题单创建者或管理员（仅共享题单）维护。
+前缀 `/api/problem-lists`，均需登录。可读自己的题单及所有共享题单。摘要字段 collaborative=true 表示全站唯一公共投稿题单（系统创建），允许全员加题，作者及管理员维护投稿；不能修改元数据或删除整单。shared=true、collaborative=false 为只读分享，仅创建者可以写入。发布新只读题单仅限管理员。
 
 | 方法与路径 | 请求 / 返回 |
 | --- | --- |
 | GET /api/problem-lists | 可见题单摘要列表 |
 | GET /api/problem-lists/{id} | 题单摘要与条目 |
 | POST /api/problem-lists | name（必填，最多 80）、description（最多 500）、shared |
-| PATCH /api/problem-lists/{id} | 同创建字段；shared=true 对所有登录成员开放 |
+| PATCH /api/problem-lists/{id} | 同创建字段；仅创建者；公共题单不可修改；新发布 shared=true 需管理员 |
 | DELETE /api/problem-lists/{id} | 删除题单及条目 |
 | POST /api/problem-lists/{id}/items | 添加条目 |
 | PATCH /api/problem-lists/{id}/items/{itemId} | 更新条目 |

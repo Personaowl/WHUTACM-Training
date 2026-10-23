@@ -27,6 +27,13 @@ public class ProblemListRepository {
                 (rs, rowNum) -> rs.getLong(1), listId);
     }
 
+    public void ensureCommunity(Long userId) {
+        jdbcTemplate.update("""
+                INSERT IGNORE INTO problem_list(owner_user_id,name,is_shared,community_key)
+                VALUES (?, '公共题单', 1, 'community')
+                """, userId);
+    }
+
     public boolean hasOtherContributors(Long listId, Long ownerId) {
         Integer count = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM problem_list_item WHERE list_id = ? AND added_by <> ?",
@@ -37,16 +44,17 @@ public class ProblemListRepository {
     public List<ProblemListSummary> findVisible(Long viewerUserId) {
         return jdbcTemplate.query(
                 """
-                SELECT l.id, l.owner_user_id, l.name, l.description, l.is_shared,
+                SELECT l.id, l.owner_user_id, l.name, l.description, l.is_shared, l.community_key,
                        l.created_at, l.updated_at, u.username, u.display_name,
                        COUNT(i.id) AS problem_count
                 FROM problem_list l
                 INNER JOIN users u ON u.id = l.owner_user_id
                 LEFT JOIN problem_list_item i ON i.list_id = l.id
                 WHERE l.owner_user_id = ? OR l.is_shared = 1
-                GROUP BY l.id, l.owner_user_id, l.name, l.description, l.is_shared,
+                GROUP BY l.id, l.owner_user_id, l.name, l.description, l.is_shared, l.community_key,
                          l.created_at, l.updated_at, u.username, u.display_name
-                ORDER BY CASE WHEN l.owner_user_id = ? THEN 0 ELSE 1 END,
+                ORDER BY CASE WHEN l.community_key = 'community' THEN 0 ELSE 1 END,
+                         CASE WHEN l.owner_user_id = ? THEN 0 ELSE 1 END,
                          l.updated_at DESC, l.id DESC
                 """,
                 (rs, rowNum) -> mapSummary(rs, viewerUserId),
@@ -58,14 +66,14 @@ public class ProblemListRepository {
     public Optional<ProblemListSummary> findById(Long listId, Long viewerUserId) {
         List<ProblemListSummary> rows = jdbcTemplate.query(
                 """
-                SELECT l.id, l.owner_user_id, l.name, l.description, l.is_shared,
+                SELECT l.id, l.owner_user_id, l.name, l.description, l.is_shared, l.community_key,
                        l.created_at, l.updated_at, u.username, u.display_name,
                        COUNT(i.id) AS problem_count
                 FROM problem_list l
                 INNER JOIN users u ON u.id = l.owner_user_id
                 LEFT JOIN problem_list_item i ON i.list_id = l.id
                 WHERE l.id = ?
-                GROUP BY l.id, l.owner_user_id, l.name, l.description, l.is_shared,
+                GROUP BY l.id, l.owner_user_id, l.name, l.description, l.is_shared, l.community_key,
                          l.created_at, l.updated_at, u.username, u.display_name
                 """,
                 (rs, rowNum) -> mapSummary(rs, viewerUserId),
@@ -278,8 +286,9 @@ public class ProblemListRepository {
                 rs.getString("username"),
                 rs.getString("display_name"),
                 rs.getBoolean("is_shared"),
+                "community".equals(rs.getString("community_key")),
                 rs.getInt("problem_count"),
-                ownerUserId.equals(viewerUserId),
+                ownerUserId.equals(viewerUserId) && rs.getString("community_key") == null,
                 timestampText(rs.getTimestamp("created_at")),
                 timestampText(rs.getTimestamp("updated_at"))
         );

@@ -114,7 +114,6 @@ export default function PracticePage() {
   return (
     <div className="stack-y-5">
       <h1 className="text-lg font-semibold text-text-primary m-0">自主练习</h1>
-      <p className="text-sm text-text-secondary m-0">按 Rating 与算法标签组合抽题，仅记录抽题历史，不进行提交校验</p>
 
       {/* Draw panel */}
       <div className="bg-white border border-border rounded-ui p-4">
@@ -165,7 +164,7 @@ export default function PracticePage() {
             <div>
               <p className="text-sm font-semibold text-text-primary m-0">算法标签</p>
               <p className="text-xs text-text-secondary mt-1 mb-0">
-                多标签按“同时包含”匹配，最多选择 5 个
+                最多 5 个，题目需同时包含所选标签
               </p>
             </div>
             {selectedTags.length > 0 && (
@@ -244,7 +243,7 @@ export default function PracticePage() {
         {historyLoading ? (
           <ListSkeleton rows={3} />
         ) : history.length === 0 ? (
-          <EmptyState title="暂无抽题记录" description="点击上方按钮开始抽题练习" />
+          <EmptyState title="暂无抽题记录" />
         ) : (
           <div className="stack-y-2">
             {history.map((item) => (

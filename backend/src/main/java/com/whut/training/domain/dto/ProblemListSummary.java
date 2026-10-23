@@ -9,6 +9,7 @@ public record ProblemListSummary(
         String ownerUsername,
         String ownerDisplayName,
         boolean shared,
+        boolean collaborative,
         int problemCount,
         boolean owner,
         String createdAt,

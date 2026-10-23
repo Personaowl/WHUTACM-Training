@@ -31,7 +31,7 @@ export default function AddToProblemListButton({ problem, compact = false, class
       .then((response) => {
         if (!active) return;
         if (response?.code !== 200) throw new Error(response?.message || "题单加载失败");
-        const owned = (response.data || []).filter((item) => item.owner || item.shared);
+        const owned = (response.data || []).filter((item) => item.owner || item.collaborative);
         setLists(owned);
         setSelectedId((current) => (
           owned.some((item) => String(item.id) === String(current))

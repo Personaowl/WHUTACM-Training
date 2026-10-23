@@ -51,8 +51,8 @@ export default function AdditionalPlatformBinding({ userId, platform, label, onC
           </span>
         </div>
       </div>
-      <p className="binding-card-description">通过公开个人介绍验证账号所有权，为后续训练接入保留账号关联；当前不自动统计该平台训练数据。</p>
-      <p className="text-sm text-text-secondary">UID 是主页地址末尾的数字：{platform === "luogu" ? "luogu.com.cn/user/123" : "nowcoder.com/users/123（竞赛主页 profile/123 也是同一 UID）"}。</p>
+      <p className="binding-card-description">仅绑定账号，暂不统计训练数据</p>
+      <p className="binding-uid-hint">数字 UID 可在主页地址中查看：{platform === "luogu" ? "luogu.com.cn/user/123" : "nowcoder.com/users/123"}</p>
       <div className="binding-input-row">
         <input aria-label={label + " UID"} className="form-input" inputMode="numeric" maxLength={18}
           value={uid} onChange={event => { setUid(event.target.value.trim()); setSuccess(false); setMessage(""); }}

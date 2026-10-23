@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import AppLayout from "./components/layout/AppLayout";
+import "./Refinements.css";
 
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const RegisterPage = lazy(() => import("./pages/RegisterPage"));

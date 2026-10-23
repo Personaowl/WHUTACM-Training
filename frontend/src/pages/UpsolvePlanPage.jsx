@@ -74,7 +74,7 @@ export default function UpsolvePlanPage() {
   return (
     <div className="upsolve-page">
       <header className="upsolve-header">
-        <div className="upsolve-heading"><span className="upsolve-mark"><ListTodo size={26} /></span><div><h1>补题计划</h1><p>把没来得及解决的题，留给下一次进步。</p></div></div>
+        <div className="upsolve-heading"><span className="upsolve-mark"><ListTodo size={26} /></span><div><h1>补题计划</h1></div></div>
         <button type="button" className="button-primary" onClick={() => openEditor()} disabled={busy}><Plus size={17} />添加题目</button>
       </header>
 
@@ -94,7 +94,7 @@ export default function UpsolvePlanPage() {
             <button type="button" aria-pressed={!completed} className={!completed ? "is-active" : ""} onClick={() => selectStatus(false)} disabled={busy}><ListTodo size={16} />待完成 <span>{data?.pendingCount ?? "—"}</span></button>
             <button type="button" aria-pressed={completed} className={completed ? "is-active" : ""} onClick={() => selectStatus(true)} disabled={busy}><CheckCheck size={16} />已完成 <span>{data?.completedCount ?? "—"}</span></button>
           </div>
-          <span className="upsolve-private">仅自己可见</span>
+          <span className="upsolve-private">{data ? `${data.pendingCount} 题待补` : ""}</span>
         </div>
         {notice && <div className="upsolve-notice" role="status"><Check size={16} />{notice}<button type="button" aria-label="关闭提示" onClick={() => setNotice("")}><X size={14} /></button></div>}
         {error && <div className="upsolve-error" role="alert">{error}<button type="button" onClick={() => setReload(v => v + 1)}>重新加载</button></div>}

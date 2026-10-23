@@ -72,12 +72,9 @@ export default function ContestsPage() {
     <div className="stack-y-5">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div>
-          <p className="text-[11px] font-bold tracking-[0.18em] text-text-secondary m-0">
-            CONTEST RADAR
-          </p>
           <h1 className="text-xl font-bold text-text-primary mt-1 mb-0">近期比赛</h1>
           <p className="text-sm text-text-secondary mt-1 mb-0">
-            聚合 Codeforces、AtCoder、牛客与洛谷赛程，统一显示为北京时间。
+            北京时间（UTC+8）
           </p>
         </div>
         <button

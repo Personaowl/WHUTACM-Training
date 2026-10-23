@@ -16,7 +16,9 @@ import {
   PanelLeftOpen,
   Link2,
   X,
+  ChevronDown,
 } from "lucide-react";
+import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
@@ -39,6 +41,25 @@ const ADMIN_ITEMS = [
   { to: "/admin/daily", label: "题管理", icon: Settings2 },
   { to: "/admin/users", label: "用户管理", icon: Users },
 ];
+
+const GROUPS = [
+  { name: "个人训练", icon: Code2, paths: ["/daily", "/weekly-training", "/practice", "/upsolve"] },
+  { name: "题单", icon: FolderOpen, paths: ["/problem-lists", "/shared-problem-lists"] },
+  { name: "赛事与排名", icon: Trophy, paths: ["/contests", "/leaderboard"] },
+  { name: "我的账号", icon: UserRound, paths: ["/profile", "/account-binding"] },
+];
+
+function NavigationGroup({ name, icon: Icon, items, pathname, compact, onClose }) {
+  const active = items.some(item => pathname === item.to || pathname.startsWith(`${item.to}/`));
+  const [expanded, setExpanded] = useState(null);
+  const open = compact || expanded === pathname || (expanded == null && active);
+  return <section className="sidebar-group">
+    <button type="button" className="sidebar-group-heading" aria-expanded={open}
+      onClick={() => setExpanded(open ? false : pathname)}><Icon size={16} /><span>{name}</span><ChevronDown size={14} className={open ? "is-open" : ""} /></button>
+    <div className="sidebar-group-items" hidden={!open}>{items.map(item => <NavLink key={item.to} item={item}
+      active={pathname === item.to || pathname.startsWith(`${item.to}/`)} collapsed={compact} onNavigate={onClose} />)}</div>
+  </section>;
+}
 
 function NavLink({ item, active, collapsed, onNavigate }) {
   const Icon = item.icon;
@@ -91,7 +112,7 @@ export default function Sidebar({
       </div>
 
       <nav className="sidebar-nav" aria-label="主导航">
-        {filteredItems.map((item) => (
+        {filteredItems.filter(item => item.to === "/").map((item) => (
           <NavLink
             key={item.to}
             item={item}
@@ -101,17 +122,14 @@ export default function Sidebar({
           />
         ))}
 
+        {GROUPS.map(group => <NavigationGroup key={`${group.name}-${location.pathname}`} name={group.name} icon={group.icon}
+          items={filteredItems.filter(item => group.paths.includes(item.to))} pathname={location.pathname}
+          compact={collapsed && !mobileOpen} onClose={onClose} />)}
+
         {isAdmin && (
           <div className="sidebar-admin">
-            {ADMIN_ITEMS.map((item) => (
-              <NavLink
-                key={item.to}
-                item={item}
-                active={location.pathname === item.to || location.pathname.startsWith(`${item.to}/`)}
-                collapsed={collapsed}
-                onNavigate={onClose}
-              />
-            ))}
+            <NavigationGroup key={location.pathname} name="管理后台" icon={Settings2} items={ADMIN_ITEMS}
+              pathname={location.pathname} compact={collapsed && !mobileOpen} onClose={onClose} />
           </div>
         )}
       </nav>

@@ -22,10 +22,10 @@ import static org.mockito.Mockito.when;
 class ProblemListServiceTest {
 
     @Test
-    void anyMemberCanCreateAVisibleSharedList() {
+    void adminCanPublishAReadOnlySharedList() {
         ProblemListRepository repository = mock(ProblemListRepository.class);
         ProblemListService service = new ProblemListService(repository);
-        User admin = user(2L, UserRole.USER);
+        User admin = user(2L, UserRole.ADMIN);
         ProblemListSummary summary = summary(10L, 2L, true, true);
 
         when(repository.createList(2L, "区间 DP", "专题训练", true)).thenReturn(10L);
@@ -95,7 +95,7 @@ class ProblemListServiceTest {
     ) {
         return new ProblemListSummary(
                 id, "区间 DP", "专题训练", ownerUserId, "owner", "Owner",
-                shared, 0, owner, null, null
+                shared, false, 0, owner, null, null
         );
     }
 }

@@ -15,9 +15,6 @@ export default function WeeklyTrainingPage() {
           <h1 className="m-0 text-2xl font-bold text-text-primary">
             我的周训练
           </h1>
-          <p className="mb-0 mt-2 text-sm text-text-secondary">
-            按周查看每日一题与每周一赛的完成情况。
-          </p>
         </div>
         {!loading && !error && member?.canExplain && (
           <WeeklyExplanationDialog
@@ -61,7 +58,6 @@ export default function WeeklyTrainingPage() {
         ) : (
           <EmptyState
             title="所选周暂无现役训练记录"
-            description="现役队员可查看周训练情况；已保存的历史周记录会保留。"
           />
         ))
       )}

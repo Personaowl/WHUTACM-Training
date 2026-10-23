@@ -64,9 +64,6 @@ export default function AdminWeeklyRecordsPage() {
         <h2 className="m-0 text-xl font-bold text-text-primary">
           周训练记录与情况说明
         </h2>
-        <p className="mb-0 mt-2 text-sm text-text-secondary">
-          按周汇总每日一题与每周一赛，审核特殊情况并调整当周状态。
-        </p>
       </header>
       <WeekPicker
         report={report}
