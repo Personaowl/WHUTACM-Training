@@ -1,0 +1,43 @@
+.profile-page { max-width: 1240px; margin-inline: auto; }
+.profile-identity-card { overflow: hidden; border: 1px solid var(--line, #e3e8ed); border-radius: 16px; background: #fff; }
+.profile-main-row { display: flex; align-items: center; gap: 22px; padding: 28px; }
+.profile-identity { flex: 1; min-width: 0; }
+.profile-identity h2 { margin: 0; color: var(--ink, #132238); font-size: 24px; font-weight: 650; line-height: 1.3; letter-spacing: -.025em; overflow-wrap: anywhere; }
+.profile-username { margin: 5px 0 0; color: var(--muted, #5f6c79); font-size: 13px; overflow-wrap: anywhere; }
+.profile-cf-account { margin: 9px 0 0; color: var(--muted, #5f6c79); font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.profile-points { flex: 0 0 auto; text-align: right; }
+.profile-points span { display: block; color: var(--muted, #5f6c79); font-size: 13px; }
+.profile-points strong { display: block; margin-top: 6px; color: var(--ink, #132238); font-size: 32px; line-height: 1.1; font-weight: 600; letter-spacing: -.025em; font-variant-numeric: tabular-nums; }
+.profile-page .profile-avatar-editor > img,
+.profile-page .profile-avatar-editor > span { border: 0; box-shadow: none; }
+.profile-page .avatar-upload-button { width: 34px; height: 34px; right: -5px; bottom: -5px; }
+.profile-page .avatar-upload-button:focus-within { outline: 2px solid #54789d; outline-offset: 2px; }
+.profile-details { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px 28px; margin: 0 28px; padding: 22px 0; border-top: 1px solid var(--line, #e3e8ed); }
+.profile-details div { min-width: 0; }
+.profile-details dt { margin-bottom: 5px; color: var(--muted, #5f6c79); font-size: 12px; }
+.profile-details dd { margin: 0; color: var(--ink, #132238); font-size: 14px; font-weight: 500; line-height: 1.5; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.profile-bio { margin: 0; padding: 0 28px 22px; color: var(--muted, #5f6c79); font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
+.profile-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 10px; padding: 16px 28px; border-top: 1px solid var(--line, #e3e8ed); background: #fafbfd; }
+.profile-action-link,
+.profile-actions > button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 38px; padding: 0 13px; border: 1px solid #ccd5df; border-radius: 10px; background: #fff; color: var(--ink, #132238); text-decoration: none; font-size: 13px; font-weight: 500; line-height: 1.4; }
+.profile-action-link:hover,
+.profile-actions > button:hover:not(:disabled) { background: #eef3f7; }
+.profile-actions .avatar-remove-button { margin-right: auto; padding-inline: 0; border-color: transparent; background: transparent; color: var(--muted, #5f6c79); }
+.profile-heatmap-section > h2 { margin: 0 0 14px; color: var(--ink, #132238); font-size: 17px; font-weight: 600; }
+.profile-heatmap-panel { overflow: hidden; padding: 24px; border: 1px solid var(--line, #e3e8ed); border-radius: 16px; background: #fff; }
+
+@media (max-width: 640px) {
+  .profile-main-row { display: grid; grid-template-columns: 80px minmax(0, 1fr); gap: 18px; padding: 22px 20px; }
+  .profile-page .avatar-upload-button { width: 38px; height: 38px; }
+  .profile-identity h2 { font-size: 21px; }
+  .profile-cf-account { font-size: 13px; }
+  .profile-points { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 16px; border-top: 1px solid var(--line, #e3e8ed); text-align: left; }
+  .profile-points strong { margin-top: 0; font-size: 28px; }
+  .profile-details { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-inline: 20px; padding-block: 20px; }
+  .profile-bio { padding: 0 20px 20px; }
+  .profile-actions { justify-content: flex-start; gap: 8px; padding: 16px 20px; }
+  .profile-action-link,
+  .profile-actions > button { min-height: 44px; }
+  .profile-actions .avatar-remove-button { flex-basis: 100%; justify-content: flex-start; margin-right: 0; }
+  .profile-heatmap-panel { padding: 20px 16px; }
+}

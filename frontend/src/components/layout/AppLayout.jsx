@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "../ui/Sidebar";
 import TopBar from "../ui/TopBar";
@@ -15,6 +15,44 @@ export default function AppLayout() {
     window.localStorage.getItem(SIDEBAR_STORAGE_KEY) !== "false"
   ));
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [smallViewport, setSmallViewport] = useState(() => window.innerWidth <= 1024);
+  const sidebarRef = useRef(null);
+  const frameRef = useRef(null);
+
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 1024px)");
+    function updateViewport() { setSmallViewport(query.matches); }
+    query.addEventListener("change", updateViewport);
+    return () => query.removeEventListener("change", updateViewport);
+  }, []);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return undefined;
+    const previousFocus = document.activeElement;
+    frameRef.current?.setAttribute("inert", "");
+    const sidebar = sidebarRef.current;
+    sidebar?.querySelector(".sidebar-mobile-close")?.focus();
+    function handleKey(event) {
+      if (event.key === "Escape") setMobileMenuOpen(false);
+      if (event.key !== "Tab") return;
+      const items = [...(sidebar?.querySelectorAll("a[href],button:not(:disabled)") || [])]
+        .filter((item) => item.getClientRects().length > 0 && getComputedStyle(item).visibility !== "hidden");
+      const first = items[0], last = items.at(-1);
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    }
+    function handleResize() {
+      if (window.innerWidth > 1024) setMobileMenuOpen(false);
+    }
+    document.addEventListener("keydown", handleKey);
+    window.addEventListener("resize", handleResize);
+    return () => {
+      frameRef.current?.removeAttribute("inert");
+      document.removeEventListener("keydown", handleKey);
+      window.removeEventListener("resize", handleResize);
+      if (previousFocus?.isConnected) previousFocus.focus();
+    };
+  }, [mobileMenuOpen]);
 
   function toggleSidebar() {
     setSidebarCollapsed((current) => {
@@ -42,8 +80,9 @@ export default function AppLayout() {
 
   return (
     <div className="app-shell">
-      <div className="ambient-grid" aria-hidden="true" />
       <Sidebar
+        sidebarRef={sidebarRef}
+        hiddenOnMobile={smallViewport && !mobileMenuOpen}
         collapsed={sidebarCollapsed}
         mobileOpen={mobileMenuOpen}
         onClose={() => setMobileMenuOpen(false)}
@@ -56,8 +95,8 @@ export default function AppLayout() {
           aria-label="关闭导航"
         />
       )}
-      <div className="app-frame">
-        <TopBar onMenuToggle={() => setMobileMenuOpen(true)} />
+      <div className="app-frame" ref={frameRef}>
+        <TopBar onMenuToggle={() => setMobileMenuOpen(true)} mobileMenuOpen={mobileMenuOpen} />
         <main className="app-main">
           <div className="app-content">
             <Outlet />

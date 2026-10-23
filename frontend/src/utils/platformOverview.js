@@ -1,7 +1,7 @@
 import { getRatingMeta } from "./cf.js";
 
 export function platformRatingMeta(platform, rating) {
-  if (typeof rating !== "number" || !Number.isFinite(rating)) return { color: "#8a98a6", label: "" };
+  if (typeof rating !== "number" || !Number.isFinite(rating)) return { color: "#5f6c79", label: "" };
   return platform === "codeforces" ? getRatingMeta(rating) : { color: "#23435e", label: "" };
 }
 

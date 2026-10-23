@@ -78,6 +78,8 @@ function NavLink({ item, active, collapsed, onNavigate }) {
 }
 
 export default function Sidebar({
+  sidebarRef,
+  hiddenOnMobile = false,
   collapsed,
   mobileOpen,
   onClose,
@@ -91,6 +93,11 @@ export default function Sidebar({
 
   return (
     <aside
+      ref={sidebarRef}
+      id="app-navigation"
+      aria-label="侧边导航"
+      aria-hidden={hiddenOnMobile || undefined}
+      inert={hiddenOnMobile ? "" : undefined}
       className={`app-sidebar ${collapsed ? "is-collapsed" : ""} ${
         mobileOpen ? "is-mobile-open" : ""
       }`}
@@ -110,7 +117,7 @@ export default function Sidebar({
         </button>
       </div>
 
-      <nav className="sidebar-nav" aria-label="主导航">
+      <nav className="sidebar-nav" aria-label="主导航" tabIndex={0}>
         {filteredItems.filter(item => item.to === "/").map((item) => (
           <NavLink
             key={item.to}

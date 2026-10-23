@@ -34,6 +34,19 @@ test("conditional form fields and portals retain v3-compatible sibling spacing",
   assert.match(css, /textarea\s*\{\s*background-color:\s*(?:#fff|white);/);
 });
 
+test("sidebar scrollbars remain slim, themed and keyboard-scrollable", async () => {
+  assert.match(css, /\.sidebar-nav\s*\{[^}]*scrollbar-width:\s*thin/s);
+  assert.match(css, /scrollbar-color:\s*#63788f\s+transparent/);
+  assert.match(css, /\.sidebar-nav::-webkit-scrollbar-button\s*\{[^}]*display:\s*none/s);
+  const sidebar = await readFile(new URL("../src/components/ui/Sidebar.jsx", import.meta.url), "utf8");
+  assert.match(sidebar, /className="sidebar-nav"[^>]*tabIndex=\{0\}/);
+});
+
+test("the shared refinement stylesheet is loaded after the base stylesheet", async () => {
+  const entry = await readFile(new URL("../src/main.jsx", import.meta.url), "utf8");
+  assert.ok(entry.indexOf('"./Refinements.css"') > entry.indexOf('"./index.css"'));
+});
+
 test("the locked dependency tree includes the native bindings used by Ubuntu CI", async () => {
   const lock = JSON.parse(await readFile(new URL("../package-lock.json", import.meta.url), "utf8"));
   for (const name of ["@tailwindcss/oxide-linux-x64-gnu", "lightningcss-linux-x64-gnu", "@rolldown/binding-linux-x64-gnu"]) {

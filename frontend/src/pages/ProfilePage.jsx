@@ -13,6 +13,7 @@ import { CardSkeleton } from "../components/ui/Skeleton";
 import ProfileEditDialog from "../components/profile/ProfileEditDialog";
 import CodeforcesOverview from "../components/profile/CodeforcesOverview";
 import { Camera, ClipboardCheck, Link2, Trash2 } from "lucide-react";
+import "./ProfilePage.css";
 
 export default function ProfilePage() {
   const { user, updateUser } = useAuth();
@@ -110,16 +111,16 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="stack-y-4">
-        <h1 className="text-lg font-semibold">个人中心</h1>
+      <div className="profile-page stack-y-4">
+        <h1 className="page-title">个人中心</h1>
         <CardSkeleton />
       </div>
     );
   }
 
   return (
-    <div className="stack-y-5">
-      <h1 className="text-lg font-semibold text-text-primary m-0">个人中心</h1>
+    <div className="profile-page stack-y-5">
+      <h1 className="page-title">个人中心</h1>
 
       {message && (
         <p
@@ -133,60 +134,49 @@ export default function ProfilePage() {
         </p>
       )}
 
-      {/* CF-style profile card */}
-      <div className="bg-white border border-border rounded-ui overflow-hidden">
-        <div className="flex items-start gap-4 p-5">
+      <section className="profile-identity-card" aria-label="个人资料">
+        <div className="profile-main-row">
           <div className="profile-avatar-editor">
-            <UserAvatar user={currentProfile} size={76} />
+            <UserAvatar user={currentProfile} size={80} />
             <label className="avatar-upload-button" title="更换头像">
-              <Camera size={15} />
+              <Camera size={16} />
               <input
                 type="file"
+                aria-label="更换头像"
                 accept="image/png,image/jpeg,image/webp,image/gif"
                 onChange={handleAvatarFile}
                 disabled={avatarSaving}
               />
             </label>
           </div>
-          <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-bold m-0 text-text-primary">
+          <div className="profile-identity">
+            <h2>
               {currentProfile?.displayName || currentProfile?.username || "-"}
             </h2>
-            <p className="text-xs text-text-secondary mt-0.5 mb-1">
+            <p className="profile-username">
               @{currentProfile?.username || "-"}
             </p>
-            <p className="text-sm m-0" style={{ color: currentProfile?.codeforcesHandle ? ratingMeta.color : undefined }}>
+            <p className="profile-cf-account" style={{ color: currentProfile?.codeforcesHandle ? ratingMeta.color : undefined }}>
               {currentProfile?.codeforcesHandle
                 ? `Codeforces: ${currentProfile.codeforcesHandle} · ${ratingMeta.label}`
                 : "尚未绑定 Codeforces"}
             </p>
-            {currentProfile?.bio && (
-              <p className="text-xs text-text-secondary mt-0.5 m-0">{currentProfile.bio}</p>
-            )}
-            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-text-secondary">
-              <span>UID: {currentProfile?.uid ?? "-"}</span>
-              <span>积分: {currentProfile?.totalPoints ?? 0}</span>
-              <span>角色: {currentProfile?.role || "-"}</span>
-              <span>
-                身份: {currentProfile?.memberType === "ACTIVE_TEAM" ? "现役队员" : "普通成员"}
-              </span>
-              {currentProfile?.realName && <span>姓名: {currentProfile.realName}</span>}
-              {(currentProfile?.college || currentProfile?.className) && (
-                <span>{[currentProfile.college, currentProfile.className].filter(Boolean).join(" · ")}</span>
-              )}
-            </div>
           </div>
-          <div className="text-right shrink-0">
-            <p className="text-xs text-text-secondary m-0">Codeforces rating</p>
-            <p className="text-xl font-bold m-0" style={{ color: ratingMeta.color }}>
-              {currentProfile?.codeforcesRating ?? "-"}
-            </p>
-            <p className="text-xs text-text-secondary m-0">
-              max {currentProfile?.maxRating ?? "-"}
-            </p>
+          <div className="profile-points">
+            <span>训练积分</span>
+            <strong>{Number(currentProfile?.totalPoints ?? 0).toLocaleString("en-US")}</strong>
           </div>
         </div>
-        <div className="border-t border-border px-5 py-2.5 flex flex-wrap items-center justify-end gap-2">
+        <dl className="profile-details">
+          <div><dt>UID</dt><dd>{currentProfile?.uid ?? "—"}</dd></div>
+          <div><dt>角色</dt><dd>{{ SUPER_ADMIN: "超级管理员", ADMIN: "管理员", USER: "选手" }[currentProfile?.role] || currentProfile?.role || "—"}</dd></div>
+          <div><dt>身份</dt><dd>{currentProfile?.memberType === "ACTIVE_TEAM" ? "现役队员" : "普通成员"}</dd></div>
+          {currentProfile?.realName && <div><dt>姓名</dt><dd>{currentProfile.realName}</dd></div>}
+          {currentProfile?.college && <div><dt>学院</dt><dd>{currentProfile.college}</dd></div>}
+          {currentProfile?.className && <div><dt>班级</dt><dd>{currentProfile.className}</dd></div>}
+        </dl>
+        {currentProfile?.bio && <p className="profile-bio">{currentProfile.bio}</p>}
+        <div className="profile-actions">
           {currentProfile?.avatarUrl && (
             <button
               className="avatar-remove-button"
@@ -197,10 +187,10 @@ export default function ProfilePage() {
               移除头像
             </button>
           )}
-          <Link to="/account-binding" className="inline-flex items-center gap-1.5 rounded-ui border border-border bg-white px-3 py-1 text-sm font-semibold text-text-primary hover:bg-bg-secondary">
+          <Link to="/account-binding" className="profile-action-link">
             <Link2 size={15} />账号绑定
           </Link>
-          <Link to="/weekly-training" className="inline-flex items-center gap-1.5 rounded-ui border border-border bg-white px-3 py-1 text-sm font-semibold text-text-primary hover:bg-bg-secondary">
+          <Link to="/weekly-training" className="profile-action-link">
             <ClipboardCheck size={15} />我的周训练
           </Link>
           <ProfileEditDialog
@@ -212,7 +202,7 @@ export default function ProfilePage() {
             }}
           />
         </div>
-      </div>
+      </section>
 
       <CodeforcesOverview
         userId={currentProfile?.id}
@@ -220,9 +210,9 @@ export default function ProfilePage() {
         canRefresh
       />
 
-      <section>
-        <h2 className="text-base font-semibold text-text-primary m-0 mb-2">打卡热力图</h2>
-        <div className="bg-white border border-border rounded-ui p-5 overflow-hidden">
+      <section className="profile-heatmap-section">
+        <h2>打卡热力图</h2>
+        <div className="profile-heatmap-panel">
           <Heatmap data={heatmapData} />
         </div>
       </section>

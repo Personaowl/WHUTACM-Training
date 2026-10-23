@@ -9,7 +9,6 @@ import Heatmap from "../components/ui/Heatmap";
 import UserAvatar from "../components/ui/UserAvatar";
 import { CardSkeleton } from "../components/ui/Skeleton";
 import {
-  Activity,
   ArrowRight,
   ArrowUpRight,
   BookOpen,
@@ -18,7 +17,6 @@ import {
   LoaderCircle,
   ListTodo,
   Send,
-  Trophy,
 } from "lucide-react";
 import CodeforcesOverview from "../components/profile/CodeforcesOverview";
 import { getCurrentUserPoints } from "../utils/home.js";
@@ -128,9 +126,9 @@ export default function HomePage() {
         </div>
 
         <dl className="home-stats" aria-label="训练概览" aria-busy={loading}>
-          <StatCard icon={Trophy} label="我的积分" value={myPoints} />
-          <StatCard icon={Send} label="今日提交" value={data ? dailySubmissionSummary?.todaySubmissions ?? 0 : null} />
-          <StatCard icon={Activity} label="近 7 日活跃" value={data ? totalUsers ?? 0 : null} />
+          <StatCard label="我的积分" value={myPoints} />
+          <StatCard label="今日提交" value={data ? dailySubmissionSummary?.todaySubmissions ?? 0 : null} />
+          <StatCard label="近 7 日活跃" value={data ? totalUsers ?? 0 : null} />
         </dl>
       </header>
 
@@ -248,10 +246,10 @@ export default function HomePage() {
   );
 }
 
-function StatCard({ icon: Icon, label, value }) {
+function StatCard({ label, value }) {
   return (
     <div className="home-stat">
-      <dt><span className="home-stat-icon"><Icon size={19} strokeWidth={1.7} aria-hidden="true" /></span>{label}</dt>
+      <dt>{label}</dt>
       <dd>{formatNumber(value)}</dd>
     </div>
   );

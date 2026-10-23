@@ -77,7 +77,7 @@ export default function DevPanel() {
   return (
     <div className="bg-[#fff8f0] border border-warning/30 rounded-ui p-4 stack-y-4">
       <div className="flex items-center gap-2">
-        <span className="text-xs font-semibold text-warning uppercase tracking-wide">DEV TOOLS</span>
+        <span className="text-sm font-semibold text-warning">开发工具</span>
         {devTime?.fixed && (
           <span className="text-xs bg-warning/10 text-warning px-1.5 py-0.5 rounded-sm">
             模拟时间: {devTime.today}
@@ -91,7 +91,7 @@ export default function DevPanel() {
 
       {/* Time setter */}
       <div>
-        <p className="text-xs font-medium text-text-primary m-0 mb-1.5">⏰ 模拟时间</p>
+        <p className="text-xs font-medium text-text-primary m-0 mb-1.5">模拟时间</p>
         <div className="flex gap-2 items-center">
           <input
             type="datetime-local"
@@ -116,7 +116,7 @@ export default function DevPanel() {
 
       {/* Force check-in */}
       <div>
-        <p className="text-xs font-medium text-text-primary m-0 mb-1.5">✅ 强制打卡</p>
+        <p className="text-xs font-medium text-text-primary m-0 mb-1.5">手动完成校验</p>
         <div className="flex gap-2 items-center">
           <input
             type="date"
