@@ -15,9 +15,9 @@ export default function AuthFrame({ title, subtitle, children, footer }) {
           <h2>WHUT-ACM<br />训练平台</h2>
           <p className="auth-intro-affiliation">武汉理工大学ACM协会</p>
           <ul className="auth-training-modes" aria-label="训练内容">
-            <li><span>每日一题</span><small>Easy / Hard</small></li>
-            <li><span>每周一赛</span><small>AtCoder ABC</small></li>
-            <li><span>个人训练</span><small>练习 · 补题 · 题单</small></li>
+            <li><span>每日一题</span><small>每日选题 · 提交校验</small></li>
+            <li><span>个人训练</span><small>自主练习 · 补题计划</small></li>
+            <li><span>个人分析</span><small>训练记录 · 数据统计</small></li>
           </ul>
         </div>
         <p className="auth-platforms">Codeforces · AtCoder · 洛谷 · Nowcoder</p>

@@ -1,6 +1,6 @@
 .profile-page { max-width: 1240px; margin-inline: auto; }
 .profile-identity-card { overflow: hidden; border: 1px solid var(--line, #e3e8ed); border-radius: 16px; background: #fff; }
-.profile-main-row { display: flex; align-items: center; gap: 22px; padding: 28px; background: #eaf3fc; }
+.profile-main-row { display: flex; align-items: center; gap: 22px; padding: 28px; background: var(--brand-soft); }
 .profile-identity { flex: 1; min-width: 0; }
 .profile-identity h2 { margin: 0; color: var(--ink, #132238); font-size: 24px; font-weight: 650; line-height: 1.3; letter-spacing: -.025em; overflow-wrap: anywhere; }
 .profile-username { margin: 5px 0 0; color: var(--muted, #5f6c79); font-size: var(--ui-meta); overflow-wrap: anywhere; }

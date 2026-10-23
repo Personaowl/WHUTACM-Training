@@ -15,9 +15,11 @@
   gap: 24px;
   padding: 24px 24px 0;
   overflow: hidden;
-  background: var(--brand-deep, #153753);
-  color: #fff;
-  border: 1px solid #214967;
+  background-color: var(--brand-soft);
+  /* A single low-contrast gradient is intentional: the requested pale overview card. */
+  background-image: linear-gradient(115deg, #f8fbff 0%, #eef5fc 58%, #fcfdff 100%);
+  color: var(--ink);
+  border: 1px solid var(--line);
   border-radius: 16px;
   box-shadow: none;
 }
@@ -203,19 +205,19 @@
 .home-community-grid .home-library-links { flex: 1; align-content: space-evenly; }
 .home-page .heatmap-cf-stat small { color: #5f6c79; font-size: var(--ui-meta); }
 .home-empty-state, .home-binding-prompt p, .home-leaderboard-row > strong small, .home-profile-identity p { color: #5f6c79; }
-.home-page .home-profile-identity h1 { color: #fff; }
-.home-page .home-profile-identity p, .home-page .home-stat dt { color: #c4d9ed; }
-.home-page .home-stats, .home-page .home-stat + .home-stat { border-color: #ffffff24; }
-.home-page .home-training-entry { background: #e9f3fd; border-color: #e9f3fd; color: #123451; }
-.home-page .home-training-entry:hover { background: #fff; border-color: #fff; }
-.home-page .home-secondary-entry { background: transparent; border-color: #88a8c4; color: #eaf3fc; }
-.home-page .home-secondary-entry:hover { background: #ffffff12; border-color: #d1e5f8; }
-.home-page .home-profile-panel a:focus-visible { outline-color: #fff; }
-.home-page .home-shortcuts { background: #edf5fd; border-color: #d3e3f2; }
-.home-page .home-shortcuts > a + a { border-color: #d3e3f2; }
-.home-page .home-shortcuts > a:hover { background: #dfedfb; }
+.home-page .home-profile-identity h1 { color: var(--ink); }
+.home-page .home-profile-identity p, .home-page .home-stat dt { color: var(--muted); }
+.home-page .home-stats, .home-page .home-stat + .home-stat { border-color: #dce6f0; }
+.home-page .home-training-entry { background: #e9f2fb; border-color: #c6d9eb; color: #123451; }
+.home-page .home-training-entry:hover { background: #dfecf9; border-color: #adc9e1; }
+.home-page .home-secondary-entry { background: #ffffffb3; border-color: #d2dfeb; color: #284c6c; }
+.home-page .home-secondary-entry:hover { background: #fff; border-color: #b8cfe2; }
+.home-page .home-profile-panel a:focus-visible { outline-color: var(--brand); }
+.home-page .home-shortcuts { background: var(--brand-soft); border-color: var(--line); }
+.home-page .home-shortcuts > a + a { border-color: var(--line); }
+.home-page .home-shortcuts > a:hover { background: var(--surface-hover); }
 .home-page .home-shortcuts svg { color: #2c618c; }
-.home-page .cf-compact-stat { background: #eaf3fc; }
+.home-page .cf-compact-stat { background: var(--brand-soft); }
 @media (min-width: 1025px) {
   .home-page { gap: 28px; }
   .home-page .home-profile-panel { padding: 28px 28px 0; gap: 24px; }
@@ -229,7 +231,7 @@
   .home-section, .home-training-aside > section { padding: 24px; }
   .home-section-heading h2, .home-training-aside .cf-compact-heading h2 { font-size: var(--ui-section); font-weight: 650; }
   .home-section-heading > a, .home-section-heading > span, .home-text-link, .home-training-aside .cf-compact-handle { font-size: var(--ui-meta); }
-  .home-page .home-problem-grid .problem-card { padding: 20px; background: #f4f8fd; border-color: #dae6f1; }
+  .home-page .home-problem-grid .problem-card { padding: 20px; background: var(--surface-tint); border-color: var(--line); }
   .home-problem-grid .problem-card h3 { font-size: var(--ui-item-title); }
   .home-problem-grid .problem-card p { font-size: var(--ui-meta); }
   .home-training-aside .cf-compact-stat > span { font-size: var(--ui-meta); }

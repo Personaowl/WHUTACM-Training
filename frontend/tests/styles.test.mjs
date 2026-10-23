@@ -58,11 +58,24 @@ test("desktop typography has shared readable roles without zooming the applicati
   assert.doesNotMatch(refinements, /transform:\s*scale\(/);
 });
 
-test("the enlarged auth cover preserves real platform and training content", async () => {
+test("the auth cover describes daily problems, personal training and analysis in Chinese", async () => {
   const frame = await readFile(new URL("../src/components/ui/AuthFrame.jsx", import.meta.url), "utf8");
   assert.match(frame, /auth-training-modes/);
-  assert.match(frame, /AtCoder ABC/);
+  for (const label of ["每日一题", "个人训练", "个人分析", "每日选题 · 提交校验", "自主练习 · 补题计划", "训练记录 · 数据统计"]) {
+    assert.ok(frame.includes(label), `missing auth cover copy: ${label}`);
+  }
+  assert.doesNotMatch(frame, /<small>[^<]*(?:Easy|Hard|AtCoder ABC)/);
   assert.doesNotMatch(frame, /geometry-ring|auth-seam-node/);
+});
+
+test("the pale theme retains readable ink and a single subtle overview gradient", async () => {
+  const refinements = await readFile(new URL("../src/Refinements.css", import.meta.url), "utf8");
+  const home = await readFile(new URL("../src/pages/HomePage.css", import.meta.url), "utf8");
+  assert.match(refinements, /--canvas:\s*#f4f7fb/);
+  assert.match(refinements, /--brand-soft:\s*#f3f8fd/);
+  assert.match(home, /\.home-page \.home-profile-panel\s*\{[^}]*color:\s*var\(--ink\)/s);
+  assert.equal((home.match(/linear-gradient\(/g) || []).length, 1);
+  assert.match(home, /\.home-page \.home-profile-panel a:focus-visible\s*\{[^}]*outline-color:\s*var\(--brand\)/);
 });
 
 test("the locked dependency tree includes the native bindings used by Ubuntu CI", async () => {

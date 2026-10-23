@@ -42,7 +42,7 @@
   .cf-overview-heading h2 { font-size: var(--ui-section); }
   .cf-profile-link, .cf-snapshot-state, .cf-refresh-button, .cf-overview-stat p, .cf-overview-stat small, .cf-panel-heading > span, .cf-tag-label > span, .cf-tag-label strong, .cf-contest-row small, .cf-overview-note { font-size: var(--ui-meta); }
   .cf-refresh-button { min-height: 44px; }
-  .cf-metric-strip { background: #edf5fd; }
+  .cf-metric-strip { background: var(--brand-soft); }
   .cf-overview-stat strong { font-size: var(--ui-value); }
   .cf-panel-heading h3, .cf-contest-change { font-size: var(--ui-item-title); }
   .cf-contest-name, .cf-empty-row { font-size: var(--ui-body); }

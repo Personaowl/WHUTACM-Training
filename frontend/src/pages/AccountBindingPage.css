@@ -35,7 +35,7 @@
 }
 
 .binding-page .binding-card::before { display: none; }
-.binding-page .binding-card-head { gap: 14px; padding: 24px; background: #edf5fd; border-bottom: 1px solid #dce7f2; }
+.binding-page .binding-card-head { gap: 14px; padding: 24px; background: var(--brand-soft); border-bottom: 1px solid var(--line); }
 
 .binding-page .binding-platform-mark {
   width: 38px;
@@ -109,7 +109,7 @@
 .binding-page .binding-step-title { font-weight: 600; }
 .binding-page .binding-step-copy code { overflow-wrap: anywhere; border: 1px solid var(--line, #e3e8ed); border-radius: 8px; font-size: 14px; font-weight: 600; }
 
-.platform-statistics { margin-top: auto; padding: 20px 24px; border-top: 1px solid var(--line, #e3e8ed); background: #f3f8fd; }
+.platform-statistics { margin-top: auto; padding: 20px 24px; border-top: 1px solid var(--line, #e3e8ed); background: var(--surface-tint); }
 .platform-statistics-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 27px; margin-bottom: 20px; }
 .platform-statistics-heading > a { display: inline-flex; align-items: center; gap: 7px; min-width: 0; font-size: 18px; font-weight: 650; letter-spacing: -.02em; }
 .platform-statistics-heading > a { color: var(--ink, #132238); }
@@ -129,13 +129,13 @@
 
 @media (min-width: 1025px) {
   .platform-binding-grid { gap: 24px; }
-  .binding-page .binding-summary { font-size: var(--ui-label); min-height: 40px; background: #e6f1fc; color: #234f75; }
+  .binding-page .binding-summary { font-size: var(--ui-label); min-height: 40px; background: var(--brand-soft); color: #234f75; }
   .binding-page .binding-card h2 { font-size: 24px; }
   .binding-page .binding-platform-mark { width: 46px; height: 46px; }
   .binding-page .binding-card-head span, .binding-page .binding-card-description { font-size: var(--ui-body); }
   .binding-controls { padding: 24px; }
   .binding-page .binding-input-row .form-input, .binding-page .binding-input-row .button-primary { min-height: 46px; font-size: var(--ui-body); }
-  .binding-page .binding-input-row .button-primary { color: #194b78; border-color: #b4cde4; background: #eaf3fc; }
+  .binding-page .binding-input-row .button-primary { color: #194b78; border-color: #bdcfe1; background: var(--brand-soft); }
   .binding-page .binding-uid-hint, .binding-page .binding-step small { font-size: var(--ui-meta); }
   .binding-page .binding-step { font-size: var(--ui-body); }
   .platform-statistics { padding: 24px; }
