@@ -17,7 +17,7 @@ backend/                  后端接口、业务服务、数据访问与测试
 frontend/                 前端页面、通用组件与接口请求
 deploy/                   环境变量、Nginx 和 systemd 模板
 docs/                     接口、数据库与生产部署说明
-.github/workflows/ci.yml   后端验证、前端依赖审计和构建
+.github/workflows/ci.yml   后端验证、前端构建和测试
 ```
 
 ### 当前代码分层
@@ -102,7 +102,7 @@ npm run build
 
 前端产物位于 `frontend/dist/`，后端 JAR 位于 `backend/target/`。根目录没有 `pom.xml`，不能直接运行 `mvn clean verify`；请使用 `-f backend/pom.xml` 或先进入 `backend/`。
 
-CI 对 main、mty-dev 的 push 及 pull request 运行后端 verify、前端锁文件安装、依赖审计、构建和测试。前端测试基于 Node test runner，后端数据库用例使用 H2 MySQL 模式；这些检查不代替真实 MySQL、真实外部 OJ 和目标服务器并发验收。不要把过往测试数量写成固定能力保证。
+CI 对 main、mty-dev 的 push 及 pull request 运行后端 verify、前端锁文件安装、构建和测试。自动依赖审计已按维护选择关闭，仍可手动运行 `npm run audit:security`；关闭检查不代表依赖漏洞已修复。前端测试基于 Node test runner，后端数据库用例使用 H2 MySQL 模式；这些检查不代替真实 MySQL、真实外部 OJ 和目标服务器并发验收。不要把过往测试数量写成固定能力保证。
 
 ---
 

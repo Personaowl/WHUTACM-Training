@@ -167,3 +167,17 @@ week 归一到上海时区该周周一，不能选未来周。返回 WeeklyTrain
 `GET /api/dev/status` 仍需登录：dev profile 返回 active=true，其他 profile 返回 active=false，正常返回而非 500。仅 dev 下存在 GET/POST /api/dev/time、POST /api/dev/time/reset、POST /api/dev/check-in；可调时间及跳过 CF 校验，**不具有生产管理接口的权限边界，不能在公网启用 dev**。
 
 独立签到/签文的 fun-check-ins 接口与自主练习提交校验已移除。平台每日题 check-in 是保留的训练校验功能，不应一起删除。
+
+## 10. 补题计划（仅当前登录用户）
+
+所有路径都从会话确定 user_id，不接受指定其他用户；管理员无额外读取权限。
+
+| 方法与路径 | 请求 / 返回 |
+| --- | --- |
+| GET /api/upsolve-plans | completed 默认 false；page 从 1 开始；size 默认 20、最大 50；返回 items、pendingCount、completedCount、page、pageSize、total（当前状态总数） |
+| POST /api/upsolve-plans | link 必填，最多 1000；title 选填，最多 255；note 选填，最多 1000；返回新记录 |
+| PATCH /api/upsolve-plans/{id} | 同新增字段；只修改链接/名称/备注，不改完成状态 |
+| PATCH /api/upsolve-plans/{id}/completion | completed 布尔必填；返回更新后记录，重复完成保留首次完成时间，撤销清空完成时间 |
+| DELETE /api/upsolve-plans/{id} | 删除本人记录，空 data；不删除已收藏题单内容 |
+
+记录字段：id、title、link、note、completed、createdAt、completedAt；时间为 ISO 字符串，未完成 completedAt 为空。重复链接（包括已完成记录）返回 409；非法链接/分页返回 400；记录不存在或非本人记录均为 404；未登录为 401。链接仅保存，不会触发外部站点访问。

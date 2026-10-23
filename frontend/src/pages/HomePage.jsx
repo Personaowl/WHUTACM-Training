@@ -16,6 +16,7 @@ import {
   CalendarDays,
   Code2,
   LoaderCircle,
+  ListTodo,
   Send,
   Trophy,
 } from "lucide-react";
@@ -178,6 +179,7 @@ export default function HomePage() {
             </section>
           )}
           <nav className="home-shortcuts" aria-label="训练快捷入口">
+            <Link to="/upsolve"><ListTodo size={19} aria-hidden="true" /><span>补题计划<small>记录待补题目，逐题完成</small></span><ArrowUpRight size={16} aria-hidden="true" /></Link>
             <Link to="/weekly-training"><CalendarDays size={19} aria-hidden="true" /><span>我的周训练<small>回顾本周完成情况</small></span><ArrowUpRight size={16} aria-hidden="true" /></Link>
             <Link to="/practice"><Code2 size={19} aria-hidden="true" /><span>自主练习<small>按难度挑选下一题</small></span><ArrowUpRight size={16} aria-hidden="true" /></Link>
           </nav>

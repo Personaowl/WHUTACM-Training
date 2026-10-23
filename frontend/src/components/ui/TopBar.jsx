@@ -11,6 +11,7 @@ const PAGE_NAMES = {
   "/contests": "近期比赛",
   "/leaderboard": "排行榜",
   "/practice": "自主练习",
+  "/upsolve": "补题计划",
   "/problem-lists": "我的题单",
   "/shared-problem-lists": "共享题单",
   "/profile": "个人中心",

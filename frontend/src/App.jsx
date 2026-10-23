@@ -12,6 +12,7 @@ const ContestsPage = lazy(() => import("./pages/ContestsPage"));
 const LeaderboardPage = lazy(() => import("./pages/LeaderboardPage"));
 const PracticePage = lazy(() => import("./pages/PracticePage"));
 const ProblemListsPage = lazy(() => import("./pages/ProblemListsPage"));
+const UpsolvePlanPage = lazy(() => import("./pages/UpsolvePlanPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const AccountBindingPage = lazy(() => import("./pages/AccountBindingPage"));
 const MemberProfilePage = lazy(() => import("./pages/MemberProfilePage"));
@@ -74,6 +75,7 @@ export default function App() {
         <Route path="/contests" element={<ContestsPage />} />
         <Route path="/leaderboard" element={<LeaderboardPage />} />
         <Route path="/practice" element={<PracticePage />} />
+        <Route path="/upsolve" element={<UpsolvePlanPage />} />
         <Route path="/problem-lists" element={<ProblemListsPage key="personal" />} />
         <Route path="/shared-problem-lists" element={<ProblemListsPage key="shared" sharedOnly />} />
         <Route path="/profile" element={<ProfilePage />} />

@@ -7,7 +7,7 @@ import {
   listProblemLists,
 } from "../../api/problemList";
 
-export default function AddToProblemListButton({ problem, compact = false, className = "" }) {
+export default function AddToProblemListButton({ problem, compact = false, className = "", initialNote = "" }) {
   const [open, setOpen] = useState(false);
   const [lists, setLists] = useState([]);
   const [selectedId, setSelectedId] = useState("");
@@ -88,6 +88,7 @@ export default function AddToProblemListButton({ problem, compact = false, class
   function handleOpenChange(nextOpen) {
     if (saving) return;
     setOpen(nextOpen);
+    if (nextOpen) setNote(initialNote);
     if (!nextOpen) {
       setError("");
       setSaved(false);
