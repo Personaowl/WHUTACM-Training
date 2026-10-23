@@ -9,7 +9,7 @@ export default function WeeklyTrainingPage() {
     useWeeklyTraining();
   const member = report?.members?.[0];
   return (
-    <div className="weekly-page stack-y-5">
+    <div className="stack-y-5">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="m-0 text-2xl font-bold text-text-primary">

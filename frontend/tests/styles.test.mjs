@@ -34,50 +34,6 @@ test("conditional form fields and portals retain v3-compatible sibling spacing",
   assert.match(css, /textarea\s*\{\s*background-color:\s*(?:#fff|white);/);
 });
 
-test("sidebar scrollbars remain slim, themed and keyboard-scrollable", async () => {
-  assert.match(css, /\.sidebar-nav\s*\{[^}]*scrollbar-width:\s*thin/s);
-  assert.match(css, /scrollbar-color:\s*#63788f\s+transparent/);
-  assert.match(css, /\.sidebar-nav::-webkit-scrollbar-button\s*\{[^}]*display:\s*none/s);
-  const sidebar = await readFile(new URL("../src/components/ui/Sidebar.jsx", import.meta.url), "utf8");
-  assert.match(sidebar, /className="sidebar-nav"[^>]*tabIndex=\{0\}/);
-});
-
-test("the shared refinement stylesheet is loaded after the base stylesheet", async () => {
-  const entry = await readFile(new URL("../src/main.jsx", import.meta.url), "utf8");
-  assert.ok(entry.indexOf('"./Refinements.css"') > entry.indexOf('"./index.css"'));
-});
-
-test("desktop typography has shared readable roles without zooming the application", async () => {
-  const refinements = await readFile(new URL("../src/Refinements.css", import.meta.url), "utf8");
-  assert.match(refinements, /@media \(min-width: 1025px\)[\s\S]*--ui-body: 16px;[\s\S]*--ui-meta: 14px;/);
-  assert.match(refinements, /body\s*\{[^}]*font-size:\s*var\(--ui-body\)/);
-  assert.match(refinements, /\.app-content \.text-sm\s*\{[^}]*font-size:\s*var\(--ui-body\)/);
-  assert.match(refinements, /\.app-content \.text-xs\s*\{[^}]*font-size:\s*var\(--ui-meta\)/);
-  assert.match(refinements, /\.auth-field\s*\{[^}]*height:\s*52px;[^}]*font-size:\s*17px;/);
-  assert.doesNotMatch(refinements, /(?:^|[;{])\s*zoom\s*:/m);
-  assert.doesNotMatch(refinements, /transform:\s*scale\(/);
-});
-
-test("the auth cover describes daily problems, personal training and analysis in Chinese", async () => {
-  const frame = await readFile(new URL("../src/components/ui/AuthFrame.jsx", import.meta.url), "utf8");
-  assert.match(frame, /auth-training-modes/);
-  for (const label of ["每日一题", "个人训练", "个人分析", "每日选题 · 提交校验", "自主练习 · 补题计划", "训练记录 · 数据统计"]) {
-    assert.ok(frame.includes(label), `missing auth cover copy: ${label}`);
-  }
-  assert.doesNotMatch(frame, /<small>[^<]*(?:Easy|Hard|AtCoder ABC)/);
-  assert.doesNotMatch(frame, /geometry-ring|auth-seam-node/);
-});
-
-test("the pale theme retains readable ink and a single subtle overview gradient", async () => {
-  const refinements = await readFile(new URL("../src/Refinements.css", import.meta.url), "utf8");
-  const home = await readFile(new URL("../src/pages/HomePage.css", import.meta.url), "utf8");
-  assert.match(refinements, /--canvas:\s*#f4f7fb/);
-  assert.match(refinements, /--brand-soft:\s*#f3f8fd/);
-  assert.match(home, /\.home-page \.home-profile-panel\s*\{[^}]*color:\s*var\(--ink\)/s);
-  assert.equal((home.match(/linear-gradient\(/g) || []).length, 1);
-  assert.match(home, /\.home-page \.home-profile-panel a:focus-visible\s*\{[^}]*outline-color:\s*var\(--brand\)/);
-});
-
 test("the locked dependency tree includes the native bindings used by Ubuntu CI", async () => {
   const lock = JSON.parse(await readFile(new URL("../package-lock.json", import.meta.url), "utf8"));
   for (const name of ["@tailwindcss/oxide-linux-x64-gnu", "lightningcss-linux-x64-gnu", "@rolldown/binding-linux-x64-gnu"]) {

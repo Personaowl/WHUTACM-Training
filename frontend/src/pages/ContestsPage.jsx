@@ -69,7 +69,7 @@ export default function ContestsPage() {
   );
 
   return (
-    <div className="contests-page stack-y-5">
+    <div className="stack-y-5">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-text-primary mt-1 mb-0">近期比赛</h1>

@@ -44,7 +44,7 @@ export default function LeaderboardPage() {
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
-    <div className="leaderboard-page stack-y-4">
+    <div className="stack-y-4">
       <h1 className="text-lg font-semibold text-text-primary m-0">排行榜</h1>
       <p className="text-sm text-text-secondary m-0">
         按总积分降序排列，积分相同时按最后打卡时间排序

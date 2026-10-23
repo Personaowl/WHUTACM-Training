@@ -9,7 +9,6 @@ export default function UserAvatar({ user, size = 40 }) {
 
   return (
     <Avatar.Root
-      key={avatarUrl || `fallback-${user?.id ?? user?.uid ?? name}`}
       className="rounded-full overflow-hidden shrink-0 inline-flex"
       style={{ width: size, height: size }}
     >

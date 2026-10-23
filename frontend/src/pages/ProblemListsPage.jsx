@@ -227,7 +227,7 @@ export default function ProblemListsPage({ sharedOnly = false }) {
   }
 
   return (
-    <div className="problem-lists-page stack-y-5">
+    <div className="stack-y-5">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="m-0 text-2xl font-bold tracking-tight text-text-primary">{sharedOnly ? "共享题单" : "我的题单"}</h1>

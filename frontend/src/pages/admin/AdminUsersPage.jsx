@@ -173,10 +173,10 @@ export default function AdminUsersPage() {
       ) : (
         <div className="bg-white border border-border rounded-ui overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="user-management-table w-full min-w-[960px] text-sm">
+            <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-bg-secondary">
-                  <th className="min-w-[260px] text-left px-4 py-2.5 font-medium text-text-secondary">用户 / 校内资料</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-text-secondary">用户 / 校内资料</th>
                   <th className="text-left px-4 py-2.5 font-medium text-text-secondary">邮箱</th>
                   <th className="text-left px-4 py-2.5 font-medium text-text-secondary">角色</th>
                   <th className="text-left px-4 py-2.5 font-medium text-text-secondary">成员身份</th>
@@ -189,7 +189,7 @@ export default function AdminUsersPage() {
               <tbody>
                 {filteredUsers.map((u) => (
                   <tr key={u.id} className="border-b border-border last:border-0 hover:bg-bg-secondary">
-                    <td className="min-w-[260px] px-4 py-2.5">
+                    <td className="px-4 py-2.5">
                       <div className="flex items-center gap-2">
                         <UserAvatar user={u} size={24} />
                         <span>
@@ -201,7 +201,7 @@ export default function AdminUsersPage() {
                         </span>
                       </div>
                     </td>
-                    <td className="whitespace-nowrap px-4 py-2.5 text-text-secondary">{u.email || "-"}</td>
+                    <td className="px-4 py-2.5 text-text-secondary">{u.email || "-"}</td>
                     <td className="px-4 py-2.5">
                       <span className={`text-xs px-2 py-0.5 rounded-full ${
                         u.role === "SUPER_ADMIN" ? "bg-[#fff0f0] text-error" :

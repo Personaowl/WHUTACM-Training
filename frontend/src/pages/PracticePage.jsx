@@ -112,11 +112,11 @@ export default function PracticePage() {
   ));
 
   return (
-    <div className="practice-page stack-y-5">
+    <div className="stack-y-5">
       <h1 className="text-lg font-semibold text-text-primary m-0">自主练习</h1>
 
       {/* Draw panel */}
-      <div className="practice-filters bg-white border border-border rounded-ui p-4">
+      <div className="bg-white border border-border rounded-ui p-4">
         <div className="flex items-end gap-3 flex-wrap">
           <label className="flex flex-col gap-1">
             <span className="text-xs text-text-secondary">最小难度</span>

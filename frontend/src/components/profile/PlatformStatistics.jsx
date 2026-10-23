@@ -11,15 +11,15 @@ export default function PlatformStatistics({ platform, accountId, overview, load
   const date = synced && !Number.isNaN(synced.getTime()) ? synced.toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : null;
   return <section className="platform-statistics" aria-label="平台统计" aria-busy={loading}>
     <div className="platform-statistics-heading">
-      {accountId ? <a href={data?.profileUrl || undefined} target="_blank" rel="noopener noreferrer" style={hasMetric(data?.rating) ? { color: rating.color } : undefined}>
+      {accountId ? <a href={data?.profileUrl || undefined} target="_blank" rel="noopener noreferrer" style={{ color: rating.color }}>
         <span>{accountId}</span>{data?.profileUrl && <ExternalLink size={13} />}
       </a> : <span className="platform-empty-account">账号统计</span>}
       <span className="platform-data-state">{state || "本地快照"}</span>
     </div>
     <dl className="platform-metrics">
-      <div><dt>当前 Rating</dt><dd className={hasMetric(data?.rating) ? undefined : "platform-metric-missing"} style={hasMetric(data?.rating) ? { color: rating.color } : undefined}>{formatPlatformMetric(data?.rating)}</dd>{rating.label && <small style={{ color: rating.color }}>{rating.label}</small>}</div>
-      <div><dt>历史最高</dt><dd className={hasMetric(data?.maxRating) ? undefined : "platform-metric-missing"} style={hasMetric(data?.maxRating) ? { color: maximum.color } : undefined}>{formatPlatformMetric(data?.maxRating)}</dd>{maximum.label && <small style={{ color: maximum.color }}>{maximum.label}</small>}</div>
-      <div><dt>解题数</dt><dd className={hasMetric(data?.solvedCount) ? undefined : "platform-metric-missing"}>{formatPlatformMetric(data?.solvedCount)}</dd><small>题</small></div>
+      <div><dt>当前 Rating</dt><dd style={{ color: rating.color }}>{formatPlatformMetric(data?.rating)}</dd>{rating.label && <small style={{ color: rating.color }}>{rating.label}</small>}</div>
+      <div><dt>历史最高</dt><dd style={{ color: maximum.color }}>{formatPlatformMetric(data?.maxRating)}</dd>{maximum.label && <small style={{ color: maximum.color }}>{maximum.label}</small>}</div>
+      <div><dt>解题数</dt><dd>{formatPlatformMetric(data?.solvedCount)}</dd><small>题</small></div>
     </dl>
     <div className="platform-statistics-foot">
       <span title={platform === "codeforces" ? "来自已有本地快照，做题统计最多覆盖最近 10000 条提交；此页不发起外部同步。" : undefined}>
@@ -28,8 +28,4 @@ export default function PlatformStatistics({ platform, accountId, overview, load
       {accountId && (error || data?.dataStatus === "UNAVAILABLE") && <button type="button" onClick={onRetry} disabled={loading}><RefreshCw size={12} />重试</button>}
     </div>
   </section>;
-}
-
-function hasMetric(value) {
-  return typeof value === "number" && Number.isFinite(value);
 }

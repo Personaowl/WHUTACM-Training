@@ -5,7 +5,6 @@ import { AuthProvider } from "./context/AuthContext";
 import App from "./App";
 import "@fontsource-variable/nunito-sans";
 import "./index.css";
-import "./Refinements.css";
 
 createRoot(document.getElementById("app")).render(
   <StrictMode>
