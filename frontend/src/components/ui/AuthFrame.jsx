@@ -4,13 +4,6 @@ import { Link } from "react-router-dom";
 export default function AuthFrame({ title, subtitle, children, footer }) {
   return (
     <main className="auth-shell">
-      <div className="auth-geometry" aria-hidden="true">
-        <span className="geometry-ring geometry-ring-one" />
-        <span className="geometry-ring geometry-ring-two" />
-        <span className="geometry-square" />
-        <span className="geometry-line" />
-      </div>
-
       <section className="auth-intro">
         <Link to="/" className="brand-lockup">
           <span className="brand-mark">
@@ -21,12 +14,13 @@ export default function AuthFrame({ title, subtitle, children, footer }) {
         <div className="auth-intro-copy">
           <h2>WHUT-ACM<br />训练平台</h2>
           <p className="auth-intro-affiliation">武汉理工大学ACM协会</p>
+          <ul className="auth-training-modes" aria-label="训练内容">
+            <li><span>每日一题</span><small>Easy / Hard</small></li>
+            <li><span>每周一赛</span><small>AtCoder ABC</small></li>
+            <li><span>个人训练</span><small>练习 · 补题 · 题单</small></li>
+          </ul>
         </div>
-        <div className="auth-seam-decoration" aria-hidden="true">
-          <span className="auth-seam-node auth-seam-node-one" />
-          <span className="auth-seam-node auth-seam-node-two" />
-          <span className="auth-seam-node auth-seam-node-three" />
-        </div>
+        <p className="auth-platforms">Codeforces · AtCoder · 洛谷 · Nowcoder</p>
       </section>
 
       <section className="auth-card-wrap">

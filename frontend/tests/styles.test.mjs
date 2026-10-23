@@ -47,6 +47,24 @@ test("the shared refinement stylesheet is loaded after the base stylesheet", asy
   assert.ok(entry.indexOf('"./Refinements.css"') > entry.indexOf('"./index.css"'));
 });
 
+test("desktop typography has shared readable roles without zooming the application", async () => {
+  const refinements = await readFile(new URL("../src/Refinements.css", import.meta.url), "utf8");
+  assert.match(refinements, /@media \(min-width: 1025px\)[\s\S]*--ui-body: 16px;[\s\S]*--ui-meta: 14px;/);
+  assert.match(refinements, /body\s*\{[^}]*font-size:\s*var\(--ui-body\)/);
+  assert.match(refinements, /\.app-content \.text-sm\s*\{[^}]*font-size:\s*var\(--ui-body\)/);
+  assert.match(refinements, /\.app-content \.text-xs\s*\{[^}]*font-size:\s*var\(--ui-meta\)/);
+  assert.match(refinements, /\.auth-field\s*\{[^}]*height:\s*52px;[^}]*font-size:\s*17px;/);
+  assert.doesNotMatch(refinements, /(?:^|[;{])\s*zoom\s*:/m);
+  assert.doesNotMatch(refinements, /transform:\s*scale\(/);
+});
+
+test("the enlarged auth cover preserves real platform and training content", async () => {
+  const frame = await readFile(new URL("../src/components/ui/AuthFrame.jsx", import.meta.url), "utf8");
+  assert.match(frame, /auth-training-modes/);
+  assert.match(frame, /AtCoder ABC/);
+  assert.doesNotMatch(frame, /geometry-ring|auth-seam-node/);
+});
+
 test("the locked dependency tree includes the native bindings used by Ubuntu CI", async () => {
   const lock = JSON.parse(await readFile(new URL("../package-lock.json", import.meta.url), "utf8"));
   for (const name of ["@tailwindcss/oxide-linux-x64-gnu", "lightningcss-linux-x64-gnu", "@rolldown/binding-linux-x64-gnu"]) {

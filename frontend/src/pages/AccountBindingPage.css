@@ -17,7 +17,7 @@
   border-radius: 10px;
   background: #f2f5f8;
   color: var(--ink, #132238);
-  font-size: 13px;
+  font-size: var(--ui-meta);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
@@ -35,7 +35,7 @@
 }
 
 .binding-page .binding-card::before { display: none; }
-.binding-page .binding-card-head { gap: 14px; padding: 22px 24px 0; }
+.binding-page .binding-card-head { gap: 14px; padding: 24px; background: #edf5fd; border-bottom: 1px solid #dce7f2; }
 
 .binding-page .binding-platform-mark {
   width: 38px;
@@ -55,7 +55,7 @@
   letter-spacing: -.025em;
 }
 
-.binding-page .binding-card-head span { margin-top: 4px; color: var(--muted, #5f6c79); font-size: 13px; }
+.binding-page .binding-card-head span { margin-top: 4px; color: var(--muted, #5f6c79); font-size: var(--ui-meta); }
 .binding-page .binding-card-head span.is-connected { color: #286344; font-weight: 500; }
 .binding-controls { padding: 18px 24px 24px; }
 
@@ -104,12 +104,12 @@
 }
 
 .binding-page .binding-input-row .button-primary:disabled { background: #f2f4f6; color: #67717d; opacity: 1; }
-.binding-page .binding-uid-hint { margin: 10px 0 0; color: var(--muted, #5f6c79); font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.binding-page .binding-uid-hint { margin: 10px 0 0; color: var(--muted, #5f6c79); font-size: var(--ui-meta); line-height: 1.6; overflow-wrap: anywhere; }
 .binding-page .binding-step { border-color: var(--line, #e3e8ed); border-radius: 10px; background: #f4f7fa; color: #4c5d70; line-height: 1.65; }
 .binding-page .binding-step-title { font-weight: 600; }
 .binding-page .binding-step-copy code { overflow-wrap: anywhere; border: 1px solid var(--line, #e3e8ed); border-radius: 8px; font-size: 14px; font-weight: 600; }
 
-.platform-statistics { margin-top: auto; padding: 20px 24px; border-top: 1px solid var(--line, #e3e8ed); background: #f6f8fa; }
+.platform-statistics { margin-top: auto; padding: 20px 24px; border-top: 1px solid var(--line, #e3e8ed); background: #f3f8fd; }
 .platform-statistics-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 27px; margin-bottom: 20px; }
 .platform-statistics-heading > a { display: inline-flex; align-items: center; gap: 7px; min-width: 0; font-size: 18px; font-weight: 650; letter-spacing: -.02em; }
 .platform-statistics-heading > a { color: var(--ink, #132238); }
@@ -117,15 +117,33 @@
 .platform-statistics-heading > a > svg { flex-shrink: 0; }
 .platform-statistics-heading > a[href]:hover { text-decoration: underline; text-underline-offset: 4px; }
 .platform-empty-account { color: var(--muted, #5f6c79); font-size: 14px; font-weight: 500; }
-.platform-data-state { flex-shrink: 0; color: var(--muted, #5f6c79); font-size: 12px; white-space: nowrap; }
+.platform-data-state { flex-shrink: 0; color: var(--muted, #5f6c79); font-size: var(--ui-meta); white-space: nowrap; }
 .platform-metrics { display: grid; grid-template-columns: 1.1fr 1.1fr 1fr; gap: 16px; margin: 0; }
 .platform-metrics > div { min-width: 0; }
-.platform-metrics dt { margin-bottom: 6px; color: var(--muted, #5f6c79); font-size: 12px; }
+.platform-metrics dt { margin-bottom: 6px; color: var(--muted, #5f6c79); font-size: var(--ui-meta); }
 .platform-metrics dd { margin: 0; color: var(--ink, #132238); font-size: 28px; font-weight: 600; line-height: 1.2; letter-spacing: -.025em; font-variant-numeric: tabular-nums; }
 .platform-metrics dd.platform-metric-missing { color: var(--muted, #5f6c79); font-size: 18px; font-weight: 400; line-height: 1.867; }
-.platform-metrics small { display: block; min-height: 18px; margin-top: 6px; color: var(--muted, #5f6c79); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
-.platform-statistics-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 18px; margin-top: 18px; color: var(--muted, #5f6c79); font-size: 12px; }
-.platform-statistics-foot button { display: inline-flex; align-items: center; gap: 5px; min-height: 28px; margin-block: -5px; padding: 0 4px; border: 0; background: transparent; color: #365b7c; font-size: 12px; }
+.platform-metrics small { display: block; min-height: 18px; margin-top: 6px; color: var(--muted, #5f6c79); font-size: var(--ui-meta); line-height: 1.5; overflow-wrap: anywhere; }
+.platform-statistics-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 18px; margin-top: 18px; color: var(--muted, #5f6c79); font-size: var(--ui-meta); }
+.platform-statistics-foot button { display: inline-flex; align-items: center; gap: 5px; min-height: 28px; margin-block: -5px; padding: 0 4px; border: 0; background: transparent; color: #365b7c; font-size: var(--ui-meta); }
+
+@media (min-width: 1025px) {
+  .platform-binding-grid { gap: 24px; }
+  .binding-page .binding-summary { font-size: var(--ui-label); min-height: 40px; background: #e6f1fc; color: #234f75; }
+  .binding-page .binding-card h2 { font-size: 24px; }
+  .binding-page .binding-platform-mark { width: 46px; height: 46px; }
+  .binding-page .binding-card-head span, .binding-page .binding-card-description { font-size: var(--ui-body); }
+  .binding-controls { padding: 24px; }
+  .binding-page .binding-input-row .form-input, .binding-page .binding-input-row .button-primary { min-height: 46px; font-size: var(--ui-body); }
+  .binding-page .binding-input-row .button-primary { color: #194b78; border-color: #b4cde4; background: #eaf3fc; }
+  .binding-page .binding-uid-hint, .binding-page .binding-step small { font-size: var(--ui-meta); }
+  .binding-page .binding-step { font-size: var(--ui-body); }
+  .platform-statistics { padding: 24px; }
+  .platform-statistics-heading > a { font-size: var(--ui-section); }
+  .platform-empty-account, .platform-data-state, .platform-metrics dt, .platform-metrics small, .platform-statistics-foot, .platform-statistics-foot button { font-size: var(--ui-meta); }
+  .platform-metrics dd { font-size: var(--ui-value); }
+  .platform-metrics dd.platform-metric-missing { font-size: 20px; line-height: 1.92; }
+}
 
 @media (max-width: 900px) {
   .platform-binding-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; }
@@ -133,8 +151,8 @@
 
 @media (max-width: 640px) {
   .binding-page .page-heading { flex-direction: row; align-items: center; gap: 10px; }
-  .binding-page .binding-summary { align-self: auto; min-height: 34px; padding-inline: 10px; gap: 5px; font-size: 12px; }
-  .binding-page .binding-card-head { padding: 20px 20px 0; }
+  .binding-page .binding-summary { align-self: auto; min-height: 34px; padding-inline: 10px; gap: 5px; font-size: var(--ui-meta); }
+  .binding-page .binding-card-head { padding: 20px; }
   .binding-controls { padding: 18px 20px 20px; }
   .platform-statistics { padding: 18px 20px; }
   .platform-statistics-heading { gap: 8px; }

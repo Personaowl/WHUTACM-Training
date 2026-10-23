@@ -182,14 +182,14 @@ export default function DailyProblemPage() {
   const todayTotalCount = todayProblems.length;
 
   return (
-    <div className="stack-y-5">
+    <div className="daily-page stack-y-5">
       <h1 className="text-lg font-semibold text-text-primary m-0">{TEXT.title}</h1>
 
       {error && (
         <p className="text-sm text-error bg-[#fff0f0] rounded-ui px-3 py-2 m-0">{error}</p>
       )}
 
-      <section className="bg-white border border-border rounded-ui px-4 py-3">
+      <section className="daily-preferences bg-white border border-border rounded-ui px-4 py-3">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             <span className="grid place-items-center w-9 h-9 shrink-0 rounded-full bg-bg-secondary">
