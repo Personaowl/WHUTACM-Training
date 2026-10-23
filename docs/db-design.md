@@ -66,6 +66,8 @@
 | user_daily_slot_status | id、user_id、date、slot、problem_key、submission_id、verdict、checked_at、score | (user_id,date,problem_key) 唯一；保留题级完成；有 (user_id,date)、problem_key、(date,user_id) 索引 |
 | user_practice_draw | id、user_id、draw_date、problem_key、contest_id、problem_index、name、rating、tags、source_url、drawn_at、submission_id、verdict、checked_at | (user_id,draw_date) 索引；仅个人抽题历史，后三个校验字段为旧兼容字段，不代表仍提供练习校验 |
 
+cf_problem 另有 idx_cf_practice_filter (is_interactive,source_contest_id,rating,id) 复合索引，用于练习筛选与有序随机偏移读取。抽题仍需候选计数，完整标签 AND 谓词不是独立索引；真实 MySQL 是否使用该索引应查看执行计划。升级会补建索引，应先备份并选择低峰，避免建索引时的锁与 I/O 开销影响使用。
+
 每日题计分数据流：
 
 1. CF 外部校验在数据库事务之外完成。

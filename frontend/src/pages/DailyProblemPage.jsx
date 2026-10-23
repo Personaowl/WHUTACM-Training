@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { checkInToday, getDailyHistory, getTodayProblem } from "../api/dailyProblem";
 import { updateMyProfile } from "../api/user";
 import CheckInModal from "../components/ui/CheckInModal";
@@ -35,6 +35,10 @@ export default function DailyProblemPage() {
   const { user, updateUser } = useAuth();
   const [todayData, setTodayData] = useState(null);
   const [historyData, setHistoryData] = useState([]);
+  const activeCheck = useRef(null);
+  const groupedHistory = useMemo(() => groupByDate(historyData), [historyData]);
+  const historyDates = useMemo(() => Object.keys(groupedHistory).sort().reverse(), [groupedHistory]);
+  useEffect(() => () => activeCheck.current?.abort(), []);
   const [historyPage, setHistoryPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -102,10 +106,14 @@ export default function DailyProblemPage() {
   }
 
   async function handleCheckIn(submissionId) {
+    activeCheck.current?.abort();
+    const controller = new AbortController();
+    activeCheck.current = controller;
     const previousDayScore = Number(todayData?.score) || 0;
     setCheckInLoading(true);
     try {
-      const resp = await checkInToday(submissionId);
+      const resp = await checkInToday(submissionId, { signal: controller.signal });
+      if (controller.signal.aborted || activeCheck.current !== controller) return;
       if (resp.code === 200) {
         const currentDayScore = Number(resp.data?.score) || 0;
         setCheckInResult({
@@ -122,6 +130,7 @@ export default function DailyProblemPage() {
         });
       }
     } catch {
+      if (controller.signal.aborted || activeCheck.current !== controller) return;
       setCheckInResult({
         accepted: false,
         submissionId,
@@ -129,7 +138,10 @@ export default function DailyProblemPage() {
         score: 0,
       });
     } finally {
-      setCheckInLoading(false);
+      if (activeCheck.current === controller) {
+        activeCheck.current = null;
+        if (!controller.signal.aborted) setCheckInLoading(false);
+      }
     }
   }
 
@@ -159,8 +171,6 @@ export default function DailyProblemPage() {
     );
   }
 
-  const groupedHistory = groupByDate(historyData);
-  const historyDates = Object.keys(groupedHistory).sort().reverse();
   const totalHistoryPages = Math.ceil(historyDates.length / PAGE_SIZE);
   const pagedDates = historyDates.slice(
     (historyPage - 1) * PAGE_SIZE,

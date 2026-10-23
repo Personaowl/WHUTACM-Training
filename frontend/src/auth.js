@@ -1,4 +1,15 @@
 const AUTH_STORAGE_KEY = "whut-training-auth";
+let cachedRaw = null;
+let cachedAuth = null;
+
+function copyAuth(auth) {
+  if (!auth || typeof auth !== "object") return auth;
+  return {
+    ...auth,
+    ...(auth.user ? { user: { ...auth.user } } : {}),
+    ...(auth.tokens ? { tokens: { ...auth.tokens } } : {}),
+  };
+}
 
 function formatDisplayDateTime(value) {
   let date = null;
@@ -42,12 +53,20 @@ export function getStoredAuth() {
 
   const raw = window.localStorage.getItem(AUTH_STORAGE_KEY);
   if (!raw) {
+    cachedRaw = null;
+    cachedAuth = null;
     return null;
   }
 
+  if (raw === cachedRaw) return copyAuth(cachedAuth);
+
   try {
-    return normalizeAuth(JSON.parse(raw));
+    cachedAuth = normalizeAuth(JSON.parse(raw));
+    cachedRaw = raw;
+    return copyAuth(cachedAuth);
   } catch {
+    cachedRaw = null;
+    cachedAuth = null;
     window.localStorage.removeItem(AUTH_STORAGE_KEY);
     return null;
   }
@@ -59,6 +78,8 @@ export function setStoredAuth(auth) {
   }
 
   window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(auth));
+  cachedRaw = null;
+  cachedAuth = null;
 }
 
 export function clearStoredAuth() {
@@ -67,6 +88,8 @@ export function clearStoredAuth() {
   }
 
   window.localStorage.removeItem(AUTH_STORAGE_KEY);
+  cachedRaw = null;
+  cachedAuth = null;
 }
 
 export function buildAuthFromLogin(data) {

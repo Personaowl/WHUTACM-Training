@@ -430,6 +430,8 @@ public class MySqlInitializer implements DatabaseInitializer {
                 "ALTER TABLE user_daily_slot_status ADD INDEX idx_user_daily_slot_status_date_user (date, user_id)"
         );
 
+        ensureIndex("cf_problem", "idx_cf_practice_filter",
+                "ALTER TABLE cf_problem ADD INDEX idx_cf_practice_filter (is_interactive, source_contest_id, rating, id)");
         ensureColumn("problem_list", "community_key", "ALTER TABLE problem_list ADD COLUMN community_key VARCHAR(32) UNIQUE");
         ensureColumn("problem_list_item", "added_by", "ALTER TABLE problem_list_item ADD COLUMN added_by BIGINT");
         jdbcTemplate.update("""

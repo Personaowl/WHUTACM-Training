@@ -71,6 +71,7 @@ npm run dev
 | [生产部署](docs/deployment.md) | 新服务器安装、环境变量、HTTP/IP 与 HTTPS 配置 |
 | [服务器与数据库迁移](docs/migration.md) | 电脑中转、备份校验、数据库恢复、切换与回退 |
 | [发布与日常运维](docs/operations.md) | 更新发布、健康检查、备份要求、会话与性能排查 |
+| [性能检查记录](docs/performance.md) | 已做优化、验证范围与并发验收注意事项 |
 | [维护记录](docs/changelog.md) | 已归档的稳定性加固和依赖审计说明 |
 
 文档已按当前实现核对；后续发布与运维事项见 [维护检查清单](docs/todolist.md)。仓库模板不等于服务器上的实际配置，部署后仍需验收。

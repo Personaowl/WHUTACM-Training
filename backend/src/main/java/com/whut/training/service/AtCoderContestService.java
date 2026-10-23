@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -29,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Supplier;
@@ -61,6 +63,10 @@ public class AtCoderContestService implements ContestService {
     private final String luoguUrl;
     private final Duration cacheDuration;
     private final Executor contestFetchExecutor;
+    private final Clock clock;
+    private final Object refreshLock = new Object();
+    private CompletableFuture<List<UpcomingContestItem>> refreshing;
+    private volatile Instant retryAfter = Instant.EPOCH;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private volatile CacheSnapshot cacheSnapshot = new CacheSnapshot(List.of(), Instant.EPOCH);
     private volatile Map<String, List<UpcomingContestItem>> lastSuccessfulByPlatform = Map.of();
@@ -84,74 +90,125 @@ public class AtCoderContestService implements ContestService {
             @Value("${contests.luogu-url:https://www.luogu.com.cn/contest/list}") String luoguUrl,
             @Qualifier("contestFetchExecutor") Executor contestFetchExecutor
     ) {
+        this(atCoderUrl, cacheMinutes, codeforcesUrl, nowcoderUrl, luoguUrl, contestFetchExecutor, Clock.systemUTC());
+    }
+
+    AtCoderContestService(String atCoderUrl, long cacheMinutes, String codeforcesUrl, String nowcoderUrl,
+                         String luoguUrl, Executor contestFetchExecutor, Clock clock) {
         this.atCoderUrl = atCoderUrl;
         this.codeforcesUrl = codeforcesUrl;
         this.nowcoderUrl = nowcoderUrl;
         this.luoguUrl = luoguUrl;
         this.cacheDuration = Duration.ofMinutes(Math.max(1, cacheMinutes));
         this.contestFetchExecutor = contestFetchExecutor;
+        this.clock = clock;
     }
 
     @Override
     public List<UpcomingContestItem> getUpcomingContests() {
-        Instant now = Instant.now();
+        Instant now = clock.instant();
         CacheSnapshot current = cacheSnapshot;
         if (now.isBefore(current.expiresAt())) {
             return current.items();
         }
 
-        synchronized (this) {
-            current = cacheSnapshot;
-            if (now.isBefore(current.expiresAt())) {
-                return current.items();
-            }
-
-            List<CompletableFuture<SourceResult>> tasks = List.of(
-                    CompletableFuture.supplyAsync(
-                            () -> fetchSource("CODEFORCES", this::fetchCodeforces), contestFetchExecutor),
-                    CompletableFuture.supplyAsync(
-                            () -> fetchSource("ATCODER", this::fetchAtCoder), contestFetchExecutor),
-                    CompletableFuture.supplyAsync(
-                            () -> fetchSource("NOWCODER", this::fetchNowcoder), contestFetchExecutor),
-                    CompletableFuture.supplyAsync(
-                            () -> fetchSource("LUOGU", this::fetchLuogu), contestFetchExecutor)
-            );
-            List<SourceResult> results = tasks.stream().map(CompletableFuture::join).toList();
-
-            Map<String, List<UpcomingContestItem>> nextByPlatform =
-                    new HashMap<>(lastSuccessfulByPlatform);
-            int successfulSources = 0;
-            for (SourceResult result : results) {
-                if (result.error() == null) {
-                    nextByPlatform.put(result.platform(), result.items());
-                    successfulSources++;
-                } else {
-                    log.warn("contest_source_unavailable platform={} reason={}",
-                            result.platform(), result.error().getMessage());
-                }
-            }
-
-            List<UpcomingContestItem> combined = nextByPlatform.values().stream()
-                    .flatMap(List::stream)
-                    .collect(java.util.stream.Collectors.toMap(
-                            item -> item.platform() + ":" + item.contestId(),
-                            item -> item,
-                            (left, right) -> left,
-                            LinkedHashMap::new
-                    ))
-                    .values().stream()
-                    .sorted(Comparator.comparing(item -> OffsetDateTime.parse(item.startTime()).toInstant()))
-                    .limit(120)
-                    .toList();
-
-            if (successfulSources == 0 && combined.isEmpty()) {
-                throw new BusinessException(503, "近期比赛暂时无法获取，请稍后重试");
-            }
-
-            lastSuccessfulByPlatform = Map.copyOf(nextByPlatform);
-            cacheSnapshot = new CacheSnapshot(combined, now.plus(cacheDuration));
-            return combined;
+        CompletableFuture<List<UpcomingContestItem>> refresh = refreshIfNeeded();
+        // 有历史快照时立即返回，外站延迟只影响后台刷新，不占用请求线程。
+        if (!Instant.EPOCH.equals(current.expiresAt())) {
+            return cacheSnapshot.items();
         }
+        try {
+            return refresh.join();
+        } catch (CompletionException error) {
+            if (error.getCause() instanceof BusinessException business) {
+                throw business;
+            }
+            throw new BusinessException(503, "近期比赛暂时无法获取，请稍后重试");
+        }
+    }
+
+    private CompletableFuture<List<UpcomingContestItem>> refreshIfNeeded() {
+        synchronized (refreshLock) {
+            Instant now = clock.instant();
+            CacheSnapshot current = cacheSnapshot;
+            if (now.isBefore(current.expiresAt())) {
+                return CompletableFuture.completedFuture(current.items());
+            }
+            if (refreshing != null) {
+                return refreshing;
+            }
+            if (now.isBefore(retryAfter)) {
+                return CompletableFuture.failedFuture(new BusinessException(503, "近期比赛暂时无法获取，请稍后重试"));
+            }
+            CompletableFuture<List<UpcomingContestItem>> result = new CompletableFuture<>();
+            refreshing = result;
+            List<CompletableFuture<SourceResult>> tasks = List.of(
+                    submitSource("CODEFORCES", this::fetchCodeforces),
+                    submitSource("ATCODER", this::fetchAtCoder),
+                    submitSource("NOWCODER", this::fetchNowcoder),
+                    submitSource("LUOGU", this::fetchLuogu)
+            );
+            CompletableFuture.allOf(tasks.toArray(CompletableFuture[]::new)).whenComplete((ignored, failure) -> {
+                try {
+                    if (failure != null) {
+                        throw new BusinessException(503, "近期比赛暂时无法获取，请稍后重试");
+                    }
+                    result.complete(mergeSources(tasks.stream().map(CompletableFuture::join).toList()));
+                } catch (RuntimeException error) {
+                    retryAfter = clock.instant().plusSeconds(30);
+                    result.completeExceptionally(error);
+                } finally {
+                    synchronized (refreshLock) {
+                        if (refreshing == result) refreshing = null;
+                    }
+                }
+            });
+            return result;
+        }
+    }
+
+    private CompletableFuture<SourceResult> submitSource(String platform, Supplier<List<UpcomingContestItem>> fetcher) {
+        try {
+            return CompletableFuture.supplyAsync(() -> fetchSource(platform, fetcher), contestFetchExecutor);
+        } catch (RuntimeException rejected) {
+            return CompletableFuture.completedFuture(new SourceResult(platform, List.of(), rejected));
+        }
+    }
+
+    private List<UpcomingContestItem> mergeSources(List<SourceResult> results) {
+        Map<String, List<UpcomingContestItem>> nextByPlatform = new HashMap<>(lastSuccessfulByPlatform);
+        int successfulSources = 0;
+        for (SourceResult result : results) {
+            if (result.error() == null) {
+                nextByPlatform.put(result.platform(), result.items());
+                successfulSources++;
+            } else {
+                log.warn("contest_source_unavailable platform={} reason={}",
+                        result.platform(), result.error().getMessage());
+            }
+        }
+
+        List<UpcomingContestItem> combined = nextByPlatform.values().stream()
+                .flatMap(List::stream)
+                .collect(java.util.stream.Collectors.toMap(
+                        item -> item.platform() + ":" + item.contestId(),
+                        item -> item,
+                        (left, right) -> left,
+                        LinkedHashMap::new
+                ))
+                .values().stream()
+                .sorted(Comparator.comparing(item -> OffsetDateTime.parse(item.startTime()).toInstant()))
+                .limit(120)
+                .toList();
+
+        if (successfulSources == 0 && nextByPlatform.isEmpty()) {
+            throw new BusinessException(503, "近期比赛暂时无法获取，请稍后重试");
+        }
+
+        lastSuccessfulByPlatform = Map.copyOf(nextByPlatform);
+        Duration nextRefresh = successfulSources == 0 ? Duration.ofSeconds(30) : cacheDuration;
+        cacheSnapshot = new CacheSnapshot(combined, clock.instant().plus(nextRefresh));
+        return combined;
     }
 
     private SourceResult fetchSource(String platform, Supplier<List<UpcomingContestItem>> fetcher) {
@@ -162,7 +219,7 @@ public class AtCoderContestService implements ContestService {
         }
     }
 
-    private List<UpcomingContestItem> fetchAtCoder() {
+    List<UpcomingContestItem> fetchAtCoder() {
         return parseUpcomingContests(fetchDocument(atCoderUrl));
     }
 
@@ -175,15 +232,15 @@ public class AtCoderContestService implements ContestService {
         );
     }
 
-    private List<UpcomingContestItem> fetchNowcoder() {
+    List<UpcomingContestItem> fetchNowcoder() {
         return parseNowcoderContests(fetchDocument(nowcoderUrl), Instant.now());
     }
 
-    private List<UpcomingContestItem> fetchLuogu() {
+    List<UpcomingContestItem> fetchLuogu() {
         return parseLuoguContests(fetchDocument(luoguUrl), Instant.now());
     }
 
-    private List<UpcomingContestItem> fetchCodeforces() {
+    List<UpcomingContestItem> fetchCodeforces() {
         try {
             String json = Jsoup.connect(codeforcesUrl)
                     .userAgent(USER_AGENT)

@@ -39,8 +39,11 @@ public class ProblemListService implements ProblemListUseCase {
     }
 
     public List<ProblemListSummary> listVisible(User currentUser) {
-        repository.ensureCommunity(requireUser(currentUser).getId());
-        return repository.findVisible(requireUser(currentUser).getId());
+        Long userId = requireUser(currentUser).getId();
+        List<ProblemListSummary> lists = repository.findVisible(userId);
+        if (lists.stream().anyMatch(ProblemListSummary::collaborative)) return lists;
+        repository.ensureCommunity(userId);
+        return repository.findVisible(userId);
     }
 
     public ProblemListDetail get(User currentUser, Long listId) {

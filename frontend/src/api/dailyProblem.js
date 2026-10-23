@@ -1,35 +1,37 @@
-import http from "./http";
-import { authHeaders } from "./auth";
+import http from "./http.js";
+import { authHeaders } from "./auth.js";
+import { checkInPollDelay, waitForCheckInPoll } from "../utils/checkInPolling.js";
 
 export async function getTodayProblem() {
   const res = await http.get("/api/daily-problem/today", { headers: authHeaders() });
   return res.data;
 }
 
-export async function checkInToday(submissionId) {
+export async function checkInToday(submissionId, { signal } = {}) {
   const res = await http.post(
     "/api/daily-problem/check-in",
     { submissionId },
-    { headers: authHeaders() }
+    { headers: authHeaders(), signal }
   );
   if (res.data?.code !== 200 || !res.data?.data?.jobId) return res.data;
 
   let job = res.data.data;
-  for (let attempt = 0; attempt < 60; attempt += 1) {
+  for (let attempt = 0; attempt <= 60; attempt += 1) {
     if (job.status === "SUCCEEDED") {
       return { code: 200, message: job.message || "success", data: job.result };
     }
     if (job.status === "FAILED") {
       return { code: job.errorCode || 400, message: job.message || "校验失败", data: null };
     }
+    if (attempt === 60) break;
     // The first request is normally a fresh Codeforces submission. Poll quickly
     // at first so a fast check-in does not feel delayed, then back off to avoid
     // unnecessary requests while Codeforces is rate-limited or busy.
-    const delayMs = attempt === 0 ? 250 : attempt < 4 ? 500 : 1000;
-    await new Promise((resolve) => window.setTimeout(resolve, delayMs));
+    const delayMs = checkInPollDelay(attempt, typeof document !== "undefined" && document.visibilityState === "hidden");
+    await waitForCheckInPoll(delayMs, signal);
     const statusResponse = await http.get(
       `/api/daily-problem/check-in/${encodeURIComponent(job.jobId)}`,
-      { headers: authHeaders() }
+      { headers: authHeaders(), signal }
     );
     if (statusResponse.data?.code !== 200) return statusResponse.data;
     job = statusResponse.data.data;

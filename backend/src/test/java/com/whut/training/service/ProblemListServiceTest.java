@@ -22,6 +22,16 @@ import static org.mockito.Mockito.when;
 class ProblemListServiceTest {
 
     @Test
+    void normalListReadsDoNotAttemptAnInsertForTheExistingCommunity() {
+        var repository=mock(ProblemListRepository.class);
+        var service=new ProblemListService(repository);
+        var community=new ProblemListSummary(1L,"公共题单",null,2L,"owner","Owner",true,true,0,false,null,null);
+        when(repository.findVisible(3L)).thenReturn(List.of(community));
+        for(int i=0;i<40;i++) assertThat(service.listVisible(user(3L,UserRole.USER))).containsExactly(community);
+        org.mockito.Mockito.verify(repository,org.mockito.Mockito.never()).ensureCommunity(org.mockito.ArgumentMatchers.anyLong());
+    }
+
+    @Test
     void adminCanPublishAReadOnlySharedList() {
         ProblemListRepository repository = mock(ProblemListRepository.class);
         ProblemListService service = new ProblemListService(repository);
