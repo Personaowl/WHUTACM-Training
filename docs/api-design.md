@@ -55,6 +55,18 @@ LoginResponse 包含 `id, username, email, role, uid, codeforcesRating, maxRatin
 
 CF 绑定窗口为 120 秒，要求验证窗口内向 CF 1A 提交 Compilation Error；AtCoder 窗口为 600 秒，临时修改 Affiliation，成功后可恢复。绑定接口不会代替用户向外部平台提交或修改设置。
 
+### 洛谷与牛客所有权验证
+
+前缀为 `/api/users/{userId}/platform-bindings/{platform}`，platform 仅 luogu / nowcoder。三个接口均仅限本人，管理员也不能查看/代操作他人验证码。
+
+| 方法与路径 | 请求 / 返回 |
+| --- | --- |
+| GET /api/users/{userId}/platform-bindings/{platform} | 当前已绑定 UID 及本人仍有效的验证挑战 |
+| POST /api/users/{userId}/platform-bindings/{platform}/start | JSON：uid，1～18 位正整数文本；生成 10 分钟挑战，不直接绑定 |
+| POST /api/users/{userId}/platform-bindings/{platform}/finish | 无业务请求体；读取对应账号简介验证随机码，成功后消费挑战并保存绑定 |
+
+返回字段：platform、accountId、verifiedAtSeconds、pendingAccountId、verificationToken、expiresAtSeconds、profileUrl。仅 accountId 非空代表已绑定；待验证不算成功。开始间隔 10 秒、验证间隔 5 秒，过密返回 429；未匹配/过期返回 400，重复账号或挑战已更新返回 409，外部页面无法安全读取返回 503。失败不会覆盖原已验证账号。本轮不增加两平台的训练统计、导出或公开资料字段。
+
 ## 3. 每日题与自主练习
 
 以下均要求登录，只操作当前用户记录。

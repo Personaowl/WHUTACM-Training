@@ -27,6 +27,21 @@ public class MySqlInitializer implements DatabaseInitializer {
     @PostConstruct
     public void init() {
         jdbcTemplate.execute("""
+                CREATE TABLE IF NOT EXISTS user_platform_binding (
+                    user_id BIGINT NOT NULL,
+                    platform VARCHAR(16) NOT NULL,
+                    account_id VARCHAR(18),
+                    verified_at BIGINT,
+                    pending_account_id VARCHAR(18),
+                    verification_token VARCHAR(64),
+                    expires_at BIGINT NOT NULL DEFAULT 0,
+                    started_at BIGINT NOT NULL DEFAULT 0,
+                    last_attempt_at BIGINT NOT NULL DEFAULT 0,
+                    PRIMARY KEY (user_id, platform),
+                    UNIQUE KEY uk_platform_account (platform, account_id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                """);
+        jdbcTemplate.execute("""
                 CREATE TABLE IF NOT EXISTS users (
                     id BIGINT PRIMARY KEY AUTO_INCREMENT,
                     username VARCHAR(64) NOT NULL UNIQUE,

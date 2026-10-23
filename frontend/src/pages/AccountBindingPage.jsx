@@ -14,10 +14,15 @@ import {
   startCodeforcesBinding,
 } from "../api/user";
 import { CardSkeleton } from "../components/ui/Skeleton";
+import AdditionalPlatformBinding from "../components/profile/AdditionalPlatformBinding";
 
 export default function AccountBindingPage() {
   const { user, updateUser } = useAuth();
   const [profile, setProfile] = useState(null);
+  const [additionalConnected, setAdditionalConnected] = useState({});
+  function onAdditionalConnected(platform, connected) {
+    setAdditionalConnected(current => ({ ...current, [platform]: connected }));
+  }
   const [loading, setLoading] = useState(true);
   const [pageError, setPageError] = useState("");
   const [cfHandle, setCfHandle] = useState("");
@@ -172,11 +177,11 @@ export default function AccountBindingPage() {
       <header className="page-heading">
         <div>
           <h1 className="page-title">账号绑定</h1>
-          <p>集中管理竞赛平台身份，绑定成功后训练数据会自动归档。</p>
+          <p>集中管理竞赛平台身份；各平台已接入的训练功能以卡片说明为准。</p>
         </div>
         <div className="binding-summary" aria-label="绑定状态">
           <ShieldCheck size={19} />
-          <span>{Number(Boolean(profile?.codeforcesHandle)) + Number(Boolean(profile?.atcoderHandle))}/2 已连接</span>
+          <span>{Number(Boolean(profile?.codeforcesHandle)) + Number(Boolean(profile?.atcoderHandle)) + Number(Boolean(additionalConnected.luogu)) + Number(Boolean(additionalConnected.nowcoder))}/4 已连接</span>
         </div>
       </header>
 
@@ -241,6 +246,8 @@ export default function AccountBindingPage() {
             </BindingStep>
           )}
         </BindingCard>
+        <AdditionalPlatformBinding userId={user.id} platform="luogu" label="洛谷" onConnected={onAdditionalConnected} />
+        <AdditionalPlatformBinding userId={user.id} platform="nowcoder" label="牛客" onConnected={onAdditionalConnected} />
       </div>
     </div>
   );

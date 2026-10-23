@@ -9,7 +9,7 @@
 - 业务库默认名 whut_training，可通过 MYSQL_URL 修改。当前使用 MySQL、InnoDB、utf8mb4_unicode_ci 和 JdbcTemplate，不使用 ORM、SQLite 或 Redis。
 - 推荐服务器 MySQL 8.0；开发用 compose.yaml 实际固定 mysql:8.4。迁移时优先同版本恢复演练，不能把二者当作相同版本或直接复制数据目录。
 - 启动创建缺失表，并执行代码中列出的补字段、补索引和修正 SQL；**CREATE TABLE IF NOT EXISTS 不代表自动对齐任意旧表结构**，当前没有 Flyway/Liquibase 的版本化迁移体系。
-- 当前初始化器创建下列 **19 张表**；旧库可能还有已废弃的表，数量不能作为迁移成功的唯一判据。
+- 当前初始化器创建下列 **20 张表**；旧库可能还有已废弃的表，数量不能作为迁移成功的唯一判据。
 - ID 通常为 BIGINT 自增，周记录及 ABC 关系表使用复合主键。代码未声明外键级联约束，关联完整性与删除流程由应用维护，不能假设删父记录会自动删子记录。
 - date / week_start 等业务日期为 VARCHAR(10) 的 YYYY-MM-DD；多数过程时间为 VARCHAR(64) 的 ISO 字符串；部分创建时间为 TIMESTAMP，外部平台时间为 BIGINT Unix 秒。恢复必须保留这些语义，业务周按 Asia/Shanghai 计算。
 
@@ -40,6 +40,12 @@
 - 两个 token 列各有唯一约束；**新签发令牌保存 SHA-256 摘要**。Repository 为兼容旧会话仍会按原值/摘要查询，不意味着旧数据库中必然全已转换。
 - 过期时间为 Unix 秒，created_at_seconds 沿用首次登录时间。默认 Access 2 小时，会话总长 6 小时；刷新旋转令牌但不续长绝对期限。
 - 按用户与过期时间建立索引，定时清除过期会话。会话持久化，所以正常重启不会像内存 token 一样全部丢失；主动退出、超管重置密码或到期会失效。当前普通资料接口修改密码不会自动撤销其他会话，不能把两种操作混为一谈。
+
+### user_platform_binding（新增 1 表）
+
+保存洛谷与牛客验证状态，不改现有 users 字段。字段为 user_id、platform（luogu / nowcoder）、account_id、verified_at、pending_account_id、verification_token、expires_at、started_at、last_attempt_at。主键为 (user_id,platform)，唯一约束 (platform,account_id) 防止重复绑定，未绑定 account_id 为 NULL。时间均为 Unix 秒。
+
+验证中的 UID 与已验证 UID 分开保存；网络读取在事务之外，完成时锁定该绑定行并再次检查验证码/时效，避免旧请求覆盖新挑战。成功清空 pending_account_id 和 verification_token。升级新增该表、不删除旧数据，迁移需随业务库一起备份；验证码仅对本人接口开放，不对其他成员公开。
 
 ## 3. 题库、每日题与练习（6 表）
 
