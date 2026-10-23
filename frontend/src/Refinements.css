@@ -1,11 +1,12 @@
 /* Shared surfaces and grouped navigation. */
 .sidebar-group { margin-top: 12px; }
-.sidebar-group-heading { display: flex; align-items: center; gap: 9px; width: 100%; padding: 10px 12px; border: 0; border-radius: 9px; color: #91a6be; background: transparent; font-size: 12px; font-weight: 650; text-align: left; cursor: pointer; }
+.sidebar-group-heading { display: flex; align-items: center; gap: 9px; width: 100%; padding: 11px 12px; border: 0; border-radius: 9px; color: #c3d0df; background: transparent; font-size: 15px; font-weight: 700; text-align: left; cursor: pointer; }
 .sidebar-group-heading:hover { color: #eff5fc; background: #ffffff08; }
 .sidebar-group-heading > span { flex: 1; }
 .sidebar-group-heading > svg:last-child { transition: transform .15s; }
 .sidebar-group-heading > svg:last-child.is-open { transform: rotate(180deg); }
-.sidebar-group-items .sidebar-link { padding-left: 20px; font-size: 14px; }
+.sidebar-group-items .sidebar-link { padding-left: 25px; font-size: 14px; font-weight: 500; }
+.sidebar-group-items .sidebar-link.is-active { font-weight: 700; }
 .sidebar-group-items[hidden] { display: none; }
 .app-sidebar.is-collapsed:not(.is-mobile-open) .sidebar-group-heading { display: none; }
 .app-sidebar.is-collapsed:not(.is-mobile-open) .sidebar-group { margin-top: 12px; border-top: 1px solid #ffffff12; padding-top: 8px; }

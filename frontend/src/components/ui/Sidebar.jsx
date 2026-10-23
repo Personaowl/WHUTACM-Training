@@ -50,12 +50,11 @@ const GROUPS = [
 ];
 
 function NavigationGroup({ name, icon: Icon, items, pathname, compact, onClose }) {
-  const active = items.some(item => pathname === item.to || pathname.startsWith(`${item.to}/`));
-  const [expanded, setExpanded] = useState(null);
-  const open = compact || expanded === pathname || (expanded == null && active);
+  const [expanded, setExpanded] = useState(true);
+  const open = compact || expanded;
   return <section className="sidebar-group">
     <button type="button" className="sidebar-group-heading" aria-expanded={open}
-      onClick={() => setExpanded(open ? false : pathname)}><Icon size={16} /><span>{name}</span><ChevronDown size={14} className={open ? "is-open" : ""} /></button>
+      onClick={() => setExpanded(value => !value)}><Icon size={18} /><span>{name}</span><ChevronDown size={14} className={open ? "is-open" : ""} /></button>
     <div className="sidebar-group-items" hidden={!open}>{items.map(item => <NavLink key={item.to} item={item}
       active={pathname === item.to || pathname.startsWith(`${item.to}/`)} collapsed={compact} onNavigate={onClose} />)}</div>
   </section>;

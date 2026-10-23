@@ -15,11 +15,19 @@ import {
 } from "../api/user";
 import { CardSkeleton } from "../components/ui/Skeleton";
 import AdditionalPlatformBinding from "../components/profile/AdditionalPlatformBinding";
+import PlatformStatistics from "../components/profile/PlatformStatistics";
+import { getPlatformOverviews } from "../api/platformOverview";
+import "./AccountBindingPage.css";
 
 export default function AccountBindingPage() {
   const { user, updateUser } = useAuth();
   const [profile, setProfile] = useState(null);
   const [additionalConnected, setAdditionalConnected] = useState({});
+  const [overviews, setOverviews] = useState({});
+  const [statisticsLoading, setStatisticsLoading] = useState(true);
+  const [statisticsError, setStatisticsError] = useState("");
+  const [statisticsRevision, setStatisticsRevision] = useState(0);
+  const reloadStatistics = () => setStatisticsRevision(value => value + 1);
   function onAdditionalConnected(platform, connected) {
     setAdditionalConnected(current => ({ ...current, [platform]: connected }));
   }
@@ -36,6 +44,19 @@ export default function AccountBindingPage() {
   const [atCoderExpiresAt, setAtCoderExpiresAt] = useState(null);
   const [atCoderLoading, setAtCoderLoading] = useState(false);
   const [atCoderMessage, setAtCoderMessage] = useState("");
+
+  useEffect(() => {
+    if (loading || !user?.id) return undefined;
+    let active = true;
+    const controller = new AbortController();
+    setStatisticsLoading(true);
+    setStatisticsError("");
+    getPlatformOverviews(user.id, controller.signal).then(data => {
+      if (active) setOverviews(Object.fromEntries(data.map(item => [item.platform, item])));
+    }).catch(error => { if (active) setStatisticsError(error.message || "统计暂时无法加载"); })
+      .finally(() => { if (active) setStatisticsLoading(false); });
+    return () => { active = false; controller.abort(); };
+  }, [user?.id, loading, statisticsRevision]);
 
   useEffect(() => {
     if (!user?.id) return undefined;
@@ -105,6 +126,7 @@ export default function AccountBindingPage() {
         setCfActive(false);
         setCfExpiresAt(null);
         setCfMessage("Codeforces 账号绑定成功");
+        reloadStatistics();
       } else {
         if (response?.message?.includes("expired")) {
           setCfActive(false);
@@ -157,6 +179,7 @@ export default function AccountBindingPage() {
         setAtCoderToken("");
         setAtCoderExpiresAt(null);
         setAtCoderMessage("AtCoder 账号绑定成功，现在可以恢复原 Affiliation");
+        reloadStatistics();
       } else {
         if (response?.message?.includes("过期")) setAtCoderActive(false);
         setAtCoderMessage(response?.message || "未检测到 Affiliation 验证码");
@@ -173,7 +196,7 @@ export default function AccountBindingPage() {
   }
 
   return (
-    <div className="stack-y-5">
+    <div className="binding-page stack-y-5">
       <header className="page-heading">
         <div>
           <h1 className="page-title">账号绑定</h1>
@@ -186,7 +209,7 @@ export default function AccountBindingPage() {
 
       {pageError && <div className="notice notice-error">{pageError}</div>}
 
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="platform-binding-grid">
         <BindingCard
           platform="Codeforces"
           accent="#2f6fb2"
@@ -194,6 +217,7 @@ export default function AccountBindingPage() {
           connectedHandle={profile?.codeforcesHandle}
           message={cfMessage}
           success={cfMessage.includes("成功") || cfMessage.includes("已开始")}
+          statistics={<PlatformStatistics platform="codeforces" accountId={profile?.codeforcesHandle} overview={overviews.codeforces} loading={statisticsLoading} error={statisticsError} onRetry={reloadStatistics} />}
         >
           <p className="binding-card-description">每日题校验 · Rating · 比赛记录</p>
           <BindingInput
@@ -223,6 +247,7 @@ export default function AccountBindingPage() {
           connectedHandle={profile?.atcoderHandle}
           message={atCoderMessage}
           success={atCoderMessage.includes("成功") || atCoderMessage.includes("已开始")}
+          statistics={<PlatformStatistics platform="atcoder" accountId={profile?.atcoderHandle} overview={overviews.atcoder} loading={statisticsLoading} error={statisticsError} onRetry={reloadStatistics} />}
         >
           <p className="binding-card-description">每周 ABC 参赛及 AC 记录</p>
           <BindingInput
@@ -245,14 +270,14 @@ export default function AccountBindingPage() {
             </BindingStep>
           )}
         </BindingCard>
-        <AdditionalPlatformBinding userId={user.id} platform="luogu" label="洛谷" onConnected={onAdditionalConnected} />
-        <AdditionalPlatformBinding userId={user.id} platform="nowcoder" label="牛客" onConnected={onAdditionalConnected} />
+        <AdditionalPlatformBinding userId={user.id} platform="luogu" label="洛谷" onConnected={onAdditionalConnected} onVerified={reloadStatistics} overview={overviews.luogu} statisticsLoading={statisticsLoading} statisticsError={statisticsError} onRetryStatistics={reloadStatistics} />
+        <AdditionalPlatformBinding userId={user.id} platform="nowcoder" label="Nowcoder" onConnected={onAdditionalConnected} onVerified={reloadStatistics} overview={overviews.nowcoder} statisticsLoading={statisticsLoading} statisticsError={statisticsError} onRetryStatistics={reloadStatistics} />
       </div>
     </div>
   );
 }
 
-function BindingCard({ platform, accent, iconSrc, connectedHandle, message, success, children }) {
+function BindingCard({ platform, accent, iconSrc, connectedHandle, message, success, children, statistics }) {
   return (
     <section className="binding-card" style={{ "--binding-accent": accent }}>
       <div className="binding-card-head">
@@ -266,8 +291,11 @@ function BindingCard({ platform, accent, iconSrc, connectedHandle, message, succ
           </span>
         </div>
       </div>
-      {children}
-      {message && <div className={`notice ${success ? "notice-success" : "notice-error"}`}>{message}</div>}
+      <div className="binding-controls">
+        {children}
+        {message && <div role="status" className={`notice ${success ? "notice-success" : "notice-error"}`}>{message}</div>}
+      </div>
+      {statistics}
     </section>
   );
 }
@@ -275,7 +303,7 @@ function BindingCard({ platform, accent, iconSrc, connectedHandle, message, succ
 function BindingInput({ value, onChange, placeholder, disabled, active, loading, onStart, onFinish, finishText }) {
   return (
     <div className="binding-input-row">
-      <input className="form-input" value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} disabled={disabled} />
+      <input className="form-input" aria-label={placeholder} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} disabled={disabled} />
       <button type="button" className="button-primary" onClick={active ? onFinish : onStart} disabled={loading}>
         {loading ? "检查中..." : active ? finishText : "开始验证"}
       </button>

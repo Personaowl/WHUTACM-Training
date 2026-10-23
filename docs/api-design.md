@@ -181,3 +181,11 @@ week 归一到上海时区该周周一，不能选未来周。返回 WeeklyTrain
 | DELETE /api/upsolve-plans/{id} | 删除本人记录，空 data；不删除已收藏题单内容 |
 
 记录字段：id、title、link、note、completed、createdAt、completedAt；时间为 ISO 字符串，未完成 completedAt 为空。重复链接（包括已完成记录）返回 409；非法链接/分页返回 400；记录不存在或非本人记录均为 404；未登录为 401。链接仅保存，不会触发外部站点访问。
+
+## 11. 统一平台统计（账号绑定页）
+
+`GET /api/users/{userId}/platform-overviews`，仅本人可读（包括管理员也不可读取他人的此接口）。返回固定顺序的 codeforces、atcoder、luogu、nowcoder 四项，每项字段为 platform、accountId、profileUrl、connected、rating、maxRating、solvedCount、syncedAt、dataStatus、partial。
+
+dataStatus 为 UNBOUND（未绑定）、NOT_SUPPORTED（统计尚未接入）、PENDING（已接入但无本地快照）、READY（已有快照）、UNAVAILABLE（该统计提供器读取异常）。未知指标均为 null，不用 0 代替；真实零值仍返回 0。待验证 UID 和验证码不返回，换绑后旧账号快照不会用于新账号。
+
+当前仅 Codeforces 从匹配账号的已有本地快照读取统计；该接口不触发外部 API 请求、后台刷新或轮询。solvedCount 沿用 CF 统计最近最多 10000 条提交的范围，达到采样上限时 partial=true；syncedAt 为快照时间，不代表实时。其他平台目前只展示已验证绑定及统计占位，ABC 训练检查仍按原接口运行。未来通过 PlatformStatisticsProvider 实现新增平台本地统计读取，另行建设同步任务即可复用前端数据区。

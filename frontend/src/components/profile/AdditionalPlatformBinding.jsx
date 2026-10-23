@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { CheckCircle2, ExternalLink } from "lucide-react";
 import http from "../../api/http";
 import { authHeaders } from "../../api/auth";
+import PlatformStatistics from "./PlatformStatistics";
 
-export default function AdditionalPlatformBinding({ userId, platform, label, onConnected }) {
+export default function AdditionalPlatformBinding({ userId, platform, label, onConnected, onVerified, overview, statisticsLoading, statisticsError, onRetryStatistics }) {
   const [binding, setBinding] = useState(null);
   const [uid, setUid] = useState("");
   const [busy, setBusy] = useState(false);
@@ -37,22 +38,23 @@ export default function AdditionalPlatformBinding({ userId, platform, label, onC
       setBinding(data.data);
       onConnected(platform, Boolean(data.data.accountId));
       setSuccess(true);
+      if (active) onVerified?.();
       setMessage(active ? "所有权验证成功，可恢复原个人介绍" : "请将下方验证码临时加入个人介绍并保存");
     } catch (error) { setMessage(error.message || "验证失败，请稍后重试"); }
     finally { setBusy(false); }
   }
   return (
-    <section className="binding-card" style={{ "--binding-accent": platform === "luogu" ? "#259e89" : "#31849c" }}>
+    <section className="binding-card" style={{ "--binding-accent": platform === "luogu" ? "#3498db" : "#e68a31" }}>
       <div className="binding-card-head">
-        <div className="binding-platform-mark" aria-hidden="true"><strong>{label[0]}</strong></div>
+        <div className="binding-platform-mark"><img src={`/platforms/${platform}.ico`} alt={`${label} 官方图标`} /></div>
         <div><h2>{label}</h2>
           <span className={binding?.accountId ? "is-connected" : ""}>
             {binding?.accountId ? <><CheckCircle2 size={14} /> 已验证 UID {binding.accountId}</> : "尚未绑定"}
           </span>
         </div>
       </div>
+      <div className="binding-controls">
       <p className="binding-card-description">仅绑定账号，暂不统计训练数据</p>
-      <p className="binding-uid-hint">数字 UID 可在主页地址中查看：{platform === "luogu" ? "luogu.com.cn/user/123" : "nowcoder.com/users/123"}</p>
       <div className="binding-input-row">
         <input aria-label={label + " UID"} className="form-input" inputMode="numeric" maxLength={18}
           value={uid} onChange={event => { setUid(event.target.value.trim()); setSuccess(false); setMessage(""); }}
@@ -61,6 +63,7 @@ export default function AdditionalPlatformBinding({ userId, platform, label, onC
           {busy ? "处理中..." : loading ? "加载中..." : active ? "我已保存，完成验证" : "开始验证"}
         </button>
       </div>
+      <p className="binding-uid-hint">UID 位于主页地址末尾，如 {platform === "luogu" ? "luogu.com.cn/user/123" : "nowcoder.com/users/123"}</p>
       {active && <div className="binding-step">
         <div className="binding-step-title">验证账号所有权</div>
         <div className="binding-step-copy">
@@ -73,6 +76,8 @@ export default function AdditionalPlatformBinding({ userId, platform, label, onC
         <button type="button" className="home-text-link" disabled={busy} onClick={() => setBinding(current => ({ ...current, verificationToken: null }))}>重新发起验证</button>
       </div>}
       {message && <div role="status" className={`notice ${success ? "notice-success" : "notice-error"}`}>{message}</div>}
+      </div>
+      <PlatformStatistics platform={platform} accountId={binding?.accountId} overview={overview} loading={statisticsLoading} error={statisticsError} onRetry={onRetryStatistics} />
     </section>
   );
 }
