@@ -9,7 +9,7 @@
 | 内容 | 来源与处理 |
 | --- | --- |
 | 用户、密码哈希、角色、个人资料、绑定信息 | MySQL 的 whut_training 业务库 |
-| 头像、题单、每日题/积分、推题、ABC、周训练说明及审核记录 | 同一业务库；当前头像为 data image，没有独立 uploads 目录 |
+| 头像、题单、每日题/积分、ABC、周训练说明及审核记录 | 同一业务库；当前头像为 data image，没有独立 uploads 目录 |
 | 程序 | 按旧机运行提交从 Git 获取构建；数据库不在 Git 中 |
 | 环境变量及数据库备份凭据 | /etc/whut-acm/，包含秘密，须安全传输 |
 | 证书、私钥及续期配置 | /etc/letsencrypt/ |
@@ -21,6 +21,8 @@
 不要直接复制运行中的 /var/lib/mysql，也不要迁移 mysql 系统库。只导出业务库，在新机重新创建账号和权限。[MySQL 8.0 官方备份说明](https://dev.mysql.com/doc/refman/8.0/en/mysqldump.html)。
 
 推荐：**新机准备 → 演练 → 旧机停写 → 最终备份 → 通过电脑传输 → 新机恢复 → 验证 → IP 访问或切 DNS → 验收**。先演练估算维护窗口；当前小规模项目用停写迁移比双机同步更易维护。新机准备好再开始最终停写，避免整段安装时间都让旧站停机。
+
+旧推题表若仍存在可随业务库一并归档，新版本不再使用；题单贡献者字段会在启动时补齐，旧条目归原创建者。不要在上线迁移时手动删旧表。
 
 ## 1. 盘点与准备
 
@@ -195,7 +197,7 @@ password=实际root密码
 
 然后把导入命令中的 mysql -u root 替换为 mysql --defaults-extra-file=/root/whut-migration/mysql-root.cnf（选项必须放在 mysql 后第一位）。可先运行 mysql --defaults-extra-file=/root/whut-migration/mysql-root.cnf -e "SELECT 1;" 测试认证，避免在导入管道里交互输入。其他验库命令也使用同一认证文件。
 
-在旧机和新机分别运行以下 SQL 对比精确行数、积分总和，并按 [数据库结构](db-design.md) 补查题单、推题、ABC、weekly_training_record 与 weekly_training_audit 等重要数据；旧版本没有的表不必强行查询：
+在旧机和新机分别运行以下 SQL 对比精确行数、积分总和，并按 [数据库结构](db-design.md) 补查个人/共享题单、贡献者字段、ABC、weekly_training_record 与 weekly_training_audit 等重要数据；旧版本没有的表或字段不必强行查询：
 
 ~~~bash
 mysql whut_training -e "SHOW TABLES; SELECT COUNT(*) AS users, COALESCE(SUM(total_points),0) AS points FROM users; SELECT COUNT(*) AS daily_records FROM user_daily_status; SELECT COUNT(*) AS problems FROM cf_problem;"

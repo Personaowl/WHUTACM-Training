@@ -12,7 +12,6 @@ const ContestsPage = lazy(() => import("./pages/ContestsPage"));
 const LeaderboardPage = lazy(() => import("./pages/LeaderboardPage"));
 const PracticePage = lazy(() => import("./pages/PracticePage"));
 const ProblemListsPage = lazy(() => import("./pages/ProblemListsPage"));
-const PushPage = lazy(() => import("./pages/PushPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const AccountBindingPage = lazy(() => import("./pages/AccountBindingPage"));
 const MemberProfilePage = lazy(() => import("./pages/MemberProfilePage"));
@@ -22,7 +21,6 @@ const TrainingDashboardLayout = lazy(() => import("./pages/admin/TrainingDashboa
 const AdminWeeklyTrainingPage = lazy(() => import("./pages/admin/AdminWeeklyTrainingPage"));
 const AdminWeeklyRecordsPage = lazy(() => import("./pages/admin/AdminWeeklyRecordsPage"));
 const AdminUsersPage = lazy(() => import("./pages/admin/AdminUsersPage"));
-const AdminPushPage = lazy(() => import("./pages/admin/AdminPushPage"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
 
 function AuthGuard({ children }) {
@@ -76,8 +74,8 @@ export default function App() {
         <Route path="/contests" element={<ContestsPage />} />
         <Route path="/leaderboard" element={<LeaderboardPage />} />
         <Route path="/practice" element={<PracticePage />} />
-        <Route path="/problem-lists" element={<ProblemListsPage />} />
-        <Route path="/push" element={<PushPage />} />
+        <Route path="/problem-lists" element={<ProblemListsPage key="personal" />} />
+        <Route path="/shared-problem-lists" element={<ProblemListsPage key="shared" sharedOnly />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/account-binding" element={<AccountBindingPage />} />
         <Route path="/members/:id" element={<MemberProfilePage />} />
@@ -91,7 +89,6 @@ export default function App() {
         </Route>
         <Route path="/admin/daily" element={<AdminGuard><AdminDailyPage /></AdminGuard>} />
         <Route path="/admin/users" element={<AdminGuard><AdminUsersPage /></AdminGuard>} />
-        <Route path="/admin/push" element={<AdminGuard><AdminPushPage /></AdminGuard>} />
       </Route>
 
       {/* 404 */}

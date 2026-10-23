@@ -2,14 +2,14 @@
 
 [文档索引](README.md) · [接口参考](api-design.md) · [数据迁移](migration.md)
 
-按 2026-10-20 当前 [MySqlInitializer](../backend/src/main/java/com/whut/training/config/MySqlInitializer.java) 和 [Repository](../backend/src/main/java/com/whut/training/repository/) 核对。下文说明表用途、关键字段及约束；完整类型、默认值和建表 SQL 以初始化器为准，避免在文档复制一份容易失效的 DDL。
+按 2026-10-23 当前 [MySqlInitializer](../backend/src/main/java/com/whut/training/config/MySqlInitializer.java) 和 [Repository](../backend/src/main/java/com/whut/training/repository/) 核对。下文说明表用途、关键字段及约束；完整类型、默认值和建表 SQL 以初始化器为准，避免在文档复制一份容易失效的 DDL。
 
 ## 1. 存储与初始化
 
 - 业务库默认名 whut_training，可通过 MYSQL_URL 修改。当前使用 MySQL、InnoDB、utf8mb4_unicode_ci 和 JdbcTemplate，不使用 ORM、SQLite 或 Redis。
 - 推荐服务器 MySQL 8.0；开发用 compose.yaml 实际固定 mysql:8.4。迁移时优先同版本恢复演练，不能把二者当作相同版本或直接复制数据目录。
 - 启动创建缺失表，并执行代码中列出的补字段、补索引和修正 SQL；**CREATE TABLE IF NOT EXISTS 不代表自动对齐任意旧表结构**，当前没有 Flyway/Liquibase 的版本化迁移体系。
-- 当前初始化器创建下列 **22 张表**；旧库可能还有已废弃的表，数量不能作为迁移成功的唯一判据。
+- 当前初始化器创建下列 **19 张表**；旧库可能还有已废弃的表，数量不能作为迁移成功的唯一判据。
 - ID 通常为 BIGINT 自增，周记录及 ABC 关系表使用复合主键。代码未声明外键级联约束，关联完整性与删除流程由应用维护，不能假设删父记录会自动删子记录。
 - date / week_start 等业务日期为 VARCHAR(10) 的 YYYY-MM-DD；多数过程时间为 VARCHAR(64) 的 ISO 字符串；部分创建时间为 TIMESTAMP，外部平台时间为 BIGINT Unix 秒。恢复必须保留这些语义，业务周按 Asia/Shanghai 计算。
 
@@ -64,16 +64,13 @@
 
 热力图读取 user_daily_status 的每日 score，色阶 0～4 按请求区间的最高分换算；不是独立签到记录，也不是 CF 全部提交数据。历史数据不会随默认 historyRetentionDays=0 自动删除。
 
-## 4. 推题与权限审计（4 表）
+## 4. 角色审计（1 表）
 
 | 表 | 主要字段 | 约束与用途 |
 | --- | --- | --- |
-| push_pool | id、title、link、description、submitter_id、status、sort_order、created_at、approved_by、approved_at | status 索引；PENDING / APPROVED / REJECTED / PUBLISHED |
-| push_submissions | id、push_id、user_id、submission_link、result_description、created_at | push_id、user_id 索引；用户解答记录，非 CF 自动判题结果 |
-| daily_push | id、date、push_id | date 唯一；记录每天发布的推题 |
 | role_change_log | id、target_user_id、changed_by、from_role、to_role、changed_at | target_user_id 索引；角色调整审计，不是通用所有管理操作日志 |
 
-启动时会将已存在 daily_push 中但仍为 APPROVED 的推题修正为 PUBLISHED。完整迁移时应保留推题、解答和每日发布关系，不只复制题池。
+旧 push_pool、push_submissions、daily_push 三表如存在，仅保留历史数据。当前不创建、不读写，不执行旧状态修正，不自动删除或迁移内容。
 
 ## 5. CF 统计（2 表）
 
@@ -89,9 +86,9 @@ CF 概览统计最多读取最近 10000 条提交，不能宣称覆盖任意大�
 | 表 | 主要字段 | 约束与用途 |
 | --- | --- | --- |
 | problem_list | id、owner_user_id、name VARCHAR(80)、description VARCHAR(500)、is_shared、created_at、updated_at | owner_user_id、(is_shared,updated_at) 索引；无 parent_id，不支持嵌套 |
-| problem_list_item | id、list_id、title VARCHAR(255)、link VARCHAR(1000)、note VARCHAR(1000)、problem_key、rating、tags、sort_order、created_at | (list_id,sort_order,id)、problem_key 索引；同题单重复链接由服务检查，未建唯一键 |
+| problem_list_item | id、list_id、added_by BIGINT、title VARCHAR(255)、link VARCHAR(1000)、note VARCHAR(1000)、problem_key、rating、tags、sort_order、created_at | (list_id,sort_order,id)、problem_key 索引；同题单重复链接由服务检查，未建唯一键 |
 
-仅创建者可编辑/删除题单和条目；管理员可以把自己的题单共享给所有已登录成员。删除题单时由 Repository 删除关联条目，不依赖外键级联。
+所有成员可创建共享题单并添加题目；added_by 记录贡献者。升级会给旧条目补为题单创建者。条目由贡献者、题单创建者或共享题单管理员维护；题单元数据与整单删除仅创建者可操作，有他人贡献不能改为私有。写操作在事务中锁题单行后检查重复链接与权限。删除题单时由 Repository 删除关联条目，不依赖外键级联。
 
 ## 7. 周训练与说明审核（2 表）
 

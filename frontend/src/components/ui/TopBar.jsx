@@ -12,7 +12,7 @@ const PAGE_NAMES = {
   "/leaderboard": "排行榜",
   "/practice": "自主练习",
   "/problem-lists": "我的题单",
-  "/push": "推题",
+  "/shared-problem-lists": "共享题单",
   "/profile": "个人中心",
   "/account-binding": "账号绑定",
   "/admin/training": "训练看板",
@@ -21,7 +21,6 @@ const PAGE_NAMES = {
   "/admin/training/records": "训练看板 / 周训练记录",
   "/admin/daily": "题目管理",
   "/admin/users": "用户管理",
-  "/admin/push": "推题审核",
 };
 
 export default function TopBar({ onMenuToggle }) {

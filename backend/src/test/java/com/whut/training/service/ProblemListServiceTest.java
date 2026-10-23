@@ -22,23 +22,10 @@ import static org.mockito.Mockito.when;
 class ProblemListServiceTest {
 
     @Test
-    void regularUsersCannotPublishSharedLists() {
+    void anyMemberCanCreateAVisibleSharedList() {
         ProblemListRepository repository = mock(ProblemListRepository.class);
         ProblemListService service = new ProblemListService(repository);
-        User user = user(1L, UserRole.USER);
-
-        assertThatThrownBy(() -> service.create(
-                user,
-                new ProblemListSaveRequest("区间 DP", "专题训练", true)
-        )).isInstanceOf(BusinessException.class)
-                .hasMessageContaining("administrators");
-    }
-
-    @Test
-    void administratorCanCreateAVisibleSharedList() {
-        ProblemListRepository repository = mock(ProblemListRepository.class);
-        ProblemListService service = new ProblemListService(repository);
-        User admin = user(2L, UserRole.ADMIN);
+        User admin = user(2L, UserRole.USER);
         ProblemListSummary summary = summary(10L, 2L, true, true);
 
         when(repository.createList(2L, "区间 DP", "专题训练", true)).thenReturn(10L);
@@ -74,7 +61,7 @@ class ProblemListServiceTest {
         ProblemListSummary summary = summary(10L, 1L, false, true);
         String link = "https://codeforces.com/problemset/problem/607/B";
         ProblemListItemView item = new ProblemListItemView(
-                20L, 10L, "Zuma", link, "重做", "607-B", 1800, "dp", 0, null
+                20L, 10L, "Zuma", link, "重做", "607-B", 1800, "dp", 0, 1L, null
         );
 
         when(repository.findById(10L, 1L)).thenReturn(Optional.of(summary));
@@ -82,7 +69,7 @@ class ProblemListServiceTest {
                 new ProblemListRepository.ProblemMetadata("607-B", "Zuma", 1800, "dp", link)
         ));
         when(repository.itemLinkExists(10L, link, null)).thenReturn(false);
-        when(repository.addItem(10L, "Zuma", link, "重做", "607-B", 1800, "dp")).thenReturn(20L);
+        when(repository.addItem(10L, "Zuma", link, "重做", "607-B", 1800, "dp", 1L)).thenReturn(20L);
         when(repository.findItem(10L, 20L)).thenReturn(Optional.of(item));
 
         var result = service.addItem(
@@ -93,7 +80,7 @@ class ProblemListServiceTest {
 
         assertThat(result.problemKey()).isEqualTo("607-B");
         assertThat(result.title()).isEqualTo("Zuma");
-        verify(repository).addItem(10L, "Zuma", link, "重做", "607-B", 1800, "dp");
+        verify(repository).addItem(10L, "Zuma", link, "重做", "607-B", 1800, "dp", 1L);
     }
 
     private static User user(Long id, UserRole role) {

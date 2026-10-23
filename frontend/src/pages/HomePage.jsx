@@ -101,7 +101,7 @@ export default function HomePage() {
     return () => { cancelled = true; window.clearInterval(timer); };
   }, [data?.problemPoolInitializing, user?.id]);
 
-  const { totalUsers, topUsers, todayProblem, todayPushProblem, dailySubmissionSummary } = data || {};
+  const { totalUsers, topUsers, todayProblem, dailySubmissionSummary } = data || {};
   const myPoints = getCurrentUserPoints(data, user?.id);
 
   const todayProblems = Array.isArray(todayProblem) ? todayProblem : (todayProblem ? [todayProblem] : []);
@@ -200,36 +200,13 @@ export default function HomePage() {
       </section>
 
       <div className="render-lazy home-community-grid">
-          <section className="home-section home-push-section">
-            <SectionHeading title="今日推题" to="/push" linkText="更多推题" />
-            {loading ? <CardSkeleton /> : error ? <div className="home-empty-state">推题暂时无法加载</div> : todayPushProblem ? (
-              <div className="home-push-content">
-                <span className="home-content-label"><Send size={15} aria-hidden="true" /> 来自训练伙伴的推荐</span>
-                <h3>
-                  {todayPushProblem.title}
-                </h3>
-                {todayPushProblem.description ? (
-                  <p>
-                    {todayPushProblem.description}
-                  </p>
-                ) : null}
-                {todayPushProblem.link && (
-                  <a
-                    href={todayPushProblem.link}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="home-text-link"
-                  >
-                    打开题目 <ArrowUpRight size={15} aria-hidden="true" />
-                  </a>
-                )}
-              </div>
-            ) : (
-              <div className="home-empty-state">
-                <Send size={26} aria-hidden="true" /><p>今天还没有推荐题目</p>
-                <Link to="/push">分享一道好题 <ArrowRight size={15} aria-hidden="true" /></Link>
-              </div>
-            )}
+          <section className="home-section home-shared-section">
+            <SectionHeading title="共享题单" to="/shared-problem-lists" linkText="浏览题单" />
+            <div className="home-empty-state">
+              <Send size={26} aria-hidden="true" />
+              <p>把值得一做的题目分享给训练伙伴</p>
+              <Link to="/shared-problem-lists">查看与添加题目 <ArrowRight size={15} aria-hidden="true" /></Link>
+            </div>
           </section>
 
           <section className="home-section home-leaderboard-section">

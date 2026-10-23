@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
   ExternalLink,
@@ -23,6 +23,7 @@ import {
   updateProblemList,
   updateProblemListItem,
 } from "../api/problemList";
+import { canEditProblem, visibleProblemLists } from "../utils/problemListPermissions";
 import EmptyState from "../components/ui/EmptyState";
 
 const EMPTY_LIST_FORM = { name: "", description: "", shared: false };
@@ -35,10 +36,11 @@ const EMPTY_PROBLEM_FORM = {
   note: "",
 };
 
-export default function ProblemListsPage() {
-  const { isAdmin } = useAuth();
+export default function ProblemListsPage({ sharedOnly = false }) {
+  const { isAdmin, user } = useAuth();
   const [lists, setLists] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
+  const detailRequest = useRef(0);
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -56,7 +58,7 @@ export default function ProblemListsPage() {
 
   async function loadLists(preferredId) {
     const response = await listProblemLists();
-    const data = requireData(response);
+    const data = visibleProblemLists(requireData(response), sharedOnly);
     setLists(data || []);
     const candidate = preferredId ?? selectedId;
     const nextId = data.some((item) => item.id === candidate)
@@ -67,19 +69,23 @@ export default function ProblemListsPage() {
   }
 
   async function loadDetail(id) {
+    const request = ++detailRequest.current;
     if (!id) {
       setDetail(null);
+      setDetailLoading(false);
       return;
     }
     setDetailLoading(true);
     try {
       const response = await getProblemList(id);
-      setDetail(requireData(response));
+      if (request === detailRequest.current) setDetail(requireData(response));
     } catch (requestError) {
-      setError(requestError.message || "题单加载失败");
-      setDetail(null);
+      if (request === detailRequest.current) {
+        setError(requestError.message || "题单加载失败");
+        setDetail(null);
+      }
     } finally {
-      setDetailLoading(false);
+      if (request === detailRequest.current) setDetailLoading(false);
     }
   }
 
@@ -89,7 +95,7 @@ export default function ProblemListsPage() {
       try {
         const response = await listProblemLists();
         if (!active) return;
-        const data = requireData(response) || [];
+        const data = visibleProblemLists(requireData(response), sharedOnly);
         setLists(data);
         setSelectedId(data[0]?.id ?? null);
       } catch (requestError) {
@@ -108,7 +114,7 @@ export default function ProblemListsPage() {
 
   function openCreateList() {
     setEditingList(null);
-    setListForm(EMPTY_LIST_FORM);
+    setListForm({ ...EMPTY_LIST_FORM, shared: sharedOnly });
     setError("");
     setListDialogOpen(true);
   }
@@ -131,12 +137,13 @@ export default function ProblemListsPage() {
     setError("");
     try {
       const response = editingList
-        ? await updateProblemList(editingList.id, listForm)
-        : await createProblemList(listForm);
+        ? await updateProblemList(editingList.id, { ...listForm, shared: sharedOnly || listForm.shared })
+        : await createProblemList({ ...listForm, shared: sharedOnly || listForm.shared });
       const nextDetail = requireData(response);
       setListDialogOpen(false);
-      await loadLists(nextDetail.list.id);
-      setDetail(nextDetail);
+      const nextId = await loadLists(nextDetail.list.id);
+      if (nextId === nextDetail.list.id) setDetail(nextDetail);
+      else await loadDetail(nextId);
     } catch (requestError) {
       setError(requestError.message || "题单保存失败");
     } finally {
@@ -183,7 +190,7 @@ export default function ProblemListsPage() {
 
   async function submitProblem(event) {
     event.preventDefault();
-    if (!detail?.list?.owner) return;
+    if (!detail || (!detail.list.owner && !detail.list.shared)) return;
     setSaving(true);
     setError("");
     const payload = {
@@ -222,7 +229,7 @@ export default function ProblemListsPage() {
     <div className="stack-y-5">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="m-0 text-2xl font-bold tracking-tight text-text-primary">我的题单</h1>
+          <h1 className="m-0 text-2xl font-bold tracking-tight text-text-primary">{sharedOnly ? "共享题单" : "我的题单"}</h1>
         </div>
         <button type="button" className="button-primary inline-flex items-center gap-2" onClick={openCreateList}>
           <FolderPlus size={16} />创建题单
@@ -257,14 +264,16 @@ export default function ProblemListsPage() {
                 onSelect={setSelectedId}
                 empty="还没有个人题单"
               />
+              {sharedOnly && <>
               <div className="my-3 border-t border-border" />
               <ListGroup
-                title="管理员共享"
+                title="成员共享"
                 items={sharedLists}
                 selectedId={selectedId}
                 onSelect={setSelectedId}
                 empty="暂无共享题单"
               />
+              </>}
             </>
           )}
         </aside>
@@ -306,7 +315,7 @@ export default function ProblemListsPage() {
               <div className="p-5 sm:p-6">
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <h3 className="m-0 text-base font-bold text-text-primary">题目</h3>
-                  {detail.list.owner && (
+                  {(detail.list.owner || detail.list.shared) && (
                     <button type="button" onClick={openAddProblem} className="button-primary inline-flex items-center gap-2">
                       <Plus size={15} />添加题目
                     </button>
@@ -322,7 +331,7 @@ export default function ProblemListsPage() {
                         key={problem.id}
                         problem={problem}
                         index={index + 1}
-                        editable={detail.list.owner}
+                        editable={canEditProblem(detail.list, problem, user?.id, isAdmin)}
                         onEdit={() => openEditProblem(problem)}
                         onDelete={() => removeProblem(problem)}
                       />
@@ -345,8 +354,9 @@ export default function ProblemListsPage() {
         editing={Boolean(editingList)}
         form={listForm}
         setForm={setListForm}
-        isAdmin={isAdmin}
+        sharedOnly={sharedOnly}
         saving={saving}
+        error={error}
         onSubmit={submitList}
       />
       <ProblemEditorDialog
@@ -356,6 +366,7 @@ export default function ProblemListsPage() {
         form={problemForm}
         setForm={setProblemForm}
         saving={saving}
+        error={error}
         onSubmit={submitProblem}
       />
     </div>
@@ -423,6 +434,7 @@ function ProblemRow({ problem, index, editable, onEdit, onDelete }) {
                 <span className="truncate">{problem.title}</span><ExternalLink size={13} className="shrink-0" />
               </a>
               <div className="mt-1 flex flex-wrap items-center gap-2 text-[10px] text-text-secondary">
+                {problem.addedBy != null && <span>添加者：成员 #{problem.addedBy}</span>}
                 {problem.problemKey && <span className="font-mono font-bold">{problem.problemKey}</span>}
                 {problem.rating != null && <span>Rating {problem.rating}</span>}
               </div>
@@ -459,25 +471,26 @@ function DialogFrame({ open, onOpenChange, title, description, children }) {
   );
 }
 
-function ListEditorDialog({ open, onOpenChange, editing, form, setForm, isAdmin, saving, onSubmit }) {
+function ListEditorDialog({ open, onOpenChange, editing, form, setForm, sharedOnly, saving, error, onSubmit }) {
   return (
     <DialogFrame open={open} onOpenChange={onOpenChange} title={editing ? "编辑题单" : "创建题单"} description="题单就是一级分类，例如“区间 DP”或“暑假补题”。">
       <form className="mt-5 stack-y-4" onSubmit={onSubmit}>
         <Field label="题单名称"><input required maxLength={80} value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} placeholder="例如：区间 DP" className="form-input" /></Field>
         <Field label="简介（可选）"><textarea maxLength={500} rows={3} value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} placeholder="记录这个题单的训练目标或使用说明" className="form-input resize-none" /></Field>
-        {isAdmin && (
+        {!sharedOnly && (
           <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-bg-secondary p-3">
             <input type="checkbox" checked={form.shared} onChange={(event) => setForm((current) => ({ ...current, shared: event.target.checked }))} className="mt-0.5 h-4 w-4 accent-[#17324f]" />
-            <span><strong className="block text-sm text-text-primary">共享给所有成员</strong><small className="mt-1 block text-[11px] leading-4 text-text-secondary">管理员共享后，所有登录用户都可以查看，但只有你能编辑。</small></span>
+            <span><strong className="block text-sm text-text-primary">共享给所有成员</strong><small className="mt-1 block text-[11px] leading-4 text-text-secondary">所有登录成员都可添加题目；贡献者可修改自己的题目，创建者及管理员可维护。</small></span>
           </label>
         )}
+        {error && <p role="alert" className="text-sm text-error">{error}</p>}
         <DialogActions saving={saving} submitText={editing ? "保存修改" : "创建题单"} />
       </form>
     </DialogFrame>
   );
 }
 
-function ProblemEditorDialog({ open, onOpenChange, editing, form, setForm, saving, onSubmit }) {
+function ProblemEditorDialog({ open, onOpenChange, editing, form, setForm, saving, error, onSubmit }) {
   return (
     <DialogFrame open={open} onOpenChange={onOpenChange} title={editing ? "编辑题目" : "添加题目"} description="粘贴标准 Codeforces 链接后，可自动从本地题库补全题目资料。">
       <form className="mt-5 stack-y-4" onSubmit={onSubmit}>
@@ -488,7 +501,8 @@ function ProblemEditorDialog({ open, onOpenChange, editing, form, setForm, savin
           <Field label="Rating（可选）"><input type="number" min="0" max="5000" value={form.rating} onChange={(event) => setForm((current) => ({ ...current, rating: event.target.value }))} placeholder="1800" className="form-input" /></Field>
         </div>
         <Field label="标签（可选，逗号分隔）"><input maxLength={1000} value={form.tags} onChange={(event) => setForm((current) => ({ ...current, tags: event.target.value }))} placeholder="dp, two pointers" className="form-input" /></Field>
-        <Field label="个人备注（可选）"><textarea maxLength={1000} rows={3} value={form.note} onChange={(event) => setForm((current) => ({ ...current, note: event.target.value }))} placeholder="记录关键思路、易错点或重做计划" className="form-input resize-none" /></Field>
+        <Field label="备注（可选）"><textarea maxLength={1000} rows={3} value={form.note} onChange={(event) => setForm((current) => ({ ...current, note: event.target.value }))} placeholder="记录关键思路、易错点或重做计划" className="form-input resize-none" /></Field>
+        {error && <p role="alert" className="text-sm text-error">{error}</p>}
         <DialogActions saving={saving} submitText={editing ? "保存修改" : "加入题单"} />
       </form>
     </DialogFrame>

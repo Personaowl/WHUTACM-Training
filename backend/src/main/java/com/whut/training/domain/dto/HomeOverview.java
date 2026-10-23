@@ -6,7 +6,6 @@ public class HomeOverview {
     private int totalUsers;
     private List<LeaderboardItem> topUsers;
     private Object todayProblem;
-    private Object todayPushProblem;
     private DailySubmissionSummary dailySubmissionSummary;
     private boolean problemPoolInitializing;
 
@@ -32,14 +31,6 @@ public class HomeOverview {
 
     public void setTodayProblem(Object todayProblem) {
         this.todayProblem = todayProblem;
-    }
-
-    public Object getTodayPushProblem() {
-        return todayPushProblem;
-    }
-
-    public void setTodayPushProblem(Object todayPushProblem) {
-        this.todayPushProblem = todayPushProblem;
     }
 
     public DailySubmissionSummary getDailySubmissionSummary() {

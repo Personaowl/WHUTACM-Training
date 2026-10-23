@@ -2,7 +2,6 @@ package com.whut.training.repository;
 
 import com.whut.training.domain.dto.CodeforcesOverview;
 import com.whut.training.domain.entity.CfProblem;
-import com.whut.training.domain.entity.PushPoolItem;
 import com.whut.training.domain.entity.User;
 import com.whut.training.domain.enums.MemberType;
 import com.whut.training.domain.enums.UserRole;
@@ -30,9 +29,6 @@ class MySqlRepositoryCompatibilityTest {
 
     @Autowired
     private DailyProblemRepository dailyProblemRepository;
-
-    @Autowired
-    private PushPoolRepository pushPoolRepository;
 
     @Autowired
     private CodeforcesProfileSnapshotRepository snapshotRepository;
@@ -93,18 +89,6 @@ class MySqlRepositoryCompatibilityTest {
                     assertThat(saved.getAtcoderVerifiedAtSeconds()).isEqualTo(1_754_006_400L);
                 });
         userRepository.updateMemberType(user.getId(), MemberType.ACTIVE_TEAM);
-
-        PushPoolItem pushed = pushPoolRepository.insert(
-                "Two pointers", "https://codeforces.com/problemset/problem/100/A", "practice", user.getId()
-        );
-        assertThat(pushed.id()).isNotNull();
-        assertThat(pushPoolRepository.findById(pushed.id()))
-                .get()
-                .satisfies(item -> {
-                    assertThat(item.title()).isEqualTo("Two pointers");
-                    assertThat(item.submitterUsername()).isEqualTo("mysql-user");
-                    assertThat(item.status()).isEqualTo("PENDING");
-                });
 
         atCoderTrackingRepository.upsertContest(
                 "abc460", "AtCoder Beginner Contest 460", 1_780_148_400L, 1_780_155_600L,
@@ -223,7 +207,7 @@ class MySqlRepositoryCompatibilityTest {
                 .contains("区间 DP");
         Long itemId = problemListRepository.addItem(
                 listId, "Updated", "https://codeforces.com/problemset/problem/100/A",
-                "重做", "100-A", 1300, "math,greedy"
+                "重做", "100-A", 1300, "math,greedy", user.getId()
         );
         assertThat(problemListRepository.findItems(listId))
                 .singleElement()
@@ -236,10 +220,6 @@ class MySqlRepositoryCompatibilityTest {
                 .get()
                 .extracting(ProblemListRepository.ProblemMetadata::name)
                 .isEqualTo("Updated");
-
-        pushPoolRepository.setDailyPush(date, 10L);
-        pushPoolRepository.setDailyPush(date, 11L);
-        assertThat(pushPoolRepository.findDailyPushId(date)).contains(11L);
 
         CodeforcesOverview overview = new CodeforcesOverview(
                 "mysql-handle", 1500, 1600, 3, 5, 4, 2,

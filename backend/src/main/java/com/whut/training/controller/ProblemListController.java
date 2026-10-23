@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/** 登录用户的个人题单与管理员共享题单接口。 */
+/** 登录用户的个人题单与全员协作共享题单接口。 */
 @RestController
 @RequestMapping("/api/problem-lists")
 public class ProblemListController {

@@ -2,7 +2,7 @@
 
 [文档索引](README.md) · [功能与权限](features.md) · [数据库](db-design.md)
 
-按 2026-10-20 的当前源码核对。本文是已有接口的对接说明，不是待实现设计；精确字段以 [Controller](../backend/src/main/java/com/whut/training/controller/) 与 [DTO](../backend/src/main/java/com/whut/training/domain/dto/) 为准。生产环境在网站同源下请求 `/api`，本地开发由 Vite 代理到 8080。
+按 2026-10-23 的当前源码核对。本文是已有接口的对接说明，不是待实现设计；精确字段以 [Controller](../backend/src/main/java/com/whut/training/controller/) 与 [DTO](../backend/src/main/java/com/whut/training/domain/dto/) 为准。生产环境在网站同源下请求 `/api`，本地开发由 Vite 代理到 8080。
 
 ## 1. 响应、认证与错误
 
@@ -80,20 +80,20 @@ CF 绑定窗口为 120 秒，要求验证窗口内向 CF 1A 提交 Compilation E
 
 ## 4. 题单
 
-前缀 `/api/problem-lists`，均需登录。可读自己的题单及管理员共享题单；**修改/删除始终仅限创建者，管理员也不能编辑别人的题单**。
+前缀 `/api/problem-lists`，均需登录。可读自己的题单及所有共享题单。任意登录成员可创建共享题单并向共享题单加题；题单名称/简介/删除仍仅限创建者，题目由添加者、题单创建者或管理员（仅共享题单）维护。
 
 | 方法与路径 | 请求 / 返回 |
 | --- | --- |
 | GET /api/problem-lists | 可见题单摘要列表 |
 | GET /api/problem-lists/{id} | 题单摘要与条目 |
 | POST /api/problem-lists | name（必填，最多 80）、description（最多 500）、shared |
-| PATCH /api/problem-lists/{id} | 同创建字段；shared=true 仅管理员可用 |
+| PATCH /api/problem-lists/{id} | 同创建字段；shared=true 对所有登录成员开放 |
 | DELETE /api/problem-lists/{id} | 删除题单及条目 |
 | POST /api/problem-lists/{id}/items | 添加条目 |
 | PATCH /api/problem-lists/{id}/items/{itemId} | 更新条目 |
 | DELETE /api/problem-lists/{id}/items/{itemId} | 删除条目 |
 
-条目字段：`title, link, note, problemKey, rating, tags`。link 必填有效 HTTP/HTTPS 地址；本地题库能识别 CF 题目时可补充元数据，否则须提供 title。同一题单重复链接返回 409。题单仅一级分类，没有嵌套文件夹。
+条目字段：`title, link, note, problemKey, rating, tags`。link 必填有效 HTTP/HTTPS 地址；本地题库能识别 CF 题目时可补充元数据，否则须提供 title。条目响应新增 addedBy，贡献者 ID 由后端当前身份写入，客户端不能指定。已有他人贡献时共享改私有返回 409。写入锁定题单行；同一题单重复链接返回 409。题单仅一级分类，没有嵌套文件夹。
 
 ## 5. 首页、排行榜与比赛
 
@@ -103,28 +103,13 @@ CF 绑定窗口为 120 秒，要求验证窗口内向 CF 1A 提交 Compilation E
 | GET /api/leaderboard | 已登录 | page 默认 1、limit 默认 10（最大 100）；data：items、total、page、limit |
 | GET /api/contests/upcoming | 已登录 | CF / AtCoder / 牛客 / 洛谷的比赛聚合列表 |
 
-首页字段：`totalUsers, topUsers, todayProblem, todayPushProblem, dailySubmissionSummary, problemPoolInitializing, currentUserId, currentUserPoints`。历史命名 totalUsers 表示**过去 7 天有每日题记录的活跃用户数**，不是全部注册数。dailySubmissionSummary 包含 todaySubmissions、todayCheckedInUsers。currentUserPoints 为当前认证用户的数据库积分，不混入共享概览缓存。
+首页字段：`totalUsers, topUsers, todayProblem, dailySubmissionSummary, problemPoolInitializing, currentUserId, currentUserPoints`。历史命名 totalUsers 表示**过去 7 天有每日题记录的活跃用户数**，不是全部注册数。dailySubmissionSummary 包含 todaySubmissions、todayCheckedInUsers。currentUserPoints 为当前认证用户的数据库积分，不混入共享概览缓存。
 
 排行榜只提供总积分排名，排除 SUPER_ADMIN。兼容参数 type 默认 total，当前不切换其他榜单，不能据此推断存在周榜/月榜。
 
-## 6. 推题与解答
+## 6. 旧推题接口下线
 
-| 方法与路径 | 权限 / 说明 |
-| --- | --- |
-| POST /api/push | 已登录；title、link 必填，description 可选；默认进入 PENDING |
-| GET /api/push | 普通用户取已推送项，管理员取全部 |
-| GET /api/push/today | 今日推题；无数据时 data=null；必要时从审核池懒发布 |
-| GET /api/push/mine | 当前用户提交的推题 |
-| GET /api/push/history | 已登录；推送历史 |
-| POST /api/push/{id}/submit | 已登录；submissionLink 必填、resultDescription 可选；提交解答记录，不自动验 AC |
-| GET /api/push/{id}/submissions | 普通用户仅自己的解答，管理员全部 |
-| POST /api/admin/push/{id}/approve | 管理员；审核通过 |
-| POST /api/admin/push/{id}/reject | 管理员；拒绝 |
-| POST /api/admin/push/{id}/promote | 管理员；提升池中顺序 |
-| DELETE /api/admin/push/{id} | 管理员；只允许删除未发布的 APPROVED 项 |
-| GET /api/admin/push/pool | 管理员；已审核、未推送题池 |
-
-推题状态为 PENDING / APPROVED / REJECTED / PUBLISHED。链接允许省略协议并补 HTTPS，最终须为有效 HTTP/HTTPS URL，不接受带用户名密码的 URL。解答接口仍存在，不能与已移除的自主练习校验混淆。
+原 `/api/push`、`/api/admin/push` 及其子路径不再注册，已登录访问旧路径返回 404；未登录请求可能先被认证拦截。推荐题目改用上文共享题单接口，无审核和每日发布环节。
 
 ## 7. 管理、训练看板与导出
 

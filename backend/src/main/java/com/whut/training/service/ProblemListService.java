@@ -19,7 +19,7 @@ import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/** 个人题单与管理员共享题单业务。 */
+/** 个人题单与成员协作共享题单业务。 */
 @Service
 public class ProblemListService implements ProblemListUseCase {
 
@@ -52,7 +52,6 @@ public class ProblemListService implements ProblemListUseCase {
     public ProblemListDetail create(User currentUser, ProblemListSaveRequest request) {
         User user = requireUser(currentUser);
         boolean shared = requestedShared(request);
-        requireSharePermission(user, shared);
         Long id = repository.createList(
                 user.getId(),
                 request.name().trim(),
@@ -66,9 +65,12 @@ public class ProblemListService implements ProblemListUseCase {
     @Transactional
     public ProblemListDetail update(User currentUser, Long listId, ProblemListSaveRequest request) {
         User user = requireUser(currentUser);
-        requireOwner(listId, user);
+        repository.lockList(listId);
+        ProblemListSummary existing = requireOwner(listId, user);
         boolean shared = requestedShared(request);
-        requireSharePermission(user, shared);
+        if (existing.shared() && !shared && repository.hasOtherContributors(listId, user.getId())) {
+            throw new BusinessException(409, "该共享题单已有其他成员贡献，不能改为私有");
+        }
         int updated = repository.updateList(
                 listId,
                 user.getId(),
@@ -83,6 +85,7 @@ public class ProblemListService implements ProblemListUseCase {
     @Transactional
     public void delete(User currentUser, Long listId) {
         User user = requireUser(currentUser);
+        repository.lockList(listId);
         requireOwner(listId, user);
         if (repository.deleteList(listId, user.getId()) == 0) {
             throw new BusinessException(404, "problem list not found");
@@ -92,7 +95,8 @@ public class ProblemListService implements ProblemListUseCase {
     @Transactional
     public ProblemListItemView addItem(User currentUser, Long listId, ProblemListItemRequest request) {
         User user = requireUser(currentUser);
-        requireOwner(listId, user);
+        repository.lockList(listId);
+        requireVisible(listId, user);
         ResolvedProblem problem = resolveProblem(request);
         if (repository.itemLinkExists(listId, problem.link(), null)) {
             throw new BusinessException(409, "该题目已经在当前题单中");
@@ -104,7 +108,8 @@ public class ProblemListService implements ProblemListUseCase {
                 problem.note(),
                 problem.problemKey(),
                 problem.rating(),
-                problem.tags()
+                problem.tags(),
+                user.getId()
         );
         return repository.findItem(listId, itemId)
                 .orElseThrow(() -> new IllegalStateException("problem list item was not created"));
@@ -118,7 +123,7 @@ public class ProblemListService implements ProblemListUseCase {
             ProblemListItemRequest request
     ) {
         User user = requireUser(currentUser);
-        requireOwner(listId, user);
+        requireItemEditor(listId, itemId, user);
         ResolvedProblem problem = resolveProblem(request);
         if (repository.itemLinkExists(listId, problem.link(), itemId)) {
             throw new BusinessException(409, "该题目已经在当前题单中");
@@ -141,7 +146,7 @@ public class ProblemListService implements ProblemListUseCase {
     @Transactional
     public void deleteItem(User currentUser, Long listId, Long itemId) {
         User user = requireUser(currentUser);
-        requireOwner(listId, user);
+        requireItemEditor(listId, itemId, user);
         if (repository.deleteItem(itemId, listId) == 0) {
             throw new BusinessException(404, "problem list item not found");
         }
@@ -191,9 +196,14 @@ public class ProblemListService implements ProblemListUseCase {
         return Boolean.TRUE.equals(request.shared());
     }
 
-    private static void requireSharePermission(User user, boolean shared) {
-        if (shared && user.getRole() != UserRole.ADMIN && user.getRole() != UserRole.SUPER_ADMIN) {
-            throw new BusinessException(403, "only administrators can share problem lists");
+    private void requireItemEditor(Long listId, Long itemId, User user) {
+        repository.lockList(listId);
+        ProblemListSummary list = requireVisible(listId, user);
+        ProblemListItemView item = repository.findItem(listId, itemId)
+                .orElseThrow(() -> new BusinessException(404, "problem list item not found"));
+        boolean moderator = list.shared() && (user.getRole() == UserRole.ADMIN || user.getRole() == UserRole.SUPER_ADMIN);
+        if (!list.owner() && !moderator && !user.getId().equals(item.addedBy())) {
+            throw new BusinessException(403, "只能修改自己添加的题目");
         }
     }
 
@@ -208,7 +218,7 @@ public class ProblemListService implements ProblemListUseCase {
             URI uri = URI.create(cleaned == null ? "" : cleaned);
             String scheme = uri.getScheme();
             if (("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme))
-                    && uri.getHost() != null) {
+                    && uri.getHost() != null && uri.getUserInfo() == null) {
                 return uri.toString();
             }
         } catch (IllegalArgumentException ignored) {

@@ -4,12 +4,10 @@ import com.whut.training.common.TimeProvider;
 import com.whut.training.repository.DailyProblemRepository;
 import com.whut.training.service.DailyProblemService;
 import com.whut.training.service.LeaderboardService;
-import com.whut.training.service.PushPoolService;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -24,7 +22,6 @@ class HomeServiceImplTest {
         LeaderboardService leaderboardService = mock(LeaderboardService.class);
         DailyProblemRepository dailyProblemRepository = mock(DailyProblemRepository.class);
         DailyProblemService dailyProblemService = mock(DailyProblemService.class);
-        PushPoolService pushPoolService = mock(PushPoolService.class);
         TimeProvider timeProvider = mock(TimeProvider.class);
         LocalDate today = LocalDate.of(2026, 8, 9);
 
@@ -33,13 +30,11 @@ class HomeServiceImplTest {
         when(leaderboardService.getTop(50, 0)).thenReturn(List.of());
         when(dailyProblemService.ensureTodaySlots()).thenReturn(true);
         when(dailyProblemRepository.findCurrentDailySlotsByDate(today)).thenReturn(List.of());
-        when(pushPoolService.getTodayPush()).thenReturn(Optional.empty());
 
         HomeServiceImpl service = new HomeServiceImpl(
                 leaderboardService,
                 dailyProblemRepository,
                 dailyProblemService,
-                pushPoolService,
                 timeProvider,
                 5_000
         );

@@ -3,18 +3,15 @@ package com.whut.training.service.impl;
 import com.whut.training.common.TimeProvider;
 import com.whut.training.domain.dto.HomeOverview;
 import com.whut.training.domain.dto.LeaderboardItem;
-import com.whut.training.domain.entity.PushPoolItem;
 import com.whut.training.repository.DailyProblemRepository;
 import com.whut.training.service.DailyProblemService;
 import com.whut.training.service.HomeService;
 import com.whut.training.service.LeaderboardService;
-import com.whut.training.service.PushPoolService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class HomeServiceImpl implements HomeService {
@@ -22,7 +19,6 @@ public class HomeServiceImpl implements HomeService {
     private final LeaderboardService leaderboardService;
     private final DailyProblemRepository dailyProblemRepository;
     private final DailyProblemService dailyProblemService;
-    private final PushPoolService pushPoolService;
     private final TimeProvider timeProvider;
     private final long cacheDurationNanos;
     private final Object cacheLock = new Object();
@@ -31,13 +27,11 @@ public class HomeServiceImpl implements HomeService {
     public HomeServiceImpl(LeaderboardService leaderboardService,
                            DailyProblemRepository dailyProblemRepository,
                            DailyProblemService dailyProblemService,
-                           PushPoolService pushPoolService,
                            TimeProvider timeProvider,
                            @Value("${app.home.cache-ms:3000}") long cacheDurationMillis) {
         this.leaderboardService = leaderboardService;
         this.dailyProblemRepository = dailyProblemRepository;
         this.dailyProblemService = dailyProblemService;
-        this.pushPoolService = pushPoolService;
         this.timeProvider = timeProvider;
         this.cacheDurationNanos = java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(
                 Math.max(0, cacheDurationMillis)
@@ -89,8 +83,6 @@ public class HomeServiceImpl implements HomeService {
             o.setTodayProblem(null);
         }
 
-        Optional<PushPoolItem> todayPush = pushPoolService.getTodayPush();
-        o.setTodayPushProblem(todayPush.orElse(null));
 
         int todayCheckedIn = dailyProblemRepository.countCheckedInUsersByDate(today);
         int todaySubmissions = dailyProblemRepository.countSubmissionsByDate(today);

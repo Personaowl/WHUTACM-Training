@@ -183,43 +183,6 @@ public class MySqlInitializer implements DatabaseInitializer {
                 """);
 
         jdbcTemplate.execute("""
-                CREATE TABLE IF NOT EXISTS push_pool (
-                    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-                    title VARCHAR(255) NOT NULL,
-                    link TEXT NOT NULL,
-                    description TEXT,
-                    submitter_id BIGINT NOT NULL,
-                    status VARCHAR(32) NOT NULL DEFAULT 'PENDING',
-                    sort_order INT,
-                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    approved_by BIGINT,
-                    approved_at TIMESTAMP NULL,
-                    KEY idx_push_pool_status (status)
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-                """);
-
-        jdbcTemplate.execute("""
-                CREATE TABLE IF NOT EXISTS push_submissions (
-                    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-                    push_id BIGINT NOT NULL,
-                    user_id BIGINT NOT NULL,
-                    submission_link TEXT NOT NULL,
-                    result_description TEXT,
-                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    KEY idx_push_submissions_push (push_id),
-                    KEY idx_push_submissions_user (user_id)
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-                """);
-
-        jdbcTemplate.execute("""
-                CREATE TABLE IF NOT EXISTS daily_push (
-                    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-                    date VARCHAR(10) NOT NULL UNIQUE,
-                    push_id BIGINT NOT NULL
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-                """);
-
-        jdbcTemplate.execute("""
                 CREATE TABLE IF NOT EXISTS role_change_log (
                     id BIGINT PRIMARY KEY AUTO_INCREMENT,
                     target_user_id BIGINT NOT NULL,
@@ -277,6 +240,7 @@ public class MySqlInitializer implements DatabaseInitializer {
                 CREATE TABLE IF NOT EXISTS problem_list_item (
                     id BIGINT PRIMARY KEY AUTO_INCREMENT,
                     list_id BIGINT NOT NULL,
+                    added_by BIGINT,
                     title VARCHAR(255) NOT NULL,
                     link VARCHAR(1000) NOT NULL,
                     note VARCHAR(1000),
@@ -436,12 +400,14 @@ public class MySqlInitializer implements DatabaseInitializer {
                 "ALTER TABLE user_daily_slot_status ADD INDEX idx_user_daily_slot_status_date_user (date, user_id)"
         );
 
+        ensureColumn("problem_list_item", "added_by", "ALTER TABLE problem_list_item ADD COLUMN added_by BIGINT");
+        jdbcTemplate.update("""
+                UPDATE problem_list_item SET added_by = (
+                    SELECT owner_user_id FROM problem_list WHERE problem_list.id = problem_list_item.list_id
+                ) WHERE added_by IS NULL
+                """);
         deactivateDuplicateDailySlots();
 
-        jdbcTemplate.update("""
-                UPDATE push_pool SET status = 'PUBLISHED'
-                WHERE status = 'APPROVED' AND id IN (SELECT push_id FROM daily_push)
-                """);
     }
 
     /**

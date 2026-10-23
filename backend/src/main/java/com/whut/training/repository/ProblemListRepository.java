@@ -22,6 +22,18 @@ public class ProblemListRepository {
         this.jdbcTemplate = jdbcTemplate;
     }
 
+    public void lockList(Long listId) {
+        jdbcTemplate.query("SELECT id FROM problem_list WHERE id = ? FOR UPDATE",
+                (rs, rowNum) -> rs.getLong(1), listId);
+    }
+
+    public boolean hasOtherContributors(Long listId, Long ownerId) {
+        Integer count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM problem_list_item WHERE list_id = ? AND added_by <> ?",
+                Integer.class, listId, ownerId);
+        return count != null && count > 0;
+    }
+
     public List<ProblemListSummary> findVisible(Long viewerUserId) {
         return jdbcTemplate.query(
                 """
@@ -65,7 +77,7 @@ public class ProblemListRepository {
     public List<ProblemListItemView> findItems(Long listId) {
         return jdbcTemplate.query(
                 """
-                SELECT id, list_id, title, link, note, problem_key, rating, tags, sort_order, created_at
+                SELECT id, list_id, title, link, note, problem_key, rating, tags, sort_order, added_by, created_at
                 FROM problem_list_item
                 WHERE list_id = ?
                 ORDER BY sort_order ASC, id ASC
@@ -78,7 +90,7 @@ public class ProblemListRepository {
     public Optional<ProblemListItemView> findItem(Long listId, Long itemId) {
         List<ProblemListItemView> rows = jdbcTemplate.query(
                 """
-                SELECT id, list_id, title, link, note, problem_key, rating, tags, sort_order, created_at
+                SELECT id, list_id, title, link, note, problem_key, rating, tags, sort_order, added_by, created_at
                 FROM problem_list_item
                 WHERE list_id = ? AND id = ?
                 LIMIT 1
@@ -142,7 +154,8 @@ public class ProblemListRepository {
             String note,
             String problemKey,
             Integer rating,
-            String tags
+            String tags,
+            Long addedBy
     ) {
         Integer nextOrder = jdbcTemplate.queryForObject(
                 "SELECT COALESCE(MAX(sort_order), -1) + 1 FROM problem_list_item WHERE list_id = ?",
@@ -154,8 +167,8 @@ public class ProblemListRepository {
             PreparedStatement statement = connection.prepareStatement(
                     """
                     INSERT INTO problem_list_item(
-                        list_id, title, link, note, problem_key, rating, tags, sort_order
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        list_id, title, link, note, problem_key, rating, tags, sort_order, added_by
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     new String[]{"id"}
             );
@@ -167,6 +180,7 @@ public class ProblemListRepository {
             statement.setObject(6, rating);
             statement.setString(7, tags);
             statement.setInt(8, nextOrder == null ? 0 : nextOrder);
+            statement.setObject(9, addedBy);
             return statement;
         }, keyHolder);
         touch(listId);
@@ -282,6 +296,7 @@ public class ProblemListRepository {
                 (Integer) rs.getObject("rating"),
                 rs.getString("tags"),
                 rs.getInt("sort_order"),
+                rs.getObject("added_by", Long.class),
                 timestampText(rs.getTimestamp("created_at"))
         );
     }

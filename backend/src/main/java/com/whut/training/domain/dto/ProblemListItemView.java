@@ -11,6 +11,7 @@ public record ProblemListItemView(
         Integer rating,
         String tags,
         int sortOrder,
+        Long addedBy,
         String createdAt
 ) {
 }

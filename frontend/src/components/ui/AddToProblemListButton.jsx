@@ -31,7 +31,7 @@ export default function AddToProblemListButton({ problem, compact = false, class
       .then((response) => {
         if (!active) return;
         if (response?.code !== 200) throw new Error(response?.message || "题单加载失败");
-        const owned = (response.data || []).filter((item) => item.owner);
+        const owned = (response.data || []).filter((item) => item.owner || item.shared);
         setLists(owned);
         setSelectedId((current) => (
           owned.some((item) => String(item.id) === String(current))
@@ -102,7 +102,7 @@ export default function AddToProblemListButton({ problem, compact = false, class
           type="button"
           disabled={!normalizedProblem.link}
           className={`${compact ? "problem-list-add is-compact" : "problem-list-add"} ${className}`.trim()}
-          aria-label={`将${normalizedProblem.title || "题目"}加入我的题单`}
+          aria-label={`将${normalizedProblem.title || "题目"}加入题单`}
         >
           <BookmarkPlus size={compact ? 14 : 15} />
           {!compact && <span>加入题单</span>}
@@ -169,7 +169,7 @@ export default function AddToProblemListButton({ problem, compact = false, class
                     className="form-input"
                   >
                     {lists.map((item) => (
-                      <option key={item.id} value={item.id}>{item.name}（{item.problemCount} 题）</option>
+                      <option key={item.id} value={item.id}>{item.name}（{item.shared ? "共享 · " : ""}{item.problemCount} 题）</option>
                     ))}
                   </select>
                 </Field>

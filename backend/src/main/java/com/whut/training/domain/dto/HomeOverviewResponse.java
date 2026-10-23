@@ -9,7 +9,6 @@ public record HomeOverviewResponse(
         int totalUsers,
         List<LeaderboardItem> topUsers,
         Object todayProblem,
-        Object todayPushProblem,
         HomeOverview.DailySubmissionSummary dailySubmissionSummary,
         boolean problemPoolInitializing,
         Long currentUserId,
@@ -18,7 +17,7 @@ public record HomeOverviewResponse(
     public static HomeOverviewResponse from(HomeOverview overview, User user) {
         return new HomeOverviewResponse(
                 overview.getTotalUsers(), overview.getTopUsers(), overview.getTodayProblem(),
-                overview.getTodayPushProblem(), overview.getDailySubmissionSummary(),
+                overview.getDailySubmissionSummary(),
                 overview.isProblemPoolInitializing(), user.getId(),
                 user.getTotalPoints() == null ? 0 : user.getTotalPoints()
         );

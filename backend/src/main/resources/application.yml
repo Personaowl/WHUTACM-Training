@@ -45,9 +45,6 @@ atcoder:
 atcoder-problems:
   submissions-url: https://kenkoooo.com/atcoder/atcoder-api/v3/user/submissions
 
-push:
-  defaultAutoApprove: false
-
 superAdmin:
   username: superadmin
   password: superadmin123

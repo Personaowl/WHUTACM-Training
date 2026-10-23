@@ -6,7 +6,7 @@ import {
   Code2,
   FolderOpen,
   House,
-  Send,
+  Globe2,
   Settings2,
   Trophy,
   UserRound,
@@ -27,7 +27,7 @@ const NAV_ITEMS = [
   { to: "/leaderboard", label: "排行榜", icon: Trophy },
   { to: "/practice", label: "自主练习", icon: Code2 },
   { to: "/problem-lists", label: "我的题单", icon: FolderOpen },
-  { to: "/push", label: "推题", icon: Send },
+  { to: "/shared-problem-lists", label: "共享题单", icon: Globe2 },
   { to: "/profile", label: "个人中心", icon: UserRound, requireAuth: true },
   { to: "/account-binding", label: "账号绑定", icon: Link2, requireAuth: true },
 ];
@@ -36,7 +36,6 @@ const ADMIN_ITEMS = [
   { to: "/admin/training", label: "训练看板", icon: ChartNoAxesCombined },
   { to: "/admin/daily", label: "题管理", icon: Settings2 },
   { to: "/admin/users", label: "用户管理", icon: Users },
-  { to: "/admin/push", label: "推题审核", icon: ClipboardCheck },
 ];
 
 function NavLink({ item, active, collapsed, onNavigate }) {
