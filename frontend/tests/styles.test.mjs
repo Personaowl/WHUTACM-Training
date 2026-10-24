@@ -43,3 +43,48 @@ test("the locked dependency tree includes the native bindings used by Ubuntu CI"
     assert.ok(entry.cpu.includes("x64"));
   }
 });
+
+test("shared reading sizes enlarge routed pages and dialogs without scaling the app", async () => {
+  const source = await readFile(new URL("../src/index.css", import.meta.url), "utf8");
+  assert.match(source, /--ui-body:\s*17px/);
+  assert.match(source, /--ui-small:\s*15px/);
+  assert.match(source, /\.text-sm\s*\{[^}]*font-size:\s*var\(--ui-body\)/);
+  assert.match(source, /\.text-xs\s*\{[^}]*font-size:\s*var\(--ui-small\)/);
+  assert.doesNotMatch(source, /(?:^|[;{])\s*zoom\s*:/m);
+});
+
+test("page headings stay between 30 and 32px without resizing metric values", async () => {
+  const source = await readFile(new URL("../src/index.css", import.meta.url), "utf8");
+  const refinements = await readFile(new URL("../src/Refinements.css", import.meta.url), "utf8");
+  assert.match(source, /--page-title-size:\s*clamp\(30px,\s*2\.2vw,\s*32px\)/);
+  assert.match(source, /\.auth-card-heading h1\s*\{[^}]*font-size:\s*var\(--page-title-size\)/);
+  assert.match(refinements, /\.app-content h1\[class\]\s*\{[^}]*font-size:\s*var\(--page-title-size\)/);
+  assert.match(source, /\.text-2xl\s*\{[^}]*font-size:\s*var\(--ui-title\)/);
+});
+
+test("sidebar scrollbars are hidden while the navigation remains keyboard-scrollable", async () => {
+  const source = await readFile(new URL("../src/index.css", import.meta.url), "utf8");
+  const sidebar = await readFile(new URL("../src/components/ui/Sidebar.jsx", import.meta.url), "utf8");
+  assert.match(source, /\.sidebar-nav\s*\{[^}]*overflow:\s*hidden auto;[^}]*scrollbar-width:\s*none/s);
+  assert.match(source, /\.sidebar-nav::\-webkit-scrollbar\s*\{[^}]*display:\s*none/);
+  assert.match(sidebar, /<nav[^>]*className="sidebar-nav"[^>]*tabIndex=\{0\}/);
+});
+
+test("sidebar toggle matches navigation text size and control height", async () => {
+  const source = await readFile(new URL("../src/index.css", import.meta.url), "utf8");
+  const sidebar = await readFile(new URL("../src/components/ui/Sidebar.jsx", import.meta.url), "utf8");
+  assert.match(source, /\.sidebar-toggle\s*\{[^}]*height:\s*46px;[^}]*font-size:\s*var\(--ui-body\)/);
+  assert.match(sidebar, /<PanelLeftOpen size=\{19\} \/>\s*:\s*<PanelLeftClose size=\{19\} \/>/);
+});
+
+test("auth keeps a larger form, legible fields and optional campus information", async () => {
+  const source = await readFile(new URL("../src/index.css", import.meta.url), "utf8");
+  const register = await readFile(new URL("../src/pages/RegisterPage.jsx", import.meta.url), "utf8");
+  assert.match(source, /\.auth-card\s*\{[^}]*width:\s*min\(100%,\s*620px\)/s);
+  assert.match(source, /\.auth-field\s*\{[^}]*height:\s*58px;[^}]*font-size:\s*18px/s);
+  assert.match(source, /\.auth-form label > span\s*\{[^}]*font-size:\s*17px/);
+  assert.match(source, /\.button-primary\.auth-submit\s*\{[^}]*min-height:\s*58px/);
+  assert.match(source, /\.auth-intro-copy > p\.auth-intro-affiliation\s*\{[^}]*font-size:\s*18px/s);
+  assert.ok(register.includes('auth-form auth-register-form'));
+  assert.ok(register.includes('校内信息（选填）'));
+});

@@ -110,7 +110,7 @@ export default function Sidebar({
         </button>
       </div>
 
-      <nav className="sidebar-nav" aria-label="主导航">
+      <nav className="sidebar-nav" aria-label="主导航" tabIndex={0}>
         {filteredItems.filter(item => item.to === "/").map((item) => (
           <NavLink
             key={item.to}
@@ -141,7 +141,7 @@ export default function Sidebar({
           aria-label={collapsed ? "展开侧边栏" : "收起侧边栏"}
           title={collapsed ? "展开侧边栏" : "收起侧边栏"}
         >
-          {collapsed ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}
+          {collapsed ? <PanelLeftOpen size={19} /> : <PanelLeftClose size={19} />}
           <span className="sidebar-label">{collapsed ? "展开侧边栏" : "收起侧边栏"}</span>
         </button>
       </div>

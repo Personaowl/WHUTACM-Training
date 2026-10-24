@@ -57,7 +57,7 @@ export default function RegisterPage() {
           {message}
         </p>
       )}
-      <form className="auth-form" onSubmit={handleSubmit}>
+      <form className="auth-form auth-register-form" onSubmit={handleSubmit}>
         <label>
           <span>登录账号</span>
           <input
