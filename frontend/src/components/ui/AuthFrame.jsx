@@ -1,4 +1,5 @@
-import { MoveUpRight } from "lucide-react";
+import { MoveUpRight, ShieldCheck } from "lucide-react";
+import { PageIcon } from "./PageHeading";
 import { Link } from "react-router-dom";
 
 export default function AuthFrame({ title, subtitle, children, footer }) {
@@ -32,7 +33,7 @@ export default function AuthFrame({ title, subtitle, children, footer }) {
       <section className="auth-card-wrap">
         <div className="auth-card">
           <div className="auth-card-heading">
-            <h1>{title}</h1>
+            <div className="auth-title-row"><PageIcon icon={ShieldCheck} /><h1>{title}</h1></div>
             <p>{subtitle}</p>
           </div>
           {children}

@@ -13,14 +13,20 @@ import {
   ArrowRight,
   ArrowUpRight,
   BookOpen,
-  CalendarDays,
+  CalendarCheck2,
+  CalendarRange,
+  ChartNoAxesCombined,
   Code2,
+  Crosshair,
   LoaderCircle,
-  ListTodo,
+  LibraryBig,
+  Medal,
+  NotebookPen,
   Send,
   Trophy,
 } from "lucide-react";
 import CodeforcesOverview from "../components/profile/CodeforcesOverview";
+import { PageIcon } from "../components/ui/PageHeading";
 import { getCurrentUserPoints } from "../utils/home.js";
 import "./HomePage.css";
 
@@ -143,7 +149,7 @@ export default function HomePage() {
 
       <div className="home-training-grid">
         <section className="home-section home-daily-section" aria-labelledby="home-daily-title">
-          <SectionHeading id="home-daily-title" title="今日训练" to="/daily" linkText="查看每日一题" />
+          <SectionHeading id="home-daily-title" title="今日训练" icon={CalendarCheck2} to="/daily" linkText="查看每日一题" />
           {loading ? <div aria-label="正在加载今日题目"><CardSkeleton /><CardSkeleton /></div> : error ? (
             <div className="home-empty-state">今日题目暂时无法加载</div>
           ) : todayProblems.length > 0 ? (
@@ -178,15 +184,15 @@ export default function HomePage() {
             </section>
           )}
           <nav className="home-shortcuts" aria-label="训练快捷入口">
-            <Link to="/upsolve"><ListTodo size={19} aria-hidden="true" /><span>补题计划</span><ArrowUpRight size={16} aria-hidden="true" /></Link>
-            <Link to="/weekly-training"><CalendarDays size={19} aria-hidden="true" /><span>我的周训练</span><ArrowUpRight size={16} aria-hidden="true" /></Link>
-            <Link to="/practice"><Code2 size={19} aria-hidden="true" /><span>自主练习</span><ArrowUpRight size={16} aria-hidden="true" /></Link>
+            <Link to="/upsolve"><NotebookPen size={19} aria-hidden="true" /><span>补题计划</span><ArrowUpRight size={16} aria-hidden="true" /></Link>
+            <Link to="/weekly-training"><CalendarRange size={19} aria-hidden="true" /><span>我的周训练</span><ArrowUpRight size={16} aria-hidden="true" /></Link>
+            <Link to="/practice"><Crosshair size={19} aria-hidden="true" /><span>自主练习</span><ArrowUpRight size={16} aria-hidden="true" /></Link>
           </nav>
         </aside>
       </div>
 
       <section className="render-lazy cf-heatmap-section">
-        <SectionHeading title="训练足迹" subtitle="过去 12 个月" />
+        <SectionHeading title="训练足迹" icon={ChartNoAxesCombined} tone="mint" subtitle="过去 12 个月" />
         {heatmapLoading ? (
           <CardSkeleton />
         ) : heatmapError ? (
@@ -202,15 +208,15 @@ export default function HomePage() {
 
       <div className="render-lazy home-community-grid">
           <section className="home-section home-shared-section">
-            <SectionHeading title="题单" />
+            <SectionHeading title="题单" icon={LibraryBig} tone="violet" />
             <nav className="home-library-links" aria-label="题单入口">
-              <Link to="/problem-lists"><BookOpen size={19} /><span>我的题单</span><ArrowUpRight size={16} /></Link>
-              <Link to="/shared-problem-lists"><Send size={19} /><span>共享题单</span><ArrowUpRight size={16} /></Link>
+              <Link to="/problem-lists"><BookOpen size={19} aria-hidden="true" /><span>我的题单</span><ArrowUpRight size={16} aria-hidden="true" /></Link>
+              <Link to="/shared-problem-lists"><LibraryBig size={19} aria-hidden="true" /><span>共享题单</span><ArrowUpRight size={16} aria-hidden="true" /></Link>
             </nav>
           </section>
 
           <section className="home-section home-leaderboard-section">
-            <SectionHeading title="训练排行" to="/leaderboard" linkText="完整排行" />
+            <SectionHeading title="训练排行" icon={Medal} tone="amber" to="/leaderboard" linkText="完整排行" />
             {loading ? <CardSkeleton /> : error ? <div className="home-empty-state">排行暂时无法加载</div> : topUsers && topUsers.length > 0 ? (
               <ol className="home-leaderboard">
                 {topUsers.map((item, idx) => (
@@ -257,10 +263,10 @@ function StatCard({ icon: Icon, label, value }) {
   );
 }
 
-function SectionHeading({ id, title, subtitle, to, linkText }) {
+function SectionHeading({ id, title, subtitle, to, linkText, icon, tone }) {
   return (
     <div className="home-section-heading">
-      <h2 id={id}>{title}</h2>
+      <div className="home-section-title">{icon && <PageIcon icon={icon} tone={tone} compact />}<h2 id={id}>{title}</h2></div>
       {to ? <Link to={to}>{linkText}<ArrowUpRight size={15} aria-hidden="true" /></Link> : <span>{subtitle}</span>}
     </div>
   );

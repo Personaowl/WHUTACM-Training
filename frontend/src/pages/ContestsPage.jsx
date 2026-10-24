@@ -3,6 +3,7 @@ import { CalendarClock, Clock3, ExternalLink, Radio, RefreshCw } from "lucide-re
 import { getUpcomingContests } from "../api/contests";
 import EmptyState from "../components/ui/EmptyState";
 import { ListSkeleton } from "../components/ui/Skeleton";
+import PageHeading from "../components/ui/PageHeading";
 
 const SHANGHAI_TIME = new Intl.DateTimeFormat("zh-CN", {
   timeZone: "Asia/Shanghai",
@@ -72,7 +73,7 @@ export default function ContestsPage() {
     <div className="stack-y-5">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-text-primary mt-1 mb-0">近期比赛</h1>
+          <PageHeading icon={CalendarClock} title="近期比赛" />
           <p className="text-sm text-text-secondary mt-1 mb-0">
             北京时间（UTC+8）
           </p>

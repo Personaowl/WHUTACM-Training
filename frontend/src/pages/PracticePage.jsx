@@ -9,6 +9,8 @@ import ProblemCard from "../components/ui/ProblemCard";
 import AddToProblemListButton from "../components/ui/AddToProblemListButton";
 import EmptyState from "../components/ui/EmptyState";
 import { ListSkeleton } from "../components/ui/Skeleton";
+import { Crosshair, Shuffle } from "lucide-react";
+import PageHeading from "../components/ui/PageHeading";
 
 const RATING_OPTIONS = Array.from({ length: 28 }, (_, index) => 800 + index * 100);
 
@@ -112,11 +114,11 @@ export default function PracticePage() {
   ));
 
   return (
-    <div className="stack-y-5">
-      <h1 className="text-lg font-semibold text-text-primary m-0">自主练习</h1>
+    <div className="practice-page stack-y-5">
+      <PageHeading icon={Crosshair} title="自主练习" tone="violet" />
 
       {/* Draw panel */}
-      <div className="bg-white border border-border rounded-ui p-4">
+      <div className="practice-draw-panel bg-white border border-border rounded-ui p-4">
         <div className="flex items-end gap-3 flex-wrap">
           <label className="flex flex-col gap-1">
             <span className="text-xs text-text-secondary">最小难度</span>
@@ -151,11 +153,11 @@ export default function PracticePage() {
             </select>
           </label>
           <button
-            className="px-4 py-2 text-sm font-medium text-white bg-text-primary hover:bg-[#1b1f23] rounded-ui border-0 cursor-pointer disabled:opacity-50"
+            className="button-primary inline-flex items-center gap-2"
             onClick={handleDraw}
             disabled={loading}
           >
-            {loading ? "抽取中..." : "抽题"}
+            <Shuffle size={18} aria-hidden="true" />{loading ? "抽取中..." : "抽题"}
           </button>
         </div>
 

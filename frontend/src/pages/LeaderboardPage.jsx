@@ -5,6 +5,8 @@ import UserAvatar from "../components/ui/UserAvatar";
 import Pagination from "../components/ui/Pagination";
 import { ListSkeleton } from "../components/ui/Skeleton";
 import EmptyState from "../components/ui/EmptyState";
+import { Medal } from "lucide-react";
+import PageHeading from "../components/ui/PageHeading";
 
 const PAGE_SIZE = 50;
 
@@ -45,7 +47,7 @@ export default function LeaderboardPage() {
 
   return (
     <div className="stack-y-4">
-      <h1 className="text-lg font-semibold text-text-primary m-0">排行榜</h1>
+      <PageHeading icon={Medal} title="排行榜" tone="amber" />
       <p className="text-sm text-text-secondary m-0">
         按总积分降序排列，积分相同时按最后打卡时间排序
       </p>

@@ -4,6 +4,35 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { build } from "vite";
 
+test("page icon tiles remain decorative and use one stroke language", async () => {
+  const source = await readFile(new URL("../src/components/ui/PageHeading.jsx", import.meta.url), "utf8");
+  assert.match(source, /aria-hidden="true"/);
+  assert.match(source, /strokeWidth=\{1\.8\}/);
+  assert.match(source, /<h1 className="page-title">\{title\}<\/h1>/);
+  const refinements = await readFile(new URL("../src/Refinements.css", import.meta.url), "utf8");
+  for (const tone of ["mint", "violet", "amber"]) assert.ok(refinements.includes(`[data-tone="${tone}"]`));
+  assert.match(refinements, /\.page-heading-identity \.page-title\s*\{[^}]*overflow-wrap:\s*anywhere/);
+});
+
+test("richer problem surfaces preserve server difficulty and Codeforces rating colors", async () => {
+  const card = await readFile(new URL("../src/components/ui/ProblemCard.jsx", import.meta.url), "utf8");
+  assert.match(card, /getRatingMeta\(problem.rating\)/);
+  assert.match(card, /style=\{\{ color: meta.color \}\}/);
+  assert.match(card, /data-slot=\{problem.slot\?\.toLowerCase\(\) \|\| problem.type\?\.toLowerCase\(\)\}/);
+  const home = await readFile(new URL("../src/pages/HomePage.css", import.meta.url), "utf8");
+  assert.ok(home.includes('[data-slot="easy"]'));
+  assert.ok(home.includes('[data-slot="hard"]'));
+  assert.match(home, /\.home-stat dd\s*\{[^}]*font-size:\s*26px;[^}]*white-space:\s*nowrap/);
+  assert.match(home, /\.home-stat:first-child\s*\{[^}]*grid-column:\s*1 \/ -1/);
+});
+
+test("library selection has a semantic state without changing editing permissions", async () => {
+  const source = await readFile(new URL("../src/pages/ProblemListsPage.jsx", import.meta.url), "utf8");
+  assert.match(source, /aria-pressed=\{selectedId === item.id\}/);
+  assert.match(source, /canAddProblem\(detail.list\)/);
+  assert.match(source, /canEditProblem\(detail.list, problem, user\?\.id, isAdmin\)/);
+});
+
 let css;
 
 before(async () => {

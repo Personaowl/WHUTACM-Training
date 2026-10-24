@@ -12,7 +12,8 @@ import Heatmap from "../components/ui/Heatmap";
 import { CardSkeleton } from "../components/ui/Skeleton";
 import ProfileEditDialog from "../components/profile/ProfileEditDialog";
 import CodeforcesOverview from "../components/profile/CodeforcesOverview";
-import { Camera, ClipboardCheck, Link2, Trash2 } from "lucide-react";
+import { Camera, CalendarRange, Link2, Trash2, UserRound } from "lucide-react";
+import PageHeading from "../components/ui/PageHeading";
 
 export default function ProfilePage() {
   const { user, updateUser } = useAuth();
@@ -111,15 +112,15 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="stack-y-4">
-        <h1 className="text-lg font-semibold">个人中心</h1>
+          <PageHeading icon={UserRound} title="个人中心" />
         <CardSkeleton />
       </div>
     );
   }
 
   return (
-    <div className="stack-y-5">
-      <h1 className="text-lg font-semibold text-text-primary m-0">个人中心</h1>
+      <div className="profile-page stack-y-5">
+        <PageHeading icon={UserRound} title="个人中心" />
 
       {message && (
         <p
@@ -201,7 +202,7 @@ export default function ProfilePage() {
             <Link2 size={15} />账号绑定
           </Link>
           <Link to="/weekly-training" className="inline-flex items-center gap-1.5 rounded-ui border border-border bg-white px-3 py-1 text-sm font-semibold text-text-primary hover:bg-bg-secondary">
-            <ClipboardCheck size={15} />我的周训练
+            <CalendarRange size={15} aria-hidden="true" />我的周训练
           </Link>
           <ProfileEditDialog
             profile={profile}

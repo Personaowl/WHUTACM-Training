@@ -1,11 +1,15 @@
 import {
-  CalendarDays,
+  CalendarCheck2,
+  CalendarRange,
   CalendarClock,
-  ClipboardCheck,
   ChartNoAxesCombined,
-  Code2,
-  FolderOpen,
-  ListTodo,
+  Library,
+  LibraryBig,
+  NotebookPen,
+  Crosshair,
+  Target,
+  Medal,
+  ShieldCheck,
   House,
   Globe2,
   Settings2,
@@ -24,13 +28,13 @@ import { useAuth } from "../../context/AuthContext";
 
 const NAV_ITEMS = [
   { to: "/", label: "首页", icon: House },
-  { to: "/daily", label: "每日一题", icon: CalendarDays },
-  { to: "/weekly-training", label: "我的周训练", icon: ClipboardCheck, requireAuth: true },
+  { to: "/daily", label: "每日一题", icon: CalendarCheck2 },
+  { to: "/weekly-training", label: "我的周训练", icon: CalendarRange, requireAuth: true },
   { to: "/contests", label: "近期比赛", icon: CalendarClock },
-  { to: "/leaderboard", label: "排行榜", icon: Trophy },
-  { to: "/practice", label: "自主练习", icon: Code2 },
-  { to: "/upsolve", label: "补题计划", icon: ListTodo, requireAuth: true },
-  { to: "/problem-lists", label: "我的题单", icon: FolderOpen },
+  { to: "/leaderboard", label: "排行榜", icon: Medal },
+  { to: "/practice", label: "自主练习", icon: Crosshair },
+  { to: "/upsolve", label: "补题计划", icon: NotebookPen, requireAuth: true },
+  { to: "/problem-lists", label: "我的题单", icon: Library },
   { to: "/shared-problem-lists", label: "共享题单", icon: Globe2 },
   { to: "/profile", label: "个人中心", icon: UserRound, requireAuth: true },
   { to: "/account-binding", label: "账号绑定", icon: Link2, requireAuth: true },
@@ -43,8 +47,8 @@ const ADMIN_ITEMS = [
 ];
 
 const GROUPS = [
-  { name: "个人训练", icon: Code2, paths: ["/daily", "/weekly-training", "/practice", "/upsolve"] },
-  { name: "题单", icon: FolderOpen, paths: ["/problem-lists", "/shared-problem-lists"] },
+  { name: "个人训练", icon: Target, paths: ["/daily", "/weekly-training", "/practice", "/upsolve"] },
+  { name: "题单", icon: LibraryBig, paths: ["/problem-lists", "/shared-problem-lists"] },
   { name: "赛事与排名", icon: Trophy, paths: ["/contests", "/leaderboard"] },
   { name: "我的账号", icon: UserRound, paths: ["/profile", "/account-binding"] },
 ];
@@ -172,7 +176,7 @@ export default function Sidebar({
 
         {isAdmin && (
           <div className="sidebar-admin">
-            <NavigationGroup key={location.pathname} name="管理后台" icon={Settings2} items={ADMIN_ITEMS}
+            <NavigationGroup key={location.pathname} name="管理后台" icon={ShieldCheck} items={ADMIN_ITEMS}
               pathname={location.pathname} compact={collapsed && !mobileOpen} onClose={onClose} />
           </div>
         )}

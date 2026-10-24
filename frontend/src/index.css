@@ -72,6 +72,14 @@ button:not(:disabled),
   --shadow-control: 0 2px 5px #132c4510;
   --motion-feedback: 140ms;
   --ease-ui: cubic-bezier(.2, .7, .3, 1);
+  --blue-ink: #2d5d91;
+  --mint-ink: #266c5c;
+  --violet-ink: #6a4f9e;
+  --amber-ink: #866021;
+  --blue-line: #cedff3;
+  --mint-line: #cce6dc;
+  --violet-line: #e0d7ef;
+  --amber-soft: #fff5e3;
   --ui-body: 17px;
   --ui-small: 15px;
   --ui-label: 16px;

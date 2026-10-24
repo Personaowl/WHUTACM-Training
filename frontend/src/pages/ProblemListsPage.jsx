@@ -7,6 +7,8 @@ import {
   FolderPlus,
   Globe2,
   LockKeyhole,
+  Library,
+  LibraryBig,
   Pencil,
   Plus,
   Trash2,
@@ -26,6 +28,7 @@ import {
 import { canAddProblem, canEditProblem, visibleProblemLists } from "../utils/problemListPermissions";
 import EmptyState from "../components/ui/EmptyState";
 import AddToProblemListButton from "../components/ui/AddToProblemListButton";
+import PageHeading from "../components/ui/PageHeading";
 
 const EMPTY_LIST_FORM = { name: "", description: "", shared: false };
 const EMPTY_PROBLEM_FORM = {
@@ -227,11 +230,9 @@ export default function ProblemListsPage({ sharedOnly = false }) {
   }
 
   return (
-    <div className="stack-y-5">
+    <div className="library-page stack-y-5">
       <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="m-0 text-2xl font-bold tracking-tight text-text-primary">{sharedOnly ? "共享题单" : "我的题单"}</h1>
-        </div>
+        <PageHeading icon={sharedOnly ? LibraryBig : Library} title={sharedOnly ? "共享题单" : "我的题单"} tone={sharedOnly ? "mint" : "violet"} />
         {(!sharedOnly || isAdmin) && <button type="button" className="button-primary inline-flex items-center gap-2" onClick={openCreateList}>
           <FolderPlus size={16} />创建题单
         </button>}
@@ -244,7 +245,7 @@ export default function ProblemListsPage({ sharedOnly = false }) {
         </div>
       )}
 
-      <section className="grid gap-3 sm:grid-cols-3">
+      <section className="library-stats grid gap-3 sm:grid-cols-3">
         <StatCard label={sharedOnly ? "公共投稿" : "我的题单"} value={sharedOnly ? myLists.reduce((sum,item)=>sum+item.problemCount,0) : myLists.length} icon={FolderOpen} />
         <StatCard label={sharedOnly ? "专题题单" : "收藏题目"} value={sharedOnly ? sharedLists.length : myLists.reduce((sum, item) => sum + item.problemCount, 0)} icon={FileText} />
         <StatCard label="题目总数" value={lists.reduce((sum,item)=>sum+item.problemCount,0)} icon={Globe2} />
@@ -288,7 +289,7 @@ export default function ProblemListsPage({ sharedOnly = false }) {
             </div>
           ) : detail ? (
             <>
-              <div className="border-b border-border p-5 sm:p-6">
+              <div className="library-detail-heading border-b border-border p-5 sm:p-6">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
@@ -400,7 +401,8 @@ function ListGroup({ title, items, selectedId, onSelect, empty }) {
               key={item.id}
               type="button"
               onClick={() => onSelect(item.id)}
-              className={`w-full rounded-xl border px-3 py-3 text-left transition-colors ${selectedId === item.id ? "border-[#17324f] bg-[#eef3f8]" : "border-transparent bg-white hover:bg-bg-secondary"}`}
+              aria-pressed={selectedId === item.id}
+              className={`library-select w-full rounded-xl border px-3 py-3 text-left transition-colors ${selectedId === item.id ? "border-[#17324f] bg-[#eef3f8]" : "border-transparent bg-white hover:bg-bg-secondary"}`}
             >
               <span className="flex items-center justify-between gap-2">
                 <strong className="truncate text-sm text-text-primary">{item.name}</strong>

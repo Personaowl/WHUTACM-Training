@@ -9,7 +9,8 @@ import AddToProblemListButton from "../components/ui/AddToProblemListButton";
 import { CardSkeleton } from "../components/ui/Skeleton";
 import { useAuth } from "../context/AuthContext";
 import { parseTags } from "../utils/cf";
-import { Settings2, Tags } from "lucide-react";
+import { CalendarCheck2, Settings2, Tags } from "lucide-react";
+import PageHeading from "../components/ui/PageHeading";
 
 const PAGE_SIZE = 10;
 const TEXT = {
@@ -164,7 +165,7 @@ export default function DailyProblemPage() {
   if (loading) {
     return (
       <div className="stack-y-4">
-        <h1 className="text-lg font-semibold">{TEXT.title}</h1>
+        <PageHeading icon={CalendarCheck2} title={TEXT.title} />
         <CardSkeleton />
         <CardSkeleton />
       </div>
@@ -182,8 +183,8 @@ export default function DailyProblemPage() {
   const todayTotalCount = todayProblems.length;
 
   return (
-    <div className="stack-y-5">
-      <h1 className="text-lg font-semibold text-text-primary m-0">{TEXT.title}</h1>
+    <div className="daily-page stack-y-5">
+      <PageHeading icon={CalendarCheck2} title={TEXT.title} />
 
       {error && (
         <p className="text-sm text-error bg-[#fff0f0] rounded-ui px-3 py-2 m-0">{error}</p>

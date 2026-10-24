@@ -3,6 +3,8 @@ import { getTodayProblem } from "../../api/dailyProblem";
 import { regenerateDaily, redrawSlot } from "../../api/admin";
 import ProblemCard from "../../components/ui/ProblemCard";
 import { CardSkeleton } from "../../components/ui/Skeleton";
+import { Settings2 } from "lucide-react";
+import PageHeading from "../../components/ui/PageHeading";
 
 export default function AdminDailyPage() {
   const [todayData, setTodayData] = useState(null);
@@ -60,7 +62,7 @@ export default function AdminDailyPage() {
 
   return (
     <div className="stack-y-4">
-      <h1 className="text-lg font-semibold text-text-primary m-0">每日题管理</h1>
+      <PageHeading icon={Settings2} title="每日题管理" tone="violet" />
 
       {message && (
         <p className="text-sm text-text-secondary bg-bg-secondary rounded-ui px-3 py-2 m-0">{message}</p>

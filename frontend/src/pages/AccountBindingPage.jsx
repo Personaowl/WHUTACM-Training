@@ -4,6 +4,7 @@ import {
   Clock3,
   ExternalLink,
   ShieldCheck,
+  Link2,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -18,6 +19,7 @@ import AdditionalPlatformBinding from "../components/profile/AdditionalPlatformB
 import PlatformStatistics from "../components/profile/PlatformStatistics";
 import { getPlatformOverviews } from "../api/platformOverview";
 import "./AccountBindingPage.css";
+import PageHeading from "../components/ui/PageHeading";
 
 export default function AccountBindingPage() {
   const { user, updateUser } = useAuth();
@@ -192,15 +194,13 @@ export default function AccountBindingPage() {
   }
 
   if (loading) {
-    return <div className="stack-y-4"><h1 className="page-title">账号绑定</h1><CardSkeleton /><CardSkeleton /></div>;
+    return <div className="stack-y-4"><PageHeading icon={Link2} title="账号绑定" tone="mint" /><CardSkeleton /><CardSkeleton /></div>;
   }
 
   return (
     <div className="binding-page stack-y-5">
       <header className="page-heading">
-        <div>
-          <h1 className="page-title">账号绑定</h1>
-        </div>
+        <PageHeading icon={Link2} title="账号绑定" tone="mint" />
         <div className="binding-summary" aria-label="绑定状态">
           <ShieldCheck size={19} />
           <span>{Number(Boolean(profile?.codeforcesHandle)) + Number(Boolean(profile?.atcoderHandle)) + Number(Boolean(additionalConnected.luogu)) + Number(Boolean(additionalConnected.nowcoder))}/4 已连接</span>

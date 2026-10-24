@@ -7,7 +7,7 @@ export default function ProblemCard({ problem, showTags = true, actions = null }
   const tags = parseTags(problem.tags);
 
   return (
-    <article className="problem-card bg-white border border-border rounded-ui p-4">
+    <article className="problem-card bg-white border border-border rounded-ui p-4" data-slot={problem.slot?.toLowerCase() || problem.type?.toLowerCase()}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <h3 className="text-base font-semibold text-text-primary m-0 break-words">
@@ -21,7 +21,7 @@ export default function ProblemCard({ problem, showTags = true, actions = null }
           )}
         </div>
         <span
-          className="text-sm font-bold shrink-0"
+          className="problem-rating text-sm font-bold shrink-0"
           style={{ color: meta.color }}
         >
           {problem.rating ?? "未定级"}
@@ -32,7 +32,7 @@ export default function ProblemCard({ problem, showTags = true, actions = null }
           {tags.map((t) => (
             <span
               key={t}
-              className="text-xs px-2 py-0.5 rounded-full bg-bg-secondary text-text-secondary"
+              className="problem-tag text-xs px-2 py-0.5 rounded-full bg-bg-secondary text-text-secondary"
             >
               {t}
             </span>
@@ -48,7 +48,7 @@ export default function ProblemCard({ problem, showTags = true, actions = null }
               target="_blank"
               rel="noreferrer"
             >
-              在 Codeforces 打开 <ArrowUpRight size={13} />
+              在 Codeforces 打开 <ArrowUpRight size={15} aria-hidden="true" />
             </a>
           ) : <span />}
           {actions && <div className="flex flex-wrap items-center justify-end gap-2">{actions}</div>}

@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { Check, CheckCheck, ChevronLeft, ChevronRight, ExternalLink, ListTodo, LoaderCircle, Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react";
+import { Check, CheckCheck, ChevronLeft, ChevronRight, ExternalLink, ListTodo, LoaderCircle, NotebookPen, Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react";
 import { completeUpsolvePlan, deleteUpsolvePlan, listUpsolvePlans, saveUpsolvePlan } from "../api/upsolve";
 import { problemHost, requireUpsolveData, upsolveDate } from "../utils/upsolve";
 import AddToProblemListButton from "../components/ui/AddToProblemListButton";
 import { useAuth } from "../context/AuthContext";
 import "./UpsolvePlanPage.css";
+import { PageIcon } from "../components/ui/PageHeading";
 
 const EMPTY_FORM = { link: "", title: "", note: "" };
 
@@ -74,7 +75,7 @@ export default function UpsolvePlanPage() {
   return (
     <div className="upsolve-page">
       <header className="upsolve-header">
-        <div className="upsolve-heading"><span className="upsolve-mark"><ListTodo size={26} /></span><div><h1>补题计划</h1></div></div>
+        <div className="upsolve-heading"><PageIcon icon={NotebookPen} tone="violet" /><div><h1>补题计划</h1></div></div>
         <button type="button" className="button-primary" onClick={() => openEditor()} disabled={busy}><Plus size={17} />添加题目</button>
       </header>
 

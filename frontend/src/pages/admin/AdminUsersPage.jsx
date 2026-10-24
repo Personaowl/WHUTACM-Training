@@ -14,7 +14,8 @@ import EmptyState from "../../components/ui/EmptyState";
 import * as Select from "@radix-ui/react-select";
 import * as Dialog from "@radix-ui/react-dialog";
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
-import { Search } from "lucide-react";
+import { Search, Users } from "lucide-react";
+import PageHeading from "../../components/ui/PageHeading";
 
 export default function AdminUsersPage() {
   const { user, isSuperAdmin } = useAuth();
@@ -142,7 +143,7 @@ export default function AdminUsersPage() {
   return (
     <div className="stack-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-text-primary m-0">用户管理</h1>
+        <PageHeading icon={Users} title="用户管理" />
         <button
           className="px-3 py-1.5 text-sm font-medium text-white bg-text-primary hover:bg-[#1b1f23] rounded-ui border-0 cursor-pointer"
           onClick={() => setCreateOpen(true)}

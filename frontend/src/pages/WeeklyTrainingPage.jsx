@@ -3,19 +3,17 @@ import WeekPicker from "../components/training/WeekPicker";
 import WeeklyTrainingDetails from "../components/training/WeeklyTrainingDetails";
 import WeeklyExplanationDialog from "../components/training/WeeklyExplanationDialog";
 import EmptyState from "../components/ui/EmptyState";
+import { CalendarRange } from "lucide-react";
+import PageHeading from "../components/ui/PageHeading";
 
 export default function WeeklyTrainingPage() {
   const { report, loading, error, setWeek, reload, updateReport } =
     useWeeklyTraining();
   const member = report?.members?.[0];
   return (
-    <div className="stack-y-5">
+    <div className="weekly-training-page stack-y-5">
       <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="m-0 text-2xl font-bold text-text-primary">
-            我的周训练
-          </h1>
-        </div>
+        <PageHeading icon={CalendarRange} title="我的周训练" tone="mint" />
         {!loading && !error && member?.canExplain && (
           <WeeklyExplanationDialog
             key={report.weekStart}
