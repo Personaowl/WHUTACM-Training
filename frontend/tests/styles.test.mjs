@@ -7,7 +7,7 @@ import { build } from "vite";
 test("page icon tiles remain decorative and use one stroke language", async () => {
   const source = await readFile(new URL("../src/components/ui/PageHeading.jsx", import.meta.url), "utf8");
   assert.match(source, /aria-hidden="true"/);
-  assert.match(source, /strokeWidth=\{1\.8\}/);
+  assert.match(source, /strokeWidth=\{2\.2\}/);
   assert.match(source, /<h1 className="page-title">\{title\}<\/h1>/);
   const refinements = await readFile(new URL("../src/Refinements.css", import.meta.url), "utf8");
   for (const tone of ["mint", "violet", "amber"]) assert.ok(refinements.includes(`[data-tone="${tone}"]`));
@@ -34,6 +34,44 @@ test("library selection has a semantic state without changing editing permission
 });
 
 let css;
+
+test("library row actions stay together and keep clear accessible names", async () => {
+  const source = await readFile(new URL("../src/pages/ProblemListsPage.jsx", import.meta.url), "utf8");
+  assert.match(source, /className="library-problem-actions" role="group"/);
+  assert.match(source, /aria-label="编辑题目" title="编辑题目"/);
+  assert.match(source, /aria-label="移除题目" title="移除题目"/);
+  assert.match(source, /onOpenAutoFocus=\{\(\) => \{ returnFocus.current = document.activeElement;/);
+  assert.match(source, /onCloseAutoFocus=/);
+  assert.match(source, /target\?\.focus\(\{ preventScroll: true \}\)/);
+  assert.match(source, /<PageHeading icon=\{sharedOnly \? BookCopy : BookOpenText\}/);
+  const styles = await readFile(new URL("../src/Refinements.css", import.meta.url), "utf8");
+  assert.match(styles, /\.library-icon-button[^}]*width:\s*44px;[^}]*min-height:\s*44px/);
+});
+
+test("light pass is finite, non-interactive and hidden under reduced motion", async () => {
+  const source = await readFile(new URL("../src/Refinements.css", import.meta.url), "utf8");
+  const effect = source.match(/\.surface-sheen\s*\{([^}]+)\}/)?.[1];
+  assert.ok(effect);
+  assert.match(effect, /pointer-events:\s*none/);
+  assert.match(effect, /animation:\s*surface-light-pass 1600ms ease-out 300ms 1 both/);
+  assert.doesNotMatch(effect, /infinite|filter|backdrop-filter|will-change/);
+  assert.match(source, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.surface-sheen\s*\{\s*display:\s*none;\s*animation:\s*none/);
+  const component = await readFile(new URL("../src/components/ui/SurfaceSheen.jsx", import.meta.url), "utf8");
+  assert.match(component, /aria-hidden="true"/);
+  assert.doesNotMatch(component, /useEffect|requestAnimationFrame|setInterval|fetch\(/);
+});
+
+test("auth retains its ink-blue cover with only restrained shared accents", async () => {
+  const source = await readFile(new URL("../src/components/ui/AuthFrame.jsx", import.meta.url), "utf8");
+  assert.match(source, /auth-shell-bridge/);
+  assert.match(source, /className="auth-cover-decoration" aria-hidden="true"/);
+  assert.doesNotMatch(source, /AlgorithmCover|auth-capabilities|auth-seam|auth-geometry|canvas|<video/);
+  const styles = await readFile(new URL("../src/components/ui/AuthFrame.css", import.meta.url), "utf8");
+  assert.match(styles, /linear-gradient\(135deg, #0b1729, #122942 62%, #1a3a55\)/);
+  assert.match(styles, /\.auth-shell-bridge \.auth-intro-copy::after/);
+  const global = await readFile(new URL("../src/index.css", import.meta.url), "utf8");
+  assert.doesNotMatch(global, /\.auth-seam-decoration|\.auth-geometry/);
+});
 
 before(async () => {
   const result = await build({

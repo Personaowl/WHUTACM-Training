@@ -9,14 +9,16 @@
 .home-load-error p { margin: 0; }
 
 .home-page .home-profile-panel {
+  position: relative;
+  isolation: isolate;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 24px;
   padding: 28px 30px 0;
   overflow: hidden;
-  background: radial-gradient(ellipse at 94% 6%, #ded4f64d, transparent 36%), radial-gradient(ellipse at 4% 100%, #cfefdf6b, transparent 45%), linear-gradient(115deg, #fff 8%, #edf5ff 58%, #f1faf7);
-  border: 1px solid #c9dced;
+  background: radial-gradient(ellipse at 94% 6%, #d6c1f980, transparent 40%), radial-gradient(ellipse at 4% 100%, #b7e8d280, transparent 45%), linear-gradient(115deg, #fff 8%, #e6f0ff 58%, #edf9f3);
+  border: var(--border-ui) solid var(--blue-line);
   border-radius: 22px;
   box-shadow: inset 0 1px 0 white, 0 8px 28px #1a334409;
 }
@@ -92,7 +94,7 @@
 .home-stat dd { margin: 4px 0 0; font-size: 32px; font-weight: 750; line-height: 1.2; font-variant-numeric: tabular-nums; letter-spacing: -0.025em; }
 
 .home-training-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr); align-items: start; gap: 20px; }
-.home-section { min-width: 0; padding: 24px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-card); }
+.home-section { min-width: 0; padding: 24px; background: var(--paper); border: var(--border-ui) solid var(--line); border-radius: var(--radius-card); }
 .home-section-heading { display: flex; min-height: 28px; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
 .home-section-heading h2 { margin: 0; font-size: var(--ui-section); font-weight: 750; letter-spacing: -0.02em; }
 .home-section-title { display: flex; align-items: center; gap: 10px; min-width: 0; }

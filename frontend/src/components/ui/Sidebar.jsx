@@ -3,8 +3,8 @@ import {
   CalendarRange,
   CalendarClock,
   ChartNoAxesCombined,
-  Library,
-  LibraryBig,
+  BookOpenText,
+  BookCopy,
   NotebookPen,
   Crosshair,
   Target,
@@ -34,7 +34,7 @@ const NAV_ITEMS = [
   { to: "/leaderboard", label: "排行榜", icon: Medal },
   { to: "/practice", label: "自主练习", icon: Crosshair },
   { to: "/upsolve", label: "补题计划", icon: NotebookPen, requireAuth: true },
-  { to: "/problem-lists", label: "我的题单", icon: Library },
+  { to: "/problem-lists", label: "我的题单", icon: BookOpenText },
   { to: "/shared-problem-lists", label: "共享题单", icon: Globe2 },
   { to: "/profile", label: "个人中心", icon: UserRound, requireAuth: true },
   { to: "/account-binding", label: "账号绑定", icon: Link2, requireAuth: true },
@@ -48,7 +48,7 @@ const ADMIN_ITEMS = [
 
 const GROUPS = [
   { name: "个人训练", icon: Target, paths: ["/daily", "/weekly-training", "/practice", "/upsolve"] },
-  { name: "题单", icon: LibraryBig, paths: ["/problem-lists", "/shared-problem-lists"] },
+  { name: "题单", icon: BookCopy, paths: ["/problem-lists", "/shared-problem-lists"] },
   { name: "赛事与排名", icon: Trophy, paths: ["/contests", "/leaderboard"] },
   { name: "我的账号", icon: UserRound, paths: ["/profile", "/account-binding"] },
 ];

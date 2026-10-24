@@ -7,8 +7,8 @@ import {
   FolderPlus,
   Globe2,
   LockKeyhole,
-  Library,
-  LibraryBig,
+  BookOpenText,
+  BookCopy,
   Pencil,
   Plus,
   Trash2,
@@ -232,7 +232,7 @@ export default function ProblemListsPage({ sharedOnly = false }) {
   return (
     <div className="library-page stack-y-5">
       <header className="flex flex-wrap items-end justify-between gap-4">
-        <PageHeading icon={sharedOnly ? LibraryBig : Library} title={sharedOnly ? "共享题单" : "我的题单"} tone={sharedOnly ? "mint" : "violet"} />
+        <PageHeading icon={sharedOnly ? BookCopy : BookOpenText} title={sharedOnly ? "共享题单" : "我的题单"} tone={sharedOnly ? "mint" : "violet"} />
         {(!sharedOnly || isAdmin) && <button type="button" className="button-primary inline-flex items-center gap-2" onClick={openCreateList}>
           <FolderPlus size={16} />创建题单
         </button>}
@@ -251,7 +251,7 @@ export default function ProblemListsPage({ sharedOnly = false }) {
         <StatCard label="题目总数" value={lists.reduce((sum,item)=>sum+item.problemCount,0)} icon={Globe2} />
       </section>
 
-      <section className="grid min-h-[560px] gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
+      <section className="library-workspace grid min-h-[560px] gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
         <aside className="rounded-2xl border border-border bg-white p-3 shadow-[0_12px_36px_rgba(17,17,17,0.035)]">
           {loading ? (
             <div className="stack-y-2 p-1 animate-pulse">
@@ -298,7 +298,7 @@ export default function ProblemListsPage({ sharedOnly = false }) {
                     </div>
                     {detail.list.description && <p className="m-0 mt-2 max-w-3xl text-sm leading-6 text-text-secondary">{detail.list.description}</p>}
                     <p className="m-0 mt-3 text-[11px] text-text-secondary">
-                      {!detail.list.collaborative && `${detail.list.ownerDisplayName || detail.list.ownerUsername} · `}{detail.list.problemCount} 道题
+                      {!detail.list.collaborative && (detail.list.ownerDisplayName || detail.list.ownerUsername) ? `${detail.list.ownerDisplayName || detail.list.ownerUsername} · ` : null}{detail.list.problemCount} 道题
                     </p>
                   </div>
                   {detail.list.owner && !detail.list.collaborative && (
@@ -385,7 +385,7 @@ function StatCard({ label, value, icon: Icon }) {
   return (
     <div className="flex items-center justify-between rounded-2xl border border-border bg-white p-4 shadow-[0_10px_30px_rgba(17,17,17,0.03)]">
       <div><p className="m-0 text-xs font-semibold text-text-secondary">{label}</p><strong className="mt-1 block text-2xl text-text-primary">{value}</strong></div>
-      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#eef3f8] text-[#17324f]"><Icon size={19} /></span>
+      <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#eef3f8] text-[#17324f]" aria-hidden="true"><Icon size={22} strokeWidth={2.2} /></span>
     </div>
   );
 }
@@ -429,42 +429,44 @@ function VisibilityBadge({ shared, collaborative }) {
 function ProblemRow({ problem, index, editable, onEdit, onDelete }) {
   const tags = String(problem.tags || "").split(",").map((tag) => tag.trim()).filter(Boolean);
   return (
-    <article className="rounded-xl border border-border bg-[#fdfdfb] p-4 transition-colors hover:border-[#b9c7d6]">
-      <div className="flex items-start gap-3">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#17324f] font-mono text-xs font-bold text-white">{String(index).padStart(2, "0")}</span>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div className="min-w-0">
-              <a href={problem.link} target="_blank" rel="noreferrer" className="inline-flex max-w-full items-center gap-1.5 font-bold text-text-primary hover:text-[#245b8f] hover:underline">
-                <span className="truncate">{problem.title}</span><ExternalLink size={13} className="shrink-0" />
-              </a>
-              <div className="mt-1 flex flex-wrap items-center gap-2 text-[10px] text-text-secondary">
-                {problem.problemKey && <span className="font-mono font-bold">{problem.problemKey}</span>}
-                {problem.rating != null && <span>Rating {problem.rating}</span>}
-              </div>
-            </div>
-            <AddToProblemListButton problem={problem} compact initialNote={problem.note || ""} />
-            {editable && (
-              <div className="flex shrink-0 items-center gap-1">
-                <button type="button" onClick={onEdit} className="rounded-lg p-2 text-text-secondary hover:bg-white hover:text-text-primary" aria-label="编辑题目"><Pencil size={14} /></button>
-                <button type="button" onClick={onDelete} className="rounded-lg p-2 text-text-secondary hover:bg-[#fff0f0] hover:text-error" aria-label="移除题目"><Trash2 size={14} /></button>
-              </div>
-            )}
+    <article className="library-problem-row">
+        <span className="library-problem-index">{String(index).padStart(2, "0")}</span>
+        <div className="library-problem-content">
+          <a href={problem.link} target="_blank" rel="noreferrer" className="library-problem-title">
+            <span>{problem.title}</span><ExternalLink size={16} aria-hidden="true" />
+          </a>
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-text-secondary">
+            {problem.problemKey && <span className="font-mono font-bold">{problem.problemKey}</span>}
+            {problem.rating != null && <span>Rating {problem.rating}</span>}
           </div>
           {tags.length > 0 && <div className="mt-2 flex flex-wrap gap-1.5">{tags.map((tag) => <span key={tag} className="rounded-md bg-white px-2 py-1 text-[10px] text-text-secondary ring-1 ring-border">{tag}</span>)}</div>}
           {problem.note && <p className="m-0 mt-3 border-l-2 border-[#b7c8d9] pl-3 text-xs leading-5 text-text-secondary">{problem.note}</p>}
         </div>
-      </div>
+        <div className="library-problem-actions" role="group" aria-label={`${problem.title}的操作`}>
+          <AddToProblemListButton problem={problem} compact initialNote={problem.note || ""} />
+          {editable && <>
+            <button type="button" onClick={onEdit} className="library-icon-button" aria-label="编辑题目" title="编辑题目"><Pencil size={18} aria-hidden="true" /></button>
+            <button type="button" onClick={onDelete} className="library-icon-button is-danger" aria-label="移除题目" title="移除题目"><Trash2 size={18} aria-hidden="true" /></button>
+          </>}
+        </div>
     </article>
   );
 }
 
 function DialogFrame({ open, onOpenChange, title, description, children }) {
+  const returnFocus = useRef(null);
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-[80] bg-[#081627]/45 backdrop-blur-[2px]" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-[81] max-h-[90vh] w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-border bg-white p-5 shadow-[0_28px_90px_rgba(8,22,39,0.25)] sm:p-6">
+        <Dialog.Content
+          onOpenAutoFocus={() => { returnFocus.current = document.activeElement; }}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            const target = returnFocus.current?.isConnected ? returnFocus.current : document.getElementById("main-content");
+            target?.focus({ preventScroll: true });
+          }}
+          className="fixed left-1/2 top-1/2 z-[81] max-h-[90vh] w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-border bg-white p-5 shadow-[0_28px_90px_rgba(8,22,39,0.25)] sm:p-6">
           <div className="flex items-start justify-between gap-4">
             <div><Dialog.Title className="m-0 text-xl font-bold text-text-primary">{title}</Dialog.Title><Dialog.Description className="sr-only">{description}</Dialog.Description></div>
             <Dialog.Close asChild><button type="button" className="rounded-lg p-2 text-text-secondary hover:bg-bg-secondary" aria-label="关闭"><X size={18} /></button></Dialog.Close>

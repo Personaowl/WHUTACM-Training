@@ -8,7 +8,7 @@
 .binding-page .binding-card-head span { font-size: var(--ui-small); margin-top: 5px; }
 .binding-controls { padding: 16px 24px 24px; }
 .binding-page .binding-card-description { min-height: 0; margin: 0 0 16px; font-size: var(--ui-body); color: var(--muted); }
-.binding-page .binding-input-row .form-input { background: #f8fafc; border-color: #e1e7ed; min-width: 0; }
+.binding-page .binding-input-row .form-input { background: #f8fafc; border-color: var(--control-line); min-width: 0; }
 .binding-page .binding-input-row .button-primary { min-height: 48px; padding-inline: 14px; white-space: nowrap; font-size: var(--ui-body); }
 .binding-page .binding-uid-hint { margin: 10px 0 0; font-size: var(--ui-small); line-height: 1.6; color: var(--muted); }
 .platform-statistics { padding: 20px 24px 16px; margin-top: auto; border-top: 1px solid #e7edf2; background: linear-gradient(135deg, #f7faff, #fff); }

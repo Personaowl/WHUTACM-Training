@@ -52,18 +52,20 @@ button:not(:disabled),
   --ink-raised: #192d49;
   --ink-border: #2b405e;
   --muted: #53677d;
-  --line: #d6e1eb;
-  --line-strong: #a9bfd4;
+  --line: #bdcfe3;
+  --line-strong: #8ba9cc;
   --paper: #ffffff;
   --canvas: #f5f8fc;
   --soft: #edf3fa;
-  --accent: #2263a5;
-  --accent-strong: #174676;
-  --accent-soft: #eaf3ff;
-  --teal-soft: #e8f7f2;
-  --violet-soft: #f2edfb;
+  --accent: #245fc0;
+  --accent-strong: #194b91;
+  --accent-soft: #e2edff;
+  --teal-soft: #def5e9;
+  --violet-soft: #ece1fc;
   --surface-subtle: #f7faff;
-  --control-line: #b6c9dc;
+  --control-line: #7292b6;
+  --border-ui: 2px;
+  --icon-stroke: 2.2;
   --radius-control: 12px;
   --radius-card: 20px;
   --shadow-surface: 0 2px 5px #18334c03, 0 8px 24px #18334c07;
@@ -72,13 +74,13 @@ button:not(:disabled),
   --shadow-control: 0 2px 5px #132c4510;
   --motion-feedback: 140ms;
   --ease-ui: cubic-bezier(.2, .7, .3, 1);
-  --blue-ink: #2d5d91;
-  --mint-ink: #266c5c;
-  --violet-ink: #6a4f9e;
-  --amber-ink: #866021;
-  --blue-line: #cedff3;
-  --mint-line: #cce6dc;
-  --violet-line: #e0d7ef;
+  --blue-ink: #2457a8;
+  --mint-ink: #146b52;
+  --violet-ink: #673ba4;
+  --amber-ink: #835711;
+  --blue-line: #abc7f0;
+  --mint-line: #9dd5bf;
+  --violet-line: #c7b0e9;
   --amber-soft: #fff5e3;
   --ui-body: 17px;
   --ui-small: 15px;
@@ -1163,54 +1165,6 @@ a {
   background-size: 38px 38px;
 }
 
-.auth-geometry {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.geometry-ring,
-.geometry-square,
-.geometry-line {
-  position: absolute;
-  border: 1px solid rgba(17, 17, 17, 0.22);
-}
-
-.geometry-ring {
-  border-radius: 50%;
-}
-
-.geometry-ring-one {
-  width: 230px;
-  height: 230px;
-  left: -75px;
-  bottom: 8%;
-}
-
-.geometry-ring-two {
-  width: 70px;
-  height: 70px;
-  left: 39%;
-  top: 8%;
-}
-
-.geometry-square {
-  width: 94px;
-  height: 94px;
-  right: 5%;
-  bottom: -30px;
-  transform: rotate(24deg);
-}
-
-.geometry-line {
-  width: 180px;
-  height: 1px;
-  right: 3%;
-  top: 14%;
-  border-width: 1px 0 0;
-  transform: rotate(-32deg);
-}
-
 .auth-intro,
 .auth-card-wrap {
   position: relative;
@@ -1228,94 +1182,6 @@ a {
     radial-gradient(circle at 82% 22%, rgba(102, 138, 177, 0.22), transparent 34%),
     radial-gradient(circle at 12% 82%, rgba(45, 77, 112, 0.22), transparent 30%),
     linear-gradient(135deg, var(--ink-deep) 0%, #10243d 58%, #183651 100%);
-}
-
-.auth-intro::after {
-  content: "";
-  position: absolute;
-  right: -190px;
-  top: 0;
-  width: 200px;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    rgba(24, 54, 81, 0.58) 0%,
-    rgba(63, 91, 120, 0.32) 28%,
-    rgba(151, 170, 190, 0.16) 62%,
-    rgba(232, 238, 245, 0) 100%
-  );
-  pointer-events: none;
-}
-
-.auth-seam-decoration {
-  position: absolute;
-  z-index: 3;
-  top: 0;
-  right: -90px;
-  width: 180px;
-  height: 100%;
-  pointer-events: none;
-  opacity: 0.5;
-  background-image: radial-gradient(circle, rgba(230, 239, 249, 0.58) 1px, transparent 1.35px);
-  background-size: 16px 16px;
-  mask-image: linear-gradient(to bottom, transparent 8%, black 25%, black 75%, transparent 92%);
-}
-
-.auth-seam-decoration::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 13%;
-  width: 1px;
-  height: 74%;
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    rgba(231, 240, 250, 0.58) 25%,
-    rgba(231, 240, 250, 0.34) 75%,
-    transparent
-  );
-}
-
-.auth-seam-decoration::after {
-  content: "";
-  position: absolute;
-  left: 57px;
-  top: calc(50% - 33px);
-  width: 66px;
-  height: 66px;
-  border: 1px solid rgba(232, 240, 249, 0.34);
-  border-radius: 50%;
-  box-shadow: 0 0 0 9px rgba(232, 240, 249, 0.035);
-}
-
-.auth-seam-node {
-  position: absolute;
-  left: 50%;
-  display: block;
-  background: rgba(220, 231, 242, 0.86);
-  border: 2px solid rgba(19, 39, 63, 0.62);
-  box-shadow: 0 0 0 5px rgba(220, 231, 242, 0.09);
-  transform: translate(-50%, -50%) rotate(45deg);
-}
-
-.auth-seam-node-one {
-  top: 27%;
-  width: 10px;
-  height: 10px;
-}
-
-.auth-seam-node-two {
-  top: 50%;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-}
-
-.auth-seam-node-three {
-  top: 73%;
-  width: 10px;
-  height: 10px;
 }
 
 .brand-lockup {
@@ -1535,62 +1401,6 @@ a {
   .auth-intro {
     min-height: 340px;
     padding: 34px;
-  }
-
-  .auth-intro::after {
-    right: 0;
-    top: auto;
-    bottom: -118px;
-    width: 100%;
-    height: 128px;
-    background: linear-gradient(
-      180deg,
-      rgba(24, 54, 81, 0.58),
-      rgba(151, 170, 190, 0.14) 58%,
-      rgba(24, 54, 81, 0)
-    );
-  }
-
-  .auth-seam-decoration {
-    top: auto;
-    right: 0;
-    bottom: -43px;
-    width: 100%;
-    height: 86px;
-    opacity: 0.46;
-    background-size: 15px 15px;
-    mask-image: linear-gradient(to right, transparent 8%, black 25%, black 75%, transparent 92%);
-  }
-
-  .auth-seam-decoration::before {
-    left: 13%;
-    top: 50%;
-    width: 74%;
-    height: 1px;
-    background: linear-gradient(to right, transparent, rgba(231, 240, 250, 0.52), transparent);
-  }
-
-  .auth-seam-decoration::after {
-    left: calc(50% - 27px);
-    top: 16px;
-    width: 54px;
-    height: 54px;
-  }
-
-  .auth-seam-node {
-    top: 50%;
-  }
-
-  .auth-seam-node-one {
-    left: 31%;
-  }
-
-  .auth-seam-node-two {
-    left: 50%;
-  }
-
-  .auth-seam-node-three {
-    left: 69%;
   }
 
   .auth-intro-copy h2 {

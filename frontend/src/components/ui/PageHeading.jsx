@@ -1,7 +1,7 @@
 export function PageIcon({ icon: Icon, tone = "blue", compact = false }) {
   return (
     <span className={`page-icon${compact ? " is-compact" : ""}`} data-tone={tone} aria-hidden="true">
-      <Icon size={compact ? 19 : 24} strokeWidth={1.8} />
+      <Icon size={compact ? 20 : 24} strokeWidth={2.2} />
     </span>
   );
 }

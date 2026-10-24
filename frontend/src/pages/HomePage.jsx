@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import CodeforcesOverview from "../components/profile/CodeforcesOverview";
 import { PageIcon } from "../components/ui/PageHeading";
+import SurfaceSheen from "../components/ui/SurfaceSheen";
 import { getCurrentUserPoints } from "../utils/home.js";
 import "./HomePage.css";
 
@@ -116,6 +117,7 @@ export default function HomePage() {
   return (
     <div className="home-page">
       <header className="home-profile-panel">
+        <SurfaceSheen />
         <div className="home-profile-identity">
           <UserAvatar user={user} size={76} />
           <div>

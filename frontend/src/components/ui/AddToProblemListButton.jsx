@@ -104,8 +104,9 @@ export default function AddToProblemListButton({ problem, compact = false, class
           disabled={!normalizedProblem.link}
           className={`${compact ? "problem-list-add is-compact" : "problem-list-add"} ${className}`.trim()}
           aria-label={`将${normalizedProblem.title || "题目"}加入题单`}
+            title="加入题单"
         >
-          <BookmarkPlus size={compact ? 14 : 15} />
+            <BookmarkPlus size={18} strokeWidth={2.2} aria-hidden="true" />
           {!compact && <span>加入题单</span>}
         </button>
       </Dialog.Trigger>
