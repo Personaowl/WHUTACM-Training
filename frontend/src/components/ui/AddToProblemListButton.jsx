@@ -226,6 +226,7 @@ function ModeButton({ active, onClick, children }) {
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={active}
       className={`flex min-h-9 items-center justify-center gap-1.5 rounded-lg border-0 text-xs font-bold transition-colors ${
         active ? "bg-white text-text-primary shadow-xs" : "bg-transparent text-text-secondary hover:text-text-primary"
       }`}

@@ -88,3 +88,39 @@ test("auth keeps a larger form, legible fields and optional campus information",
   assert.ok(register.includes('auth-form auth-register-form'));
   assert.ok(register.includes('校内信息（选填）'));
 });
+
+test("polished surfaces reuse tokens and preserve stationary interaction feedback", async () => {
+  const source = await readFile(new URL("../src/index.css", import.meta.url), "utf8");
+  const refinements = await readFile(new URL("../src/Refinements.css", import.meta.url), "utf8");
+  assert.match(source, /--shadow-surface:/);
+  assert.match(source, /--radius-control:\s*12px/);
+  assert.match(source, /\.app-main article\.bg-white:hover\s*\{[^}]*transform:\s*none/s);
+  assert.match(refinements, /\.training-section-link\[aria-current="page"\]/);
+  assert.match(refinements, /\[role="dialog"\] form\s*\{[^}]*scroll-padding-block:/);
+});
+
+test("mobile navigation exposes state and restores keyboard access on close", async () => {
+  const sidebar = await readFile(new URL("../src/components/ui/Sidebar.jsx", import.meta.url), "utf8");
+  const layout = await readFile(new URL("../src/components/layout/AppLayout.jsx", import.meta.url), "utf8");
+  assert.ok(sidebar.includes('aria-current={active ? "page" : undefined}'));
+  assert.ok(sidebar.includes('aria-controls={groupId}'));
+  assert.ok(sidebar.includes('event.key === "Escape"'));
+  assert.ok(sidebar.includes('event.key !== "Tab"'));
+  assert.ok(sidebar.includes('returnTarget?.focus'));
+  assert.ok(layout.includes('href="#main-content"'));
+  assert.ok(layout.includes('inert={mobileNavOpen ? "" : undefined}'));
+});
+
+test("problem names remain readable without truncating the essential title", async () => {
+  const card = await readFile(new URL("../src/components/ui/ProblemCard.jsx", import.meta.url), "utf8");
+  assert.doesNotMatch(card, /<h3[^>]*\btruncate\b/);
+  assert.ok(card.includes('break-words'));
+});
+
+test("compact navigation labels remain whole while their containers can wrap", async () => {
+  const refinements = await readFile(new URL("../src/Refinements.css", import.meta.url), "utf8");
+  const upsolve = await readFile(new URL("../src/pages/UpsolvePlanPage.css", import.meta.url), "utf8");
+  assert.match(refinements, /\.training-section-link\s*\{[^}]*white-space:\s*nowrap/);
+  assert.match(upsolve, /\.upsolve-tabs button\s*\{[^}]*white-space:\s*nowrap/);
+  assert.match(upsolve, /\.upsolve-toolbar\s*\{[^}]*flex-wrap:\s*wrap/);
+});

@@ -1,6 +1,6 @@
 .binding-page { max-width: 1240px; margin-inline: auto; }
 .platform-binding-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 22px; align-items: start; }
-.binding-page .binding-card { display: flex; flex-direction: column; min-height: 0; padding: 0; background: white; border-color: #dfe5e9; box-shadow: 0 6px 24px #1e354906; border-radius: 20px; }
+.binding-page .binding-card { display: flex; flex-direction: column; min-height: 0; padding: 0; background: var(--paper); border-color: var(--line); box-shadow: var(--shadow-surface); border-radius: var(--radius-card); }
 .binding-page .binding-card::before { width: auto; height: 3px; inset: 0 0 auto; opacity: .8; }
 .binding-page .binding-card-head { padding: 24px 24px 0; gap: 14px; background: linear-gradient(120deg, color-mix(in srgb, var(--binding-accent) 7%, white), white); }
 .binding-page .binding-platform-mark { width: 50px; height: 50px; padding: 10px; border-radius: 15px; border-color: #e2e8ee; box-shadow: none; background: #fff; flex-shrink: 0; }

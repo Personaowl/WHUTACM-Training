@@ -10,7 +10,7 @@ export default function ProblemCard({ problem, showTags = true, actions = null }
     <article className="problem-card bg-white border border-border rounded-ui p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <h3 className="text-base font-semibold text-text-primary m-0 truncate">
+          <h3 className="text-base font-semibold text-text-primary m-0 break-words">
             {problem.contestId}
             {problem.problemIndex}. {problem.name}
           </h3>

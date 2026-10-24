@@ -51,7 +51,7 @@ export default function RegisterPage() {
       footer={<>已有账号？<Link to="/login">返回登录</Link></>}
     >
       {message && (
-        <p className={`auth-message ${
+        <p role={message.includes("成功") ? "status" : "alert"} className={`auth-message ${
           message.includes("成功") ? "auth-message-success" : "auth-message-error"
         }`}>
           {message}

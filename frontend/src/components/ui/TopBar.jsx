@@ -24,7 +24,7 @@ const PAGE_NAMES = {
   "/admin/users": "用户管理",
 };
 
-export default function TopBar({ onMenuToggle }) {
+export default function TopBar({ onMenuToggle, menuOpen }) {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -35,8 +35,8 @@ export default function TopBar({ onMenuToggle }) {
   return (
     <header className="app-topbar">
       <div className="topbar-title">
-        <button className="topbar-menu" onClick={onMenuToggle} aria-label="打开导航">
-          <Menu size={20} />
+        <button className="topbar-menu" onClick={onMenuToggle} aria-label="打开导航" aria-controls="app-sidebar" aria-expanded={menuOpen}>
+          <Menu size={20} aria-hidden="true" />
         </button>
         <span className="topbar-route">/ {pageName}</span>
         <span className="topbar-context">训练工作台</span>

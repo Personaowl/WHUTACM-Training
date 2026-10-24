@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "../ui/Sidebar";
 import TopBar from "../ui/TopBar";
@@ -15,6 +15,19 @@ export default function AppLayout() {
     window.localStorage.getItem(SIDEBAR_STORAGE_KEY) !== "false"
   ));
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia("(max-width: 980px)").matches);
+  const closeMobileMenu = useCallback(() => setMobileMenuOpen(false), []);
+  const mobileNavOpen = isMobile && mobileMenuOpen;
+
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 980px)");
+    function handleViewportChange(event) {
+      setIsMobile(event.matches);
+      if (!event.matches) closeMobileMenu();
+    }
+    query.addEventListener("change", handleViewportChange);
+    return () => query.removeEventListener("change", handleViewportChange);
+  }, [closeMobileMenu]);
 
   function toggleSidebar() {
     setSidebarCollapsed((current) => {
@@ -42,23 +55,26 @@ export default function AppLayout() {
 
   return (
     <div className="app-shell">
+      <a className="skip-to-content" href="#main-content">跳到主要内容</a>
       <div className="ambient-grid" aria-hidden="true" />
       <Sidebar
         collapsed={sidebarCollapsed}
-        mobileOpen={mobileMenuOpen}
-        onClose={() => setMobileMenuOpen(false)}
+        mobileOpen={mobileNavOpen}
+        isMobile={isMobile}
+        onClose={closeMobileMenu}
         onToggle={toggleSidebar}
       />
-      {mobileMenuOpen && (
+      {mobileNavOpen && (
         <button
           className="sidebar-backdrop"
-          onClick={() => setMobileMenuOpen(false)}
+          onClick={closeMobileMenu}
+          tabIndex={-1}
           aria-label="关闭导航"
         />
       )}
-      <div className="app-frame">
-        <TopBar onMenuToggle={() => setMobileMenuOpen(true)} />
-        <main className="app-main">
+      <div className="app-frame" inert={mobileNavOpen ? "" : undefined}>
+        <TopBar onMenuToggle={() => setMobileMenuOpen(true)} menuOpen={mobileNavOpen} />
+        <main id="main-content" className="app-main" tabIndex={-1}>
           <div className="app-content">
             <Outlet />
             {isDevBackend && (

@@ -92,7 +92,7 @@
 .home-stat dd { margin: 4px 0 0; font-size: 32px; font-weight: 750; line-height: 1.2; font-variant-numeric: tabular-nums; letter-spacing: -0.025em; }
 
 .home-training-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr); align-items: start; gap: 20px; }
-.home-section { min-width: 0; padding: 23px; background: #fff; border: 1px solid var(--line); border-radius: 19px; }
+.home-section { min-width: 0; padding: 24px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-card); }
 .home-section-heading { display: flex; min-height: 28px; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
 .home-section-heading h2 { margin: 0; font-size: var(--ui-section); font-weight: 750; letter-spacing: -0.02em; }
 .home-section-heading > a,
@@ -100,8 +100,8 @@
 .home-section-heading > a:hover,
 .home-text-link:hover { color: #17324f; text-decoration: underline; text-underline-offset: 4px; }
 .home-section-heading > span { color: var(--muted); font-size: var(--ui-small); }
-.home-problem-grid { display: grid; gap: 12px; }
-.home-page .home-problem-grid .problem-card { padding: 16px 18px; border-color: #e0e6eb; background: #fcfdfe; border-radius: 13px; box-shadow: none; backdrop-filter: none; }
+.home-problem-grid { display: grid; gap: 16px; }
+.home-page .home-problem-grid .problem-card { padding: 20px; border-color: var(--line); background: linear-gradient(120deg, #fcfdff, #f7fbff); border-radius: 16px; box-shadow: none; backdrop-filter: none; }
 .home-problem-grid .problem-card h3 { font-size: var(--ui-item); line-height: 1.5; white-space: normal; overflow-wrap: anywhere; }
 .home-problem-grid .problem-card p { font-size: var(--ui-small); }
 .home-page .home-problem-grid .problem-card:hover { transform: none; border-color: #b8cbdc; box-shadow: none; }
@@ -111,7 +111,7 @@
 .home-empty-state a { display: inline-flex; align-items: center; gap: 6px; color: #335b7c; font-size: var(--ui-body); font-weight: 650; }
 .home-daily-section > .home-empty-state { min-height: 280px; background: #f7f9fb; border: 1px dashed #d8e2eb; border-radius: 13px; }
 .home-training-aside { display: grid; min-width: 0; gap: 16px; }
-.home-training-aside > section { border-radius: 19px; padding: 23px; }
+.home-training-aside > section { border-radius: var(--radius-card); padding: 24px; }
 .home-page .home-training-aside .cf-compact-overview { background: white; box-shadow: none; backdrop-filter: none; }
 .home-training-aside .cf-compact-heading { margin-bottom: 18px; }
 .home-training-aside .cf-compact-heading h2 { font-size: var(--ui-section); }
@@ -137,7 +137,7 @@
 .home-shortcuts span { flex: 1; min-width: 0; font-size: var(--ui-body); font-weight: 700; }
 .home-shortcuts small { display: block; margin-top: 3px; color: var(--muted); font-size: var(--ui-small); font-weight: 500; }
 
-.home-page .cf-heatmap-card { box-shadow: none; border-radius: 19px; }
+.home-page .cf-heatmap-card { box-shadow: var(--shadow-surface); border-radius: var(--radius-card); }
 .home-page .cf-heatmap-section > .home-section-heading { margin-bottom: 12px; padding-inline: 2px; }
 .home-page .heatmap-cf-stat strong { color: var(--ink); font-size: 27px; font-weight: 650; }
 .home-page .heatmap-cf-stat strong span { font-size: 16px; font-weight: 500; }

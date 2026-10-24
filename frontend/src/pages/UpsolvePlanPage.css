@@ -10,11 +10,11 @@
 .upsolve-quick input { flex: 1; min-width: 0; background: white; }
 .upsolve-quick button { flex-shrink: 0; }
 .upsolve-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 20px 24px; border-bottom: 1px solid #edf0f2; }
-.upsolve-tabs { display: flex; gap: 6px; padding: 4px; background: #f2f4f6; border-radius: 13px; }
-.upsolve-tabs button { display: flex; align-items: center; justify-content: center; gap: 7px; padding: 9px 14px; border: 0; border-radius: 10px; background: transparent; color: #52677e; font-weight: 650; font-size: var(--ui-body); }
-.upsolve-tabs button.is-active { background: #17324f; color: #fff; }
-.upsolve-tabs span { padding: 1px 6px; border-radius: 6px; background: #ffffff30; font-size: var(--ui-small); }
-.upsolve-private { font-size: var(--ui-small); color: var(--muted); }
+.upsolve-tabs { display: flex; gap: 6px; padding: 4px; border: 1px solid var(--line); background: var(--surface-subtle); border-radius: 14px; }
+.upsolve-tabs button { display: flex; flex-shrink: 0; align-items: center; justify-content: center; gap: 7px; padding: 9px 14px; border: 0; border-radius: 10px; background: transparent; color: #52677e; font-weight: 650; font-size: var(--ui-body); white-space: nowrap; }
+.upsolve-tabs button.is-active { background: var(--paper); color: var(--accent-strong); box-shadow: var(--shadow-control); }
+.upsolve-tabs span { padding: 1px 6px; border-radius: 6px; background: var(--accent-soft); font-size: var(--ui-small); }
+.upsolve-private { font-size: var(--ui-small); color: var(--muted); white-space: nowrap; }
 .upsolve-list { margin: 0; padding: 0; list-style: none; }
 .upsolve-row { display: flex; gap: 16px; align-items: flex-start; padding: 24px; border-bottom: 1px solid #edf0f2; transition: background-color .15s; }
 .upsolve-row:hover { background: #fafbfd; }
@@ -30,7 +30,7 @@
 .upsolve-url { display: block; margin-top: 8px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: var(--ui-small); text-decoration: none; }
 .upsolve-url:hover { color: #17324f; }
 .upsolve-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
-.upsolve-icon-button { display: inline-flex; align-items: center; justify-content: center; min-width: 36px; min-height: 36px; border: 0; border-radius: 9px; background: transparent; color: #7a8694; }
+.upsolve-icon-button { display: inline-flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); }
 .upsolve-icon-button:hover { color: #17324f; background: #edf2f7; }
 .upsolve-icon-button.is-danger:hover { background: #fff1f1; color: #b44848; }
 .upsolve-row.is-completed .upsolve-title { color: #65778b; }
@@ -65,8 +65,9 @@
   .upsolve-heading p { font-size: var(--ui-small); }
   .upsolve-mark { width: 46px; height: 46px; border-radius: 14px; }
   .upsolve-quick { padding: 16px; gap: 8px; }
-  .upsolve-toolbar { padding: 16px; gap: 6px; }
-  .upsolve-tabs button { gap: 5px; padding: 8px 9px; font-size: var(--ui-body); }
+  .upsolve-toolbar { padding: 16px; gap: 10px; flex-wrap: wrap; }
+  .upsolve-tabs { flex-shrink: 0; max-width: 100%; }
+  .upsolve-tabs button { gap: 5px; padding: 8px; font-size: var(--ui-body); }
   .upsolve-private { font-size: var(--ui-small); }
   .upsolve-row { display: grid; grid-template-columns: 21px minmax(0,1fr); gap: 10px 12px; padding: 20px 16px; }
   .upsolve-actions { grid-column: 2; justify-content: flex-end; flex-wrap: wrap; }

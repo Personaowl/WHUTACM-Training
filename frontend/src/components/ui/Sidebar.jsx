@@ -18,7 +18,7 @@ import {
   X,
   ChevronDown,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
@@ -51,11 +51,12 @@ const GROUPS = [
 
 function NavigationGroup({ name, icon: Icon, items, pathname, compact, onClose }) {
   const [expanded, setExpanded] = useState(true);
+  const groupId = useId();
   const open = compact || expanded;
   return <section className="sidebar-group">
-    <button type="button" className="sidebar-group-heading" aria-expanded={open}
-      onClick={() => setExpanded(value => !value)}><Icon size={18} /><span>{name}</span><ChevronDown size={14} className={open ? "is-open" : ""} /></button>
-    <div className="sidebar-group-items" hidden={!open}>{items.map(item => <NavLink key={item.to} item={item}
+    <button type="button" className="sidebar-group-heading" aria-expanded={open} aria-controls={groupId}
+      onClick={() => setExpanded(value => !value)}><Icon size={18} aria-hidden="true" /><span>{name}</span><ChevronDown size={14} aria-hidden="true" className={open ? "is-open" : ""} /></button>
+    <div id={groupId} className="sidebar-group-items" hidden={!open}>{items.map(item => <NavLink key={item.to} item={item}
       active={pathname === item.to || pathname.startsWith(`${item.to}/`)} collapsed={compact} onNavigate={onClose} />)}</div>
   </section>;
 }
@@ -68,9 +69,10 @@ function NavLink({ item, active, collapsed, onNavigate }) {
       onClick={onNavigate}
       className={`sidebar-link ${active ? "is-active" : ""}`}
       aria-label={item.label}
+      aria-current={active ? "page" : undefined}
       title={collapsed ? item.label : undefined}
     >
-      <Icon size={19} strokeWidth={1.8} />
+      <Icon size={19} strokeWidth={1.8} aria-hidden="true" />
       <span className="sidebar-label">{item.label}</span>
       {active && <span className="sidebar-active-dot" aria-hidden="true" />}
     </Link>
@@ -80,17 +82,60 @@ function NavLink({ item, active, collapsed, onNavigate }) {
 export default function Sidebar({
   collapsed,
   mobileOpen,
+  isMobile,
   onClose,
   onToggle,
 }) {
   const { isAuthenticated, isAdmin } = useAuth();
   const location = useLocation();
+  const sidebarRef = useRef(null);
   const filteredItems = NAV_ITEMS.filter(
     (item) => !item.requireAuth || isAuthenticated
   );
 
+  useEffect(() => {
+    if (!isMobile || !mobileOpen) return undefined;
+    const sidebar = sidebarRef.current;
+    const previousFocus = document.activeElement;
+    sidebar.querySelector('.sidebar-mobile-close')?.focus({ preventScroll: true });
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const controls = Array.from(sidebar.querySelectorAll('a[href], button:not(:disabled), [tabindex="0"]'))
+        .filter((element) => element.getClientRects().length && getComputedStyle(element).visibility !== "hidden");
+      if (!controls.length) return;
+      const index = controls.indexOf(document.activeElement);
+      if (event.shiftKey && index <= 0) {
+        event.preventDefault();
+        controls.at(-1).focus();
+      } else if (!event.shiftKey && (index < 0 || index === controls.length - 1)) {
+        event.preventDefault();
+        controls[0].focus();
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      const returnTarget = previousFocus?.isConnected && previousFocus.getClientRects().length
+        ? previousFocus : document.querySelector('.app-main');
+      returnTarget?.focus({ preventScroll: true });
+    };
+  }, [isMobile, mobileOpen, onClose]);
+
   return (
     <aside
+      id="app-sidebar"
+      ref={sidebarRef}
+      role={isMobile && mobileOpen ? "dialog" : undefined}
+      aria-label={isMobile ? "网站导航" : undefined}
+      aria-modal={isMobile && mobileOpen ? true : undefined}
+      aria-hidden={isMobile && !mobileOpen ? true : undefined}
+      inert={isMobile && !mobileOpen ? "" : undefined}
       className={`app-sidebar ${collapsed ? "is-collapsed" : ""} ${
         mobileOpen ? "is-mobile-open" : ""
       }`}
@@ -106,7 +151,7 @@ export default function Sidebar({
           </span>
         </Link>
         <button className="sidebar-mobile-close" onClick={onClose} aria-label="关闭菜单">
-          <X size={19} />
+          <X size={19} aria-hidden="true" />
         </button>
       </div>
 

@@ -38,7 +38,7 @@ export default function LoginPage() {
       subtitle="使用你的训练平台账号继续。"
       footer={<>没有账号？<Link to="/register">创建账号</Link></>}
     >
-      {message && <p className="auth-message auth-message-error">{message}</p>}
+      {message && <p role="alert" className="auth-message auth-message-error">{message}</p>}
       <form className="auth-form" onSubmit={handleSubmit}>
         <label>
           <span>登录账号</span>
