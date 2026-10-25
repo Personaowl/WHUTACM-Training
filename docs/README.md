@@ -12,6 +12,7 @@
 | [接口参考](api-design.md) | Controller / DTO 对接：路径、鉴权、参数、响应与兼容入口 |
 | [数据库结构](db-design.md) | 初始化器与 Repository：21 张现行表、索引、数据流及兼容字段 |
 | [本地开发](development.md) | 技术栈、分层、环境准备、启动、账号绑定和测试构建 |
+| [架构与重构记录](architecture.md) | 模块边界、稳定回退点、当前拆分及后续演进顺序 |
 | [生产部署](deployment.md) | Ubuntu 单实例新机安装、生产环境变量、HTTP/IP 与 HTTPS |
 | [数据迁移](migration.md) | 旧机停写、电脑中转、备份校验、恢复与切换回退 |
 | [发布与日常运维](operations.md) | 发布前提、服务检查、限流、性能排查与备份 |

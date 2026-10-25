@@ -123,7 +123,7 @@ export function AuthProvider({ children }) {
   const logout = useCallback(async () => {
     try {
       if (state.tokens?.accessToken && state.tokens?.refreshToken) {
-        await apiLogout(state.tokens);
+        await apiLogout();
       }
     } catch {
       // best effort

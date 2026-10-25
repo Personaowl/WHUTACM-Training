@@ -1,12 +1,7 @@
 package com.whut.training.service.impl;
 
 import com.whut.training.aspect.annotation.ServiceLog;
-import com.whut.training.common.TimeProvider;
 import com.whut.training.domain.dto.AdminCreateUserRequest;
-import com.whut.training.domain.dto.AtCoderBindingResponse;
-import com.whut.training.domain.dto.AtCoderBindingStartRequest;
-import com.whut.training.domain.dto.CodeforcesBindingResponse;
-import com.whut.training.domain.dto.CodeforcesBindingStartRequest;
 import com.whut.training.domain.dto.UserUpdateRequest;
 import com.whut.training.domain.dto.UserRegisterRequest;
 import com.whut.training.domain.entity.User;
@@ -14,55 +9,32 @@ import com.whut.training.domain.enums.UserRole;
 import com.whut.training.exception.BusinessException;
 import com.whut.training.repository.UserRepository;
 import com.whut.training.repository.AuthTokenSessionRepository;
-import com.whut.training.service.CodeforcesApiService;
-import com.whut.training.service.AtCoderApiService;
 import com.whut.training.service.UserService;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.net.URI;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
-import java.util.Locale;
-import java.util.UUID;
 
 /**
  * 用户服务实现。
  *
- * <p>负责站内账号注册、Codeforces 所有权验证绑定、管理员创建用户、
+ * <p>负责站内账号注册、管理员创建用户、
  * 用户资料更新和查询。站内用户名与 Codeforces Handle 相互独立，密码使用 BCrypt 存储。
  */
 @Service
 @ServiceLog
 public class UserServiceImpl implements UserService {
 
-    private static final long CODEFORCES_BINDING_TTL_SECONDS = 120;
-    private static final String CODEFORCES_VERIFICATION_URL = "https://codeforces.com/contest/1/problem/A";
-    private static final long ATCODER_BINDING_TTL_SECONDS = 600;
     private static final String ADMIN_RESET_PASSWORD = "123456";
 
     private final UserRepository userRepository;
-    private final CodeforcesApiService codeforcesApiService;
-    private final AtCoderApiService atCoderApiService;
-    private final TimeProvider timeProvider;
     private final PasswordEncoder passwordEncoder;
     private final AuthTokenSessionRepository authTokenSessionRepository;
 
-    /**
-     * 创建用户服务实现。
-     *
-     * @param userRepository      用户仓储。
-     * @param codeforcesApiService Codeforces API 服务。
-     */
-    public UserServiceImpl(UserRepository userRepository, CodeforcesApiService codeforcesApiService,
-                           AtCoderApiService atCoderApiService, TimeProvider timeProvider,
-                           PasswordEncoder passwordEncoder,
+    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder,
                            AuthTokenSessionRepository authTokenSessionRepository) {
         this.userRepository = userRepository;
-        this.codeforcesApiService = codeforcesApiService;
-        this.atCoderApiService = atCoderApiService;
-        this.timeProvider = timeProvider;
         this.passwordEncoder = passwordEncoder;
         this.authTokenSessionRepository = authTokenSessionRepository;
     }
@@ -266,181 +238,6 @@ public class UserServiceImpl implements UserService {
         throw new BusinessException(400, "请上传 PNG、JPEG 或 WebP 图片作为头像");
     }
 
-    @Override
-    public CodeforcesBindingResponse startCodeforcesBinding(Long userId, CodeforcesBindingStartRequest request) {
-        User user = getById(userId);
-        String handle = request.getHandle().trim();
-
-        Optional<User> boundUser = userRepository.findByCodeforcesHandle(handle);
-        if (boundUser.isPresent() && !boundUser.get().getId().equals(userId)) {
-            throw new BusinessException(400, "this Codeforces handle is already bound");
-        }
-
-        if (codeforcesApiService.getUserInfo(handle).isEmpty()) {
-            throw new BusinessException(400, "Codeforces handle does not exist or Codeforces API is unavailable");
-        }
-
-        long startedAtSeconds = timeProvider.nowEpochSecond();
-        user.setPendingCodeforcesHandle(handle);
-        user.setCodeforcesBindingStartedAtSeconds(startedAtSeconds);
-        userRepository.save(user);
-
-        return new CodeforcesBindingResponse(
-                handle,
-                startedAtSeconds + CODEFORCES_BINDING_TTL_SECONDS,
-                CODEFORCES_VERIFICATION_URL,
-                "Submit a compilation error to Codeforces 1A within 2 minutes, then finish verification"
-        );
-    }
-
-    @Override
-    public User finishCodeforcesBinding(Long userId) {
-        User user = getById(userId);
-        String pendingHandle = user.getPendingCodeforcesHandle();
-        Long startedAtSeconds = user.getCodeforcesBindingStartedAtSeconds();
-        if (pendingHandle == null || pendingHandle.isBlank() || startedAtSeconds == null) {
-            throw new BusinessException(400, "Codeforces binding has not been started");
-        }
-
-        long nowSeconds = timeProvider.nowEpochSecond();
-        if (nowSeconds - startedAtSeconds > CODEFORCES_BINDING_TTL_SECONDS) {
-            clearPendingCodeforcesBinding(user);
-            userRepository.save(user);
-            throw new BusinessException(400, "Codeforces binding verification expired; please start again");
-        }
-
-        Optional<Boolean> verification =
-                codeforcesApiService.hasOwnershipVerificationSubmission(pendingHandle, startedAtSeconds);
-        if (verification.isEmpty()) {
-            throw new BusinessException(503, "Codeforces API is unavailable; please try again");
-        }
-        if (!verification.get()) {
-            throw new BusinessException(400, "No qualifying compilation-error submission was found");
-        }
-
-        Optional<User> boundUser = userRepository.findByCodeforcesHandle(pendingHandle);
-        if (boundUser.isPresent() && !boundUser.get().getId().equals(userId)) {
-            throw new BusinessException(400, "this Codeforces handle is already bound");
-        }
-
-        CodeforcesApiService.CodeforcesUserProfile profile = codeforcesApiService.getUserInfo(pendingHandle)
-                .orElseThrow(() -> new BusinessException(503, "Codeforces API is unavailable; please try again"));
-        user.setCodeforcesHandle(pendingHandle);
-        syncCodeforcesProfile(user, profile);
-        clearPendingCodeforcesBinding(user);
-        return userRepository.save(user);
-    }
-
-    @Override
-    public AtCoderBindingResponse startAtCoderBinding(Long userId, AtCoderBindingStartRequest request) {
-        User user = getById(userId);
-        String handle = request.handle().trim();
-        Optional<User> boundUser = userRepository.findByAtcoderHandle(handle);
-        if (boundUser.isPresent() && !boundUser.get().getId().equals(userId)) {
-            throw new BusinessException(400, "this AtCoder handle is already bound");
-        }
-        if (atCoderApiService.getPublicProfile(handle).isEmpty()) {
-            throw new BusinessException(400, "AtCoder Handle 不存在或 AtCoder 暂时无法访问");
-        }
-        long startedAt = timeProvider.nowEpochSecond();
-        String token = "WHUT-ACM-" + UUID.randomUUID().toString()
-                .replace("-", "").substring(0, 8).toUpperCase(Locale.ROOT);
-        user.setPendingAtcoderHandle(handle);
-        user.setAtcoderBindingToken(token);
-        user.setAtcoderBindingStartedAtSeconds(startedAt);
-        userRepository.save(user);
-        return new AtCoderBindingResponse(handle, token, startedAt + ATCODER_BINDING_TTL_SECONDS,
-                atCoderApiService.profileUrl(handle),
-                "请临时将 AtCoder 个人资料中的 Affiliation 修改为验证码，然后完成验证");
-    }
-
-    @Override
-    public User finishAtCoderBinding(Long userId) {
-        User user = getById(userId);
-        String handle = user.getPendingAtcoderHandle();
-        String token = user.getAtcoderBindingToken();
-        Long startedAt = user.getAtcoderBindingStartedAtSeconds();
-        if (handle == null || token == null || startedAt == null) {
-            throw new BusinessException(400, "AtCoder 绑定尚未开始");
-        }
-        long now = timeProvider.nowEpochSecond();
-        if (now - startedAt > ATCODER_BINDING_TTL_SECONDS) {
-            clearPendingAtCoderBinding(user);
-            userRepository.save(user);
-            throw new BusinessException(400, "AtCoder 验证已过期，请重新开始");
-        }
-        AtCoderApiService.AtCoderPublicProfile profile = atCoderApiService.getPublicProfile(handle)
-                .orElseThrow(() -> new BusinessException(503, "AtCoder 暂时无法访问，请稍后重试"));
-        if (profile.affiliation() == null
-                || !profile.affiliation().toUpperCase(Locale.ROOT).contains(token.toUpperCase(Locale.ROOT))) {
-            throw new BusinessException(400, "未在 AtCoder Affiliation 中检测到验证码");
-        }
-        Optional<User> boundUser = userRepository.findByAtcoderHandle(handle);
-        if (boundUser.isPresent() && !boundUser.get().getId().equals(userId)) {
-            throw new BusinessException(400, "this AtCoder handle is already bound");
-        }
-        user.setAtcoderHandle(handle);
-        user.setAtcoderVerifiedAtSeconds(now);
-        clearPendingAtCoderBinding(user);
-        return userRepository.save(user);
-    }
-
-    private void clearPendingAtCoderBinding(User user) {
-        user.setPendingAtcoderHandle(null);
-        user.setAtcoderBindingToken(null);
-        user.setAtcoderBindingStartedAtSeconds(null);
-    }
-
-    /**
-     * 将 Codeforces 统计信息写回用户实体。
-     *
-     * @param user    用户。
-     * @param profile Codeforces 资料。
-     */
-    private void syncCodeforcesProfile(User user, CodeforcesApiService.CodeforcesUserProfile profile) {
-        user.setCodeforcesRating(profile.rating());
-        user.setMaxRating(profile.maxRating());
-        user.setOnline(profile.online());
-        user.setLastOnlineTimeSeconds(profile.lastOnlineTimeSeconds());
-        user.setUid(parseUidFromAvatarUrl(profile.avatarUrl()));
-    }
-
-    /**
-     * 在必要时补齐 Codeforces 资料。
-     *
-     * @param user    用户。
-     * @param profile Codeforces 资料。
-     */
-    private void enrichFromCodeforcesIfNeeded(User user, CodeforcesApiService.CodeforcesUserProfile profile) {
-        boolean needEnrich = user.getCodeforcesRating() == null
-                || user.getMaxRating() == null
-                || user.getOnline() == null
-                || user.getLastOnlineTimeSeconds() == null;
-        if (!needEnrich) {
-            user.setUid(parseUidFromAvatarUrl(profile.avatarUrl()));
-            return;
-        }
-
-        if (user.getCodeforcesRating() == null) {
-            user.setCodeforcesRating(profile.rating());
-        }
-        if (user.getMaxRating() == null) {
-            user.setMaxRating(profile.maxRating());
-        }
-        if (user.getOnline() == null) {
-            user.setOnline(profile.online());
-        }
-        if (user.getLastOnlineTimeSeconds() == null) {
-            user.setLastOnlineTimeSeconds(profile.lastOnlineTimeSeconds());
-        }
-        user.setUid(parseUidFromAvatarUrl(profile.avatarUrl()));
-    }
-
-    private void clearPendingCodeforcesBinding(User user) {
-        user.setPendingCodeforcesHandle(null);
-        user.setCodeforcesBindingStartedAtSeconds(null);
-    }
-
     /**
      * 将空白文本规范化为 null。
      *
@@ -455,35 +252,4 @@ public class UserServiceImpl implements UserService {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
-    /**
-     * 从头像 URL 中解析 UID。
-     *
-     * @param avatarUrl 头像地址。
-     * @return UID；无法解析时返回 null。
-     */
-    private Long parseUidFromAvatarUrl(String avatarUrl) {
-        if (avatarUrl == null || avatarUrl.isBlank()) {
-            return null;
-        }
-        try {
-            URI uri = URI.create(avatarUrl.trim());
-            String path = uri.getPath();
-            if (path == null || path.isBlank()) {
-                return null;
-            }
-            String[] segments = path.split("/");
-            for (String segment : segments) {
-                if (segment == null || segment.isBlank()) {
-                    continue;
-                }
-                if (segment.chars().allMatch(Character::isDigit)) {
-                    return Long.parseLong(segment);
-                }
-                break;
-            }
-            return null;
-        } catch (Exception ex) {
-            return null;
-        }
-    }
 }

@@ -5,8 +5,8 @@ import com.whut.training.domain.dto.DailyHeatmapItem;
 import com.whut.training.domain.dto.DailyProblemHistoryItem;
 import com.whut.training.domain.entity.CfProblem;
 import com.whut.training.domain.entity.DailyProblem;
+import com.whut.training.domain.entity.DailyProblemSlot;
 import com.whut.training.domain.entity.UserDailyStatus;
-import com.whut.training.domain.entity.UserPracticeDraw;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -18,37 +18,17 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 每日题相关仓储。
  *
- * <p>负责题库同步、每日题落库、打卡记录和练习记录的 MySQL 读写。
+ * <p>负责每日题位、历史记录、打卡及积分统计的 MySQL 读写。
  */
 @Repository
 public class DailyProblemRepository {
 
     private final JdbcTemplate jdbcTemplate;
     private final TimeProvider timeProvider;
-    private final Object practiceTagsLock = new Object();
-    private final AtomicLong practiceTagsRevision = new AtomicLong();
-    private volatile PracticeTagsCache practiceTagsCache;
-
-    private final RowMapper<CfProblem> cfProblemRowMapper = (rs, rowNum) -> new CfProblem(
-            rs.getString("problem_key"),
-            rs.getInt("contest_id"),
-            rs.getString("problem_index"),
-            rs.getString("name"),
-            (Integer) rs.getObject("rating"),
-            rs.getString("tags"),
-            rs.getInt("is_interactive") != 0,
-            (Integer) rs.getObject("source_contest_id"),
-            (Integer) rs.getObject("solved_count"),
-            rs.getString("source_url")
-    );
-
     private final RowMapper<DailyProblem> dailyProblemRowMapper = (rs, rowNum) -> new DailyProblem(
             rs.getLong("id"),
             LocalDate.parse(rs.getString("date")),
@@ -69,18 +49,10 @@ public class DailyProblemRepository {
             rs.getInt("score")
     );
 
-    private final RowMapper<UserDailyStatus> userDailySlotStatusRowMapper = (rs, rowNum) -> new UserDailyStatus(
-            rs.getLong("user_id"),
-            LocalDate.parse(rs.getString("date")),
-            rs.getLong("submission_id"),
-            rs.getString("verdict"),
-            rs.getInt("score")
-    );
-
-    private final RowMapper<UserPracticeDraw> userPracticeDrawRowMapper = (rs, rowNum) -> new UserPracticeDraw(
+    private final RowMapper<DailyProblemSlot> dailyProblemSlotRowMapper = (rs, rowNum) -> new DailyProblemSlot(
             rs.getLong("id"),
-            rs.getLong("user_id"),
-            LocalDate.parse(rs.getString("draw_date")),
+            LocalDate.parse(rs.getString("date")),
+            rs.getString("slot"),
             rs.getString("problem_key"),
             rs.getInt("contest_id"),
             rs.getString("problem_index"),
@@ -88,23 +60,8 @@ public class DailyProblemRepository {
             (Integer) rs.getObject("rating"),
             rs.getString("tags"),
             rs.getString("source_url"),
-            (Long) rs.getObject("submission_id"),
-            rs.getString("verdict")
+            rs.getInt("is_redrawn") != 0
     );
-
-            private final RowMapper<com.whut.training.domain.entity.DailyProblemSlot> dailyProblemSlotRowMapper = (rs, rowNum) -> new com.whut.training.domain.entity.DailyProblemSlot(
-                rs.getLong("id"),
-                LocalDate.parse(rs.getString("date")),
-                rs.getString("slot"),
-                rs.getString("problem_key"),
-                rs.getInt("contest_id"),
-                rs.getString("problem_index"),
-                rs.getString("name"),
-                (Integer) rs.getObject("rating"),
-                rs.getString("tags"),
-                rs.getString("source_url"),
-                rs.getInt("is_redrawn") != 0
-            );
 
     /**
      * 创建每日题仓储。
@@ -122,7 +79,7 @@ public class DailyProblemRepository {
      * @param date 日期。
      * @return 题位列表（可能为空）。
      */
-    public List<com.whut.training.domain.entity.DailyProblemSlot> findDailySlotsByDate(LocalDate date) {
+    public List<DailyProblemSlot> findDailySlotsByDate(LocalDate date) {
         return jdbcTemplate.query(
                 "SELECT id, date, slot, problem_key, contest_id, problem_index, name, rating, tags, source_url, is_redrawn FROM daily_problem_slot WHERE date = ? ORDER BY slot",
                 dailyProblemSlotRowMapper,
@@ -152,7 +109,7 @@ public class DailyProblemRepository {
      * <p>正常情况下每个题位只有一条有效记录；查询仍按 slot 取最新 id，作为旧数据
      * 残留或多实例短暂并发时的兜底，确保客户端最多收到一题 Easy 和一题 Hard。
      */
-    public List<com.whut.training.domain.entity.DailyProblemSlot> findCurrentDailySlotsByDate(LocalDate date) {
+    public List<DailyProblemSlot> findCurrentDailySlotsByDate(LocalDate date) {
         return jdbcTemplate.query(
                 """
                         SELECT s.id, s.date, s.slot, s.problem_key, s.contest_id, s.problem_index,
@@ -174,7 +131,7 @@ public class DailyProblemRepository {
     /**
      * 插入每日题位记录。
      */
-    public com.whut.training.domain.entity.DailyProblemSlot insertDailySlot(LocalDate date, String slot, CfProblem problem, String generatedBy) {
+    public DailyProblemSlot insertDailySlot(LocalDate date, String slot, CfProblem problem, String generatedBy) {
         String sql = "INSERT INTO daily_problem_slot (date, slot, problem_key, contest_id, problem_index, name, rating, tags, source_url, generated_at, generated_by, is_redrawn) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)";
         String nowIso = OffsetDateTime.now().toString();
         KeyHolder keyHolder = new GeneratedKeyHolder();
@@ -194,7 +151,7 @@ public class DailyProblemRepository {
             return statement;
         }, keyHolder);
         Long id = keyHolder.getKey() == null ? null : keyHolder.getKey().longValue();
-        return new com.whut.training.domain.entity.DailyProblemSlot(
+        return new DailyProblemSlot(
                 id,
                 date,
                 slot,
@@ -214,190 +171,6 @@ public class DailyProblemRepository {
      */
     public void deleteDailySlotsByDate(LocalDate date) {
         jdbcTemplate.update("DELETE FROM daily_problem_slot WHERE date = ?", date.toString());
-    }
-
-    /**
-     * 批量新增或更新题库。
-     *
-     * @param problems 题库列表。
-     * @return 实际处理条数。
-     */
-    public int upsertProblems(List<CfProblem> problems) {
-        if (problems.isEmpty()) {
-            return 0;
-        }
-        String nowIso = OffsetDateTime.now().toString();
-        try {
-            jdbcTemplate.batchUpdate(
-                    """
-                            INSERT INTO cf_problem (
-                                problem_key, contest_id, problem_index, name, rating, tags,
-                                is_interactive, source_contest_id, solved_count, source_url, last_synced_at
-                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                            ON DUPLICATE KEY UPDATE
-                                contest_id = VALUES(contest_id),
-                                problem_index = VALUES(problem_index),
-                                name = VALUES(name),
-                                rating = VALUES(rating),
-                                tags = VALUES(tags),
-                                is_interactive = VALUES(is_interactive),
-                                source_contest_id = VALUES(source_contest_id),
-                                solved_count = VALUES(solved_count),
-                                source_url = VALUES(source_url),
-                                last_synced_at = VALUES(last_synced_at)
-                            """,
-                    problems,
-                    300,
-                    (ps, problem) -> {
-                        ps.setString(1, problem.problemKey());
-                        ps.setInt(2, problem.contestId());
-                        ps.setString(3, problem.problemIndex());
-                        ps.setString(4, problem.name());
-                        if (problem.rating() == null) {
-                            ps.setObject(5, null);
-                        } else {
-                            ps.setInt(5, problem.rating());
-                        }
-                        ps.setString(6, problem.tags());
-                        ps.setInt(7, problem.interactive() ? 1 : 0);
-                        ps.setObject(8, problem.sourceContestId());
-                        ps.setObject(9, problem.solvedCount());
-                        ps.setString(10, problem.sourceUrl());
-                        ps.setString(11, nowIso);
-                    }
-            );
-        } finally {
-            practiceTagsRevision.incrementAndGet();
-            practiceTagsCache = null;
-        }
-        return problems.size();
-    }
-
-    /**
-     * 统计题库数量。
-     *
-     * @return 题库条数。
-     */
-    public long countProblems() {
-        Long count = jdbcTemplate.queryForObject("SELECT COUNT(1) FROM cf_problem", Long.class);
-        return count == null ? 0 : count;
-    }
-
-    /**
-     * 在指定 rating 范围内随机抽取题目，并排除最近重复题。
-     *
-     * @param minRating        最小 rating。
-     * @param maxRating        最大 rating。
-     * @param noRepeatAfterDate 不允许重复的起始日期。
-     * @return 随机题目。
-     */
-    public Optional<CfProblem> findRandomProblem(Integer minRating, Integer maxRating, LocalDate noRepeatAfterDate) {
-        String sql = """
-                SELECT problem_key, contest_id, problem_index, name, rating, tags, is_interactive, source_contest_id, solved_count, source_url
-                FROM cf_problem p
-                WHERE p.source_contest_id IS NULL
-                  AND p.is_interactive = 0
-                  AND p.rating IS NOT NULL
-                  AND p.rating BETWEEN ? AND ?
-                  AND NOT EXISTS (
-                    SELECT 1 FROM daily_problem d
-                    WHERE d.problem_key = p.problem_key
-                      AND d.date >= ?
-                  )
-                ORDER BY RAND()
-                LIMIT 1
-                """;
-        List<CfProblem> rows = jdbcTemplate.query(sql, cfProblemRowMapper, minRating, maxRating, noRepeatAfterDate.toString());
-        return rows.stream().findFirst();
-    }
-
-    /**
-     * 在指定 rating 范围内随机抽取题目。
-     *
-     * @param minRating 最小 rating。
-     * @param maxRating 最大 rating。
-     * @return 随机题目。
-     */
-    public Optional<CfProblem> findRandomProblem(Integer minRating, Integer maxRating) {
-        return findRandomProblem(minRating, maxRating, List.of());
-    }
-
-    /**
-     * 按 rating 范围和标签随机抽题。多个标签采用 AND 语义，题目必须同时包含全部标签。
-     */
-    public Optional<CfProblem> findRandomProblem(Integer minRating, Integer maxRating, List<String> tags) {
-        String sql = """
-                FROM cf_problem p
-                WHERE p.source_contest_id IS NULL
-                  AND p.is_interactive = 0
-                  AND p.rating IS NOT NULL
-                  AND p.rating BETWEEN ? AND ?
-                """;
-        StringBuilder filteredSql = new StringBuilder(sql);
-        List<Object> params = new java.util.ArrayList<>();
-        params.add(minRating);
-        params.add(maxRating);
-        if (tags != null) {
-            for (String tag : tags) {
-                filteredSql.append(" AND LOCATE(CONCAT(',', LOWER(?), ','), CONCAT(',', LOWER(COALESCE(p.tags, '')), ',')) > 0\n");
-                params.add(tag);
-            }
-        }
-        Long count = jdbcTemplate.queryForObject("SELECT COUNT(*) " + filteredSql, Long.class, params.toArray());
-        if (count == null || count == 0) {
-            return Optional.empty();
-        }
-        long offset = ThreadLocalRandom.current().nextLong(count);
-        String select = "SELECT problem_key, contest_id, problem_index, name, rating, tags, is_interactive, source_contest_id, solved_count, source_url ";
-        List<Object> rowParams = new java.util.ArrayList<>(params);
-        rowParams.add(offset);
-        // 与筛选索引顺序一致，不为全部候选题计算随机值及排序。
-        List<CfProblem> rows = jdbcTemplate.query(select + filteredSql + " ORDER BY p.rating, p.id LIMIT 1 OFFSET ?", cfProblemRowMapper, rowParams.toArray());
-        // 同步期间候选数可能缩小；只在该竞态下重读第一条，不能因偏移越界误报没有题目。
-        if (rows.isEmpty() && offset > 0) {
-            rows = jdbcTemplate.query(select + filteredSql + " ORDER BY p.rating, p.id LIMIT 1", cfProblemRowMapper, params.toArray());
-        }
-        return rows.stream().findFirst();
-    }
-
-    /**
-     * 从本地题库汇总可用于筛选的标签。
-     */
-    public List<String> findAvailableProblemTags() {
-        PracticeTagsCache cached = practiceTagsCache;
-        long revision = practiceTagsRevision.get();
-        if (cached != null && cached.revision() == revision && System.nanoTime() < cached.expiresAtNanos()) {
-            return cached.tags();
-        }
-        synchronized (practiceTagsLock) {
-            cached = practiceTagsCache;
-            revision = practiceTagsRevision.get();
-            if (cached != null && cached.revision() == revision && System.nanoTime() < cached.expiresAtNanos()) {
-                return cached.tags();
-            }
-            List<String> tags = loadAvailableProblemTags();
-            if (revision == practiceTagsRevision.get()) {
-                practiceTagsCache = new PracticeTagsCache(tags, revision, System.nanoTime() + TimeUnit.MINUTES.toNanos(1));
-            }
-            return tags;
-        }
-    }
-
-    private record PracticeTagsCache(List<String> tags, long revision, long expiresAtNanos) { }
-
-    private List<String> loadAvailableProblemTags() {
-        List<String> tagRows = jdbcTemplate.queryForList(
-                "SELECT tags FROM cf_problem WHERE source_contest_id IS NULL AND is_interactive = 0 AND tags IS NOT NULL AND tags <> ''",
-                String.class
-        );
-        return tagRows.stream()
-                .flatMap(row -> java.util.Arrays.stream(row.split(",")))
-                .map(String::trim)
-                .filter(tag -> !tag.isEmpty())
-                .map(tag -> tag.toLowerCase(java.util.Locale.ROOT))
-                .distinct()
-                .sorted()
-                .toList();
     }
 
     /**
@@ -500,7 +273,7 @@ public class DailyProblemRepository {
                         FROM user_daily_slot_status
                         WHERE user_id = ? AND date = ? AND problem_key = ?
                         """,
-                userDailySlotStatusRowMapper,
+                userDailyStatusRowMapper,
                 userId,
                 date.toString(),
                 problemKey
@@ -689,55 +462,6 @@ public class DailyProblemRepository {
         );
     }
 
-    /**
-     * 插入练习题抽题记录。
-     *
-     * @param userId   用户 ID。
-     * @param drawDate 抽题日期。
-     * @param problem  题目实体。
-     * @return 抽题记录。
-     */
-    public UserPracticeDraw insertPracticeDraw(Long userId, LocalDate drawDate, CfProblem problem) {
-        String sql = """
-                INSERT INTO user_practice_draw (
-                    user_id, draw_date, problem_key, contest_id, problem_index, name, rating,
-                    tags, source_url, drawn_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """;
-        String nowIso = OffsetDateTime.now().toString();
-        KeyHolder keyHolder = new GeneratedKeyHolder();
-        jdbcTemplate.update(connection -> {
-            var statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            statement.setLong(1, userId);
-            statement.setString(2, drawDate.toString());
-            statement.setString(3, problem.problemKey());
-            statement.setInt(4, problem.contestId());
-            statement.setString(5, problem.problemIndex());
-            statement.setString(6, problem.name());
-            statement.setObject(7, problem.rating());
-            statement.setString(8, problem.tags());
-            statement.setString(9, problem.sourceUrl());
-            statement.setString(10, nowIso);
-            return statement;
-        }, keyHolder);
-        Long id = keyHolder.getKey() == null ? null : keyHolder.getKey().longValue();
-
-        return new UserPracticeDraw(
-                id,
-                userId,
-                drawDate,
-                problem.problemKey(),
-                problem.contestId(),
-                problem.problemIndex(),
-                problem.name(),
-                problem.rating(),
-                problem.tags(),
-                problem.sourceUrl(),
-                null,
-                null
-        );
-    }
-
     public int countCheckedInUsersByDate(LocalDate date) {
         Integer c = jdbcTemplate.queryForObject(
                 """
@@ -810,20 +534,4 @@ public class DailyProblemRepository {
                 .toList();
     }
 
-    public List<UserPracticeDraw> findPracticeDrawsByUserId(Long userId, int limit) {
-        return jdbcTemplate.query(
-                "SELECT id, user_id, draw_date, problem_key, contest_id, problem_index, name, rating, tags, source_url, drawn_at, submission_id, verdict, checked_at FROM user_practice_draw WHERE user_id = ? ORDER BY drawn_at DESC LIMIT ?",
-                userPracticeDrawRowMapper,
-                userId,
-                limit
-        );
-    }
-
-    public boolean deletePracticeDraw(Long drawId, Long userId) {
-        int rows = jdbcTemplate.update(
-                "DELETE FROM user_practice_draw WHERE id = ? AND user_id = ?",
-                drawId, userId
-        );
-        return rows > 0;
-    }
 }

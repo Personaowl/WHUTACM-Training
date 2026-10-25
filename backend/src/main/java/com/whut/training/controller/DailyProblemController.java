@@ -12,9 +12,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 每日一题与练习题接口。
+ * 每日一题接口。
  *
- * <p>包括今日题获取、每日打卡、历史查询和自主抽题。所有接口都要求已登录。
+ * <p>包括今日题获取、每日打卡、历史查询。所有接口都要求已登录。
  */
 @RestController
 @RequestMapping("/api")
@@ -73,55 +73,6 @@ public class DailyProblemController {
     @GetMapping("/daily-problem/history")
     public ApiResponse<List<DailyProblemHistoryItem>> history(@RequestParam(defaultValue = "0") int days) {
         return ApiResponse.ok(dailyProblemService.getHistory(requireCurrentUser(), days));
-    }
-
-    /**
-     * 自主抽题。
-     *
-     * @param request 可选抽题条件，主要是难度范围。
-     * @return 抽到的练习题。
-     */
-    @PostMapping("/practice/draw")
-    public ApiResponse<PracticeDrawResponse> draw(@RequestBody(required = false) PracticeDrawRequest request) {
-        Integer minRating = request == null ? null : request.minRating();
-        Integer maxRating = request == null ? null : request.maxRating();
-        List<String> tags = request == null ? List.of() : request.tags();
-        return ApiResponse.ok(dailyProblemService.drawPracticeProblem(requireCurrentUser(), minRating, maxRating, tags));
-    }
-
-    /**
-     * 获取自主练习可选标签。
-     */
-    @GetMapping("/practice/tags")
-    public ApiResponse<List<String>> practiceTags() {
-        requireCurrentUser();
-        return ApiResponse.ok(dailyProblemService.getAvailablePracticeTags());
-    }
-
-    /**
-     * 获取自主练习历史。
-     *
-     * @param limit 最大条数，默认 20。
-     * @return 练习历史列表。
-     */
-    @GetMapping("/practice/history")
-    public ApiResponse<List<PracticeHistoryItem>> practiceHistory(@RequestParam(defaultValue = "20") int limit) {
-        return ApiResponse.ok(dailyProblemService.getPracticeHistory(requireCurrentUser(), limit));
-    }
-
-    /**
-     * 删除一条自主练习记录。
-     *
-     * @param drawId 抽题记录 ID。
-     * @return 操作结果。
-     */
-    @DeleteMapping("/practice/{drawId}")
-    public ApiResponse<Void> deletePracticeDraw(@PathVariable Long drawId) {
-        boolean deleted = dailyProblemService.deletePracticeDraw(requireCurrentUser(), drawId);
-        if (!deleted) {
-            throw new BusinessException(404, "practice draw not found");
-        }
-        return ApiResponse.ok(null);
     }
 
     /**

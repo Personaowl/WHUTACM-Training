@@ -4,7 +4,7 @@ import {
   getPracticeHistory,
   deletePracticeDraw,
   getPracticeTags,
-} from "../api/dailyProblem";
+} from "../api/practice";
 import ProblemCard from "../components/ui/ProblemCard";
 import AddToProblemListButton from "../components/ui/AddToProblemListButton";
 import EmptyState from "../components/ui/EmptyState";

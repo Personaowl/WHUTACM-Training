@@ -2,10 +2,6 @@ package com.whut.training.controller;
 
 import com.whut.training.common.ApiResponse;
 import com.whut.training.context.UserContext;
-import com.whut.training.domain.dto.CodeforcesBindingResponse;
-import com.whut.training.domain.dto.AtCoderBindingResponse;
-import com.whut.training.domain.dto.AtCoderBindingStartRequest;
-import com.whut.training.domain.dto.CodeforcesBindingStartRequest;
 import com.whut.training.domain.dto.CodeforcesOverview;
 import com.whut.training.domain.dto.DailyHeatmapItem;
 import com.whut.training.domain.dto.PublicUserProfile;
@@ -149,42 +145,6 @@ public class UserController {
     }
 
     /**
-     * 为当前登录用户开始 Codeforces 账号所有权验证。
-     */
-    @PostMapping("/{id}/codeforces-binding/start")
-    public ApiResponse<CodeforcesBindingResponse> startCodeforcesBinding(
-            @PathVariable Long id,
-            @Valid @RequestBody CodeforcesBindingStartRequest request
-    ) {
-        requireSelf(id);
-        return ApiResponse.ok(userService.startCodeforcesBinding(id, request));
-    }
-
-    /**
-     * 查询验证提交并完成 Codeforces 账号绑定。
-     */
-    @PostMapping("/{id}/codeforces-binding/finish")
-    public ApiResponse<User> finishCodeforcesBinding(@PathVariable Long id) {
-        requireSelf(id);
-        return ApiResponse.ok(userService.finishCodeforcesBinding(id));
-    }
-
-    @PostMapping("/{id}/atcoder-binding/start")
-    public ApiResponse<AtCoderBindingResponse> startAtCoderBinding(
-            @PathVariable Long id,
-            @Valid @RequestBody AtCoderBindingStartRequest request
-    ) {
-        requireSelf(id);
-        return ApiResponse.ok(userService.startAtCoderBinding(id, request));
-    }
-
-    @PostMapping("/{id}/atcoder-binding/finish")
-    public ApiResponse<User> finishAtCoderBinding(@PathVariable Long id) {
-        requireSelf(id);
-        return ApiResponse.ok(userService.finishAtCoderBinding(id));
-    }
-
-    /**
      * 获取用户每日提交热图数据。
      *
      * @param id   用户 ID。
@@ -203,16 +163,6 @@ public class UserController {
         if (days < 1) days = 180;
         if (days > 365) days = 365;
         return ApiResponse.ok(dailyProblemRepository.findHeatmapForUser(id, days));
-    }
-
-    private void requireSelf(Long id) {
-        User currentUser = UserContext.getCurrentUser();
-        if (currentUser == null) {
-            throw new BusinessException(401, "unauthorized");
-        }
-        if (!currentUser.getId().equals(id)) {
-            throw new BusinessException(403, "you can only operate your own account");
-        }
     }
 
     private User requireAuthenticated() {

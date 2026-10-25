@@ -1,5 +1,5 @@
-import http from "./http";
-import { authHeaders } from "./auth";
+import http from "./http.js";
+import { authHeaders } from "./auth.js";
 
 export async function registerUser(payload) {
   const res = await http.post("/api/users/register", payload);
@@ -35,57 +35,5 @@ export async function getPublicProfile(id) {
   const res = await http.get(`/api/users/${id}/public-profile`, {
     headers: authHeaders(),
   });
-  return res.data;
-}
-
-export async function getCodeforcesOverview(id) {
-  const res = await http.get(`/api/users/${id}/codeforces-overview`, {
-    headers: authHeaders(),
-  });
-  return res.data;
-}
-
-export async function refreshCodeforcesOverview(id) {
-  const res = await http.post(
-    `/api/users/${id}/codeforces-overview/refresh`,
-    {},
-    { headers: authHeaders(), timeout: 45000 }
-  );
-  return res.data;
-}
-
-export async function startCodeforcesBinding(userId, handle) {
-  const res = await http.post(
-    `/api/users/${userId}/codeforces-binding/start`,
-    { handle },
-    { headers: authHeaders() }
-  );
-  return res.data;
-}
-
-export async function finishCodeforcesBinding(userId) {
-  const res = await http.post(
-    `/api/users/${userId}/codeforces-binding/finish`,
-    {},
-    { headers: authHeaders() }
-  );
-  return res.data;
-}
-
-export async function startAtCoderBinding(userId, handle) {
-  const res = await http.post(
-    `/api/users/${userId}/atcoder-binding/start`,
-    { handle },
-    { headers: authHeaders() }
-  );
-  return res.data;
-}
-
-export async function finishAtCoderBinding(userId) {
-  const res = await http.post(
-    `/api/users/${userId}/atcoder-binding/finish`,
-    {},
-    { headers: authHeaders() }
-  );
   return res.data;
 }

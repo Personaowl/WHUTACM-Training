@@ -7,9 +7,9 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * 每日题与练习题服务。
+ * 每日题服务。
  *
- * <p>负责生成今日题、校验打卡、查询历史、抽练习题和管理员重生成今日题。
+ * <p>负责生成今日题、校验打卡、查询历史和管理员重生成今日题。
  */
 public interface DailyProblemService {
     /**
@@ -44,23 +44,6 @@ public interface DailyProblemService {
     List<DailyProblemHistoryItem> getHistory(User user, int days);
 
     /**
-     * 自主抽题。
-     *
-     * @param user      当前用户。
-     * @param minRating 最小难度。
-     * @param maxRating 最大难度。
-     * @return 抽题结果。
-     */
-    PracticeDrawResponse drawPracticeProblem(User user, Integer minRating, Integer maxRating, List<String> tags);
-
-    /**
-     * 获取当前本地题库中的所有可用标签。
-     *
-     * @return 已去重并排序的 Codeforces 标签。
-     */
-    List<String> getAvailablePracticeTags();
-
-    /**
      * 管理员重生成今日题。
      *
      * @param adminUser 管理员用户。
@@ -84,21 +67,4 @@ public interface DailyProblemService {
      */
     boolean ensureTodaySlots();
 
-    /**
-     * 获取用户的自主练习历史。
-     *
-     * @param user  当前用户。
-     * @param limit 最大条数。
-     * @return 练习历史列表。
-     */
-    List<PracticeHistoryItem> getPracticeHistory(User user, int limit);
-
-    /**
-     * 删除一条自主练习记录。
-     *
-     * @param user   当前用户。
-     * @param drawId 抽题记录 ID。
-     * @return 是否删除成功。
-     */
-    boolean deletePracticeDraw(User user, Long drawId);
 }

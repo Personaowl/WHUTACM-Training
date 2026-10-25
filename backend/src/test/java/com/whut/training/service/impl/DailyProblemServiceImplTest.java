@@ -5,6 +5,8 @@ import com.whut.training.domain.entity.DailyProblemSlot;
 import com.whut.training.domain.entity.User;
 import com.whut.training.domain.enums.UserRole;
 import com.whut.training.repository.DailyProblemRepository;
+import com.whut.training.repository.ProblemCatalogRepository;
+import com.whut.training.service.ProblemPoolService;
 import com.whut.training.repository.UserRepository;
 import com.whut.training.service.CodeforcesApiService;
 import org.junit.jupiter.api.Test;
@@ -32,6 +34,7 @@ class DailyProblemServiceImplTest {
     @Test
     void emptyProblemPoolStartsOnlyOneBackgroundSyncWithoutBlockingHome() throws Exception {
         DailyProblemRepository repository = mock(DailyProblemRepository.class);
+        ProblemCatalogRepository catalogRepository = mock(ProblemCatalogRepository.class);
         CodeforcesApiService codeforcesApiService = mock(CodeforcesApiService.class);
         UserRepository userRepository = mock(UserRepository.class);
         TimeProvider timeProvider = mock(TimeProvider.class);
@@ -41,7 +44,7 @@ class DailyProblemServiceImplTest {
 
         when(timeProvider.today()).thenReturn(today);
         when(repository.findCurrentDailySlotsByDate(today)).thenReturn(List.of());
-        when(repository.countProblems()).thenReturn(0L);
+        when(catalogRepository.countProblems()).thenReturn(0L);
         when(codeforcesApiService.fetchProblemSet()).thenAnswer(invocation -> {
             fetchStarted.countDown();
             releaseFetch.await(2, TimeUnit.SECONDS);
@@ -49,9 +52,8 @@ class DailyProblemServiceImplTest {
         });
 
         DailyProblemServiceImpl service = new DailyProblemServiceImpl(
-                repository,
-                codeforcesApiService,
-                timeProvider,
+                repository, catalogRepository, new ProblemPoolService(catalogRepository, codeforcesApiService, true),
+                codeforcesApiService, timeProvider,
                 new com.whut.training.service.DailyCheckInRecorder(repository, userRepository),
                 1200,
                 2000,
@@ -59,8 +61,7 @@ class DailyProblemServiceImplTest {
                 800,
                 1800,
                 1900,
-                3000,
-                true
+                3000
         );
 
         try {
@@ -76,6 +77,7 @@ class DailyProblemServiceImplTest {
     @Test
     void checksOneSubmissionOnlyOnceWhenMatchingTheSecondDailySlot() {
         DailyProblemRepository repository = mock(DailyProblemRepository.class);
+        ProblemCatalogRepository catalogRepository = mock(ProblemCatalogRepository.class);
         CodeforcesApiService codeforcesApiService = mock(CodeforcesApiService.class);
         UserRepository userRepository = mock(UserRepository.class);
         TimeProvider timeProvider = mock(TimeProvider.class);
@@ -99,9 +101,10 @@ class DailyProblemServiceImplTest {
         when(repository.maxUserDailySlotScore(7L, today)).thenReturn(1800);
 
         DailyProblemServiceImpl service = new DailyProblemServiceImpl(
-                repository, codeforcesApiService, timeProvider,
+                repository, catalogRepository, new ProblemPoolService(catalogRepository, codeforcesApiService, true),
+                codeforcesApiService, timeProvider,
                 new com.whut.training.service.DailyCheckInRecorder(repository, userRepository),
-                1200, 2000, 90, 800, 1800, 1900, 3000, true
+                1200, 2000, 90, 800, 1800, 1900, 3000
         );
         var result = service.checkIn(user, 999L);
 
@@ -114,6 +117,7 @@ class DailyProblemServiceImplTest {
     @Test
     void checksEasyAndThenHardIndependentlyOnTheSameDay() {
         DailyProblemRepository repository = mock(DailyProblemRepository.class);
+        ProblemCatalogRepository catalogRepository = mock(ProblemCatalogRepository.class);
         CodeforcesApiService codeforcesApiService = mock(CodeforcesApiService.class);
         UserRepository userRepository = mock(UserRepository.class);
         TimeProvider timeProvider = mock(TimeProvider.class);
@@ -145,9 +149,10 @@ class DailyProblemServiceImplTest {
                 .thenReturn(2500);
 
         DailyProblemServiceImpl service = new DailyProblemServiceImpl(
-                repository, codeforcesApiService, timeProvider,
+                repository, catalogRepository, new ProblemPoolService(catalogRepository, codeforcesApiService, true),
+                codeforcesApiService, timeProvider,
                 new com.whut.training.service.DailyCheckInRecorder(repository, userRepository),
-                1200, 2000, 90, 800, 1800, 1900, 3000, true
+                1200, 2000, 90, 800, 1800, 1900, 3000
         );
 
         var easyResult = service.checkIn(user, 101L);

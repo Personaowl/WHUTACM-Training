@@ -1,6 +1,5 @@
 package com.whut.training.repository;
 
-import com.whut.training.common.TimeProvider;
 import com.whut.training.domain.entity.CfProblem;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,7 +13,7 @@ import static org.mockito.Mockito.*;
 
 class PracticePerformanceTest {
     private JdbcTemplate jdbc;
-    private DailyProblemRepository repository;
+    private ProblemCatalogRepository repository;
     private CfProblem problem(String index, int rating, String tags) {
         return new CfProblem("123-"+index,123,index,"Problem "+index,rating,tags,false,null,10,"https://codeforces.com/problemset/problem/123/"+index);
     }
@@ -25,7 +24,7 @@ class PracticePerformanceTest {
                   contest_id INT,problem_index VARCHAR(16),name VARCHAR(255),rating INT,tags VARCHAR(1000),
                   is_interactive INT,source_contest_id INT,solved_count INT,source_url VARCHAR(1000),last_synced_at VARCHAR(64))
                 """);
-        repository=new DailyProblemRepository(jdbc,mock(TimeProvider.class));
+        repository=new ProblemCatalogRepository(jdbc);
         repository.upsertProblems(List.of(problem("A",800,"math"),problem("B",1800,"dp,math"),problem("C",1900,"dp"),problem("D",3500,"digit dp")));
         clearInvocations(jdbc);
     }

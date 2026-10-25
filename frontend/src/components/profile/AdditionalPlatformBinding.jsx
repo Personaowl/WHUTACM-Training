@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, ExternalLink } from "lucide-react";
-import http from "../../api/http";
-import { authHeaders } from "../../api/auth";
+import { getAdditionalBinding, startAdditionalBinding, finishAdditionalBinding } from "../../api/accountBinding";
 import PlatformStatistics from "./PlatformStatistics";
 import SurfaceContours from "../ui/SurfaceContours";
 
@@ -12,11 +11,10 @@ export default function AdditionalPlatformBinding({ userId, platform, label, onC
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
-  const base = `/api/users/${userId}/platform-bindings/${platform}`;
   useEffect(() => {
     if (!userId) return;
     let active = true;
-    http.get(base, { headers: authHeaders() }).then(({ data }) => {
+    getAdditionalBinding(userId, platform).then(data => {
       if (!active) return;
       if (data.code !== 200) throw new Error(data.message);
       setBinding(data.data);
@@ -25,7 +23,7 @@ export default function AdditionalPlatformBinding({ userId, platform, label, onC
     }).catch(error => { if (active) setMessage(error.message || "绑定信息加载失败"); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [base]);
+  }, [userId, platform]);
   const active = Boolean(binding?.verificationToken && binding?.pendingAccountId === uid);
   async function submit() {
     if (!/^[1-9][0-9]{0,17}$/.test(uid)) {
@@ -33,8 +31,7 @@ export default function AdditionalPlatformBinding({ userId, platform, label, onC
     }
     setBusy(true); setMessage(""); setSuccess(false);
     try {
-      const { data } = await http.post(base + (active ? "/finish" : "/start"),
-        active ? {} : { uid }, { headers: authHeaders() });
+      const data = await (active ? finishAdditionalBinding(userId, platform) : startAdditionalBinding(userId, platform, uid));
       if (data.code !== 200) throw new Error(data.message);
       setBinding(data.data);
       onConnected(platform, Boolean(data.data.accountId));

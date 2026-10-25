@@ -23,9 +23,12 @@ docs/                     接口、数据库与生产部署说明
 ### 当前代码分层
 
 - 前端：pages 为路由页面，components 为通用/业务组件，api 为 HTTP 封装，utils 为表单和展示规则；懒加载页面，服务端数据与本地登录状态分别处理。
+- 首页数据生命周期由 `useHomeOverview` 管理；绑定、平台统计、自主练习分别使用独立 API 模块。旧版 views 和旧 styles.css 已移除，实际入口仍是 main.jsx → App.jsx。
 - 后端：Controller 处理 HTTP 与入口权限，Service 承担业务流程，Repository 使用 JdbcTemplate 访问 MySQL，DTO 定义请求/响应；部分关键业务在服务层再次校验权限。
+- CF / AtCoder 所有权验证位于独立的 `ContestAccountBindingController` 和 `service.binding.ContestAccountBindingService`，不再混入站内用户资料服务。重构基线及回退步骤见[架构记录](architecture.md)。
 - AccessTokenInterceptor 验证令牌并将当前数据库用户放入 UserContext；GlobalExceptionHandler 统一常见失败。不要根据老源码注释推断所有接口都返回相同结构，首页与文件导出有例外。
 - DailyCheckInJobService 在内存管理校验任务；外部 CF 请求经 CodeforcesRequestCoordinator 排队，记账由 DailyCheckInRecorder 在独立短事务中执行。
+- 每日题与自主练习分开：DailyProblemService / DailyProblemRepository 负责题位、历史和打卡；PracticeController / PracticeService / PracticeDrawRepository 负责抽题与个人记录。二者共用 ProblemCatalogRepository 和 ProblemPoolService，标签缓存、启动/定时同步及同步去重只保留一份。
 - ABC 跟踪与周训练统计是两个服务：前者同步外部比赛，后者从本地记录聚合并管理情况说明。MySqlInitializer 负责建表/有限补结构，DataInitializer 负责初始化配置的超管。
 - 当前按单后端实例部署，缓存、任务和部分锁在进程内；没有微服务拆分、分布式任务队列或跨实例调度去重。层次分离不等于可直接横向扩容。
 - 四平台基础统计由 PlatformStatisticsProvider 统一返回；首页和个人中心共用 PlatformDataPanel，绑定页使用 PlatformStatistics，三者共用统计数字字号。新增三平台经 PublicPlatformStatisticsService 异步写入 platform_statistics_snapshot；默认 30 分钟缓存、失败退避 5 分钟，网页请求不等待外部网站。测试配置关闭外部同步，使用解析样例和 H2 快照回归；口径见[接口参考](api-design.md)。

@@ -10,10 +10,10 @@ import { useAuth } from "../context/AuthContext";
 import {
   finishAtCoderBinding,
   finishCodeforcesBinding,
-  getUserById,
   startAtCoderBinding,
   startCodeforcesBinding,
-} from "../api/user";
+} from "../api/accountBinding";
+import { getUserById } from "../api/user";
 import { CardSkeleton } from "../components/ui/Skeleton";
 import AdditionalPlatformBinding from "../components/profile/AdditionalPlatformBinding";
 import PlatformStatistics from "../components/profile/PlatformStatistics";

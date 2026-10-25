@@ -31,6 +31,12 @@ class MySqlRepositoryCompatibilityTest {
     private DailyProblemRepository dailyProblemRepository;
 
     @Autowired
+    private ProblemCatalogRepository catalogRepository;
+
+    @Autowired
+    private PracticeDrawRepository practiceDrawRepository;
+
+    @Autowired
     private CodeforcesProfileSnapshotRepository snapshotRepository;
 
     @Autowired
@@ -124,16 +130,16 @@ class MySqlRepositoryCompatibilityTest {
                 "100-A", 100, "A", "Updated", 1300, "math,greedy", false,
                 null, 20, "https://codeforces.com/problemset/problem/100/A"
         );
-        dailyProblemRepository.upsertProblems(List.of(first));
-        dailyProblemRepository.upsertProblems(List.of(updated));
-        assertThat(dailyProblemRepository.countProblems()).isGreaterThanOrEqualTo(1);
-        assertThat(dailyProblemRepository.findRandomProblem(1200, 1400)).isPresent();
-        assertThat(dailyProblemRepository.findRandomProblem(1200, 1400, List.of("math", "greedy")))
+        catalogRepository.upsertProblems(List.of(first));
+        catalogRepository.upsertProblems(List.of(updated));
+        assertThat(catalogRepository.countProblems()).isGreaterThanOrEqualTo(1);
+        assertThat(catalogRepository.findRandomProblem(1200, 1400)).isPresent();
+        assertThat(catalogRepository.findRandomProblem(1200, 1400, List.of("math", "greedy")))
                 .get()
                 .extracting(CfProblem::problemKey)
                 .isEqualTo("100-A");
-        assertThat(dailyProblemRepository.findRandomProblem(1200, 1400, List.of("graphs"))).isEmpty();
-        assertThat(dailyProblemRepository.findAvailableProblemTags()).contains("greedy", "math");
+        assertThat(catalogRepository.findRandomProblem(1200, 1400, List.of("graphs"))).isEmpty();
+        assertThat(catalogRepository.findAvailableProblemTags()).contains("greedy", "math");
 
         LocalDate date = LocalDate.of(2026, 8, 1);
         dailyProblemRepository.insertDailySlot(date, "easy", updated, "test");
@@ -168,7 +174,7 @@ class MySqlRepositoryCompatibilityTest {
         assertThat(dailyProblemRepository.findUserDailyStatus(user.getId(), date))
                 .get().extracting(status -> status.score()).isEqualTo(1300);
 
-        dailyProblemRepository.insertPracticeDraw(user.getId(), date, updated);
+        practiceDrawRepository.insertPracticeDraw(user.getId(), date, updated);
         assertThat(trainingDashboardRepository.findActiveTeamDailyActivity(date.minusDays(1), date))
                 .extracting(TrainingDashboardRepository.DailyActivity::userId)
                 .contains(user.getId());

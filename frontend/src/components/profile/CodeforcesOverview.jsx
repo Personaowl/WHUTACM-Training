@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import {
   getCodeforcesOverview,
   refreshCodeforcesOverview,
-} from "../../api/user";
+} from "../../api/platformOverview";
 import { getRatingMeta } from "../../utils/cf";
 import { CardSkeleton } from "../ui/Skeleton";
 

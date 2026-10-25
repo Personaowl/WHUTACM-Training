@@ -6,16 +6,15 @@ import com.whut.training.domain.dto.*;
 import com.whut.training.domain.entity.CfProblem;
 import com.whut.training.domain.entity.DailyProblem;
 import com.whut.training.domain.entity.User;
-import com.whut.training.domain.entity.UserPracticeDraw;
 import com.whut.training.domain.enums.UserRole;
 import com.whut.training.exception.BusinessException;
 import com.whut.training.repository.DailyProblemRepository;
+import com.whut.training.repository.ProblemCatalogRepository;
+import com.whut.training.service.ProblemPoolService;
 import com.whut.training.service.CodeforcesApiService;
 import com.whut.training.service.DailyProblemService;
 import com.whut.training.service.DailyCheckInRecorder;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
@@ -24,12 +23,11 @@ import org.slf4j.LoggerFactory;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * 每日题与练习题服务实现。
+ * 每日题生成、重抽和提交校验。
  *
- * <p>负责从 Codeforces 拉取题库、自动生成每日题、保存打卡与练习记录。当前实现对外部 API 的失败多采用空结果回落，只有在题库不可用时才显式抛出 503；这会掩盖一部分瞬时网络问题，后续适合补充重试与告警。
+ * <p>使用共享本地题库生成每日题；记账仍通过独立的短事务服务执行。
  */
 @Service
 @ServiceLog
@@ -38,11 +36,12 @@ public class DailyProblemServiceImpl implements DailyProblemService {
     private static final Logger log = LoggerFactory.getLogger(DailyProblemServiceImpl.class);
 
     private final DailyProblemRepository dailyProblemRepository;
+    private final ProblemCatalogRepository catalogRepository;
+    private final ProblemPoolService problemPoolService;
     private final CodeforcesApiService codeforcesApiService;
     private final TimeProvider timeProvider;
     private final Object generationLock = new Object();
     private final DailyCheckInRecorder checkInRecorder;
-    private final AtomicBoolean problemSyncInProgress = new AtomicBoolean(false);
     private final int defaultMinRating;
     private final int defaultMaxRating;
     private final int noRepeatDays;
@@ -50,10 +49,11 @@ public class DailyProblemServiceImpl implements DailyProblemService {
     private final int easyMaxRating;
     private final int hardMinRating;
     private final int hardMaxRating;
-    private final boolean initialSyncEnabled;
 
     public DailyProblemServiceImpl(
             DailyProblemRepository dailyProblemRepository,
+            ProblemCatalogRepository catalogRepository,
+            ProblemPoolService problemPoolService,
             CodeforcesApiService codeforcesApiService,
             TimeProvider timeProvider,
             DailyCheckInRecorder checkInRecorder,
@@ -63,10 +63,11 @@ public class DailyProblemServiceImpl implements DailyProblemService {
             @Value("${app.daily-problem.easy-min-rating:800}") int easyMinRating,
             @Value("${app.daily-problem.easy-max-rating:1800}") int easyMaxRating,
             @Value("${app.daily-problem.hard-min-rating:1900}") int hardMinRating,
-            @Value("${app.daily-problem.hard-max-rating:3000}") int hardMaxRating,
-            @Value("${app.daily-problem.initial-sync-enabled:true}") boolean initialSyncEnabled
+            @Value("${app.daily-problem.hard-max-rating:3000}") int hardMaxRating
     ) {
         this.dailyProblemRepository = dailyProblemRepository;
+        this.catalogRepository = catalogRepository;
+        this.problemPoolService = problemPoolService;
         this.codeforcesApiService = codeforcesApiService;
         this.timeProvider = timeProvider;
         this.checkInRecorder = checkInRecorder;
@@ -77,19 +78,6 @@ public class DailyProblemServiceImpl implements DailyProblemService {
         this.easyMaxRating = easyMaxRating;
         this.hardMinRating = hardMinRating;
         this.hardMaxRating = hardMaxRating;
-        this.initialSyncEnabled = initialSyncEnabled;
-    }
-
-    /**
-     * 应用启动后异步预同步 Codeforces 题库。
-     * 避免首次请求时同步耗时过长导致前端超时。
-     */
-    @EventListener(ApplicationReadyEvent.class)
-    public void initialSyncOnStartup() {
-        if (!initialSyncEnabled || dailyProblemRepository.countProblems() > 0) {
-            return;
-        }
-        startProblemPoolSyncAsync();
     }
 
     /**
@@ -100,14 +88,6 @@ public class DailyProblemServiceImpl implements DailyProblemService {
         LocalDate today = timeProvider.today();
         ensureDailyProblem(today, false, "scheduler");
         ensureDailySlots(today, false, "scheduler");
-    }
-
-    /**
-     * 定时同步题库。
-     */
-    @Scheduled(cron = "${app.daily-problem.sync-cron:0 0 */6 * * *}", zone = "${app.daily-problem.zone:Asia/Shanghai}")
-    public void syncProblemPoolByScheduler() {
-        syncProblemPoolIfIdle();
     }
 
     /**
@@ -268,88 +248,11 @@ public class DailyProblemServiceImpl implements DailyProblemService {
         return dailyProblemRepository.findDailyHistoryForUser(user.getId(), startDate, today);
     }
 
-    /**
-     * 按难度范围抽取练习题。
-     *
-     * @param user      当前用户。
-     * @param minRating 最小 rating。
-     * @param maxRating 最大 rating。
-     * @return 抽题响应。
-     */
-    @Override
-    public PracticeDrawResponse drawPracticeProblem(User user, Integer minRating, Integer maxRating, List<String> tags) {
-        ensureProblemPoolAvailable();
-        int resolvedMinRating = minRating == null ? defaultMinRating : minRating;
-        int resolvedMaxRating = maxRating == null ? defaultMaxRating : maxRating;
-        if (resolvedMinRating > resolvedMaxRating) {
-            throw new BusinessException(400, "invalid rating range");
-        }
-
-        List<String> normalizedTags = tags == null ? List.of() : tags.stream()
-                .filter(java.util.Objects::nonNull)
-                .map(String::trim)
-                .filter(tag -> !tag.isEmpty())
-                .map(tag -> tag.toLowerCase(java.util.Locale.ROOT))
-                .distinct()
-                .toList();
-        if (normalizedTags.size() > 5 || normalizedTags.stream().anyMatch(tag -> tag.length() > 64)) {
-            throw new BusinessException(400, "标签选择无效，最多选择 5 个标签");
-        }
-
-        CfProblem problem = dailyProblemRepository.findRandomProblem(
-                        resolvedMinRating,
-                        resolvedMaxRating,
-                        normalizedTags
-                )
-                .orElseThrow(() -> new BusinessException(404, "没有符合当前难度和标签条件的题目"));
-        UserPracticeDraw draw = dailyProblemRepository.insertPracticeDraw(user.getId(), timeProvider.today(), problem);
-        return new PracticeDrawResponse(
-                draw.id(),
-                new ProblemView(
-                        "PRACTICE",
-                        draw.drawDate().toString(),
-                        draw.problemKey(),
-                        draw.contestId(),
-                        draw.problemIndex(),
-                        draw.name(),
-                        draw.rating(),
-                        draw.tags(),
-                        draw.sourceUrl()
-                )
-        );
-    }
-
-    @Override
-    public List<String> getAvailablePracticeTags() {
-        return dailyProblemRepository.findAvailableProblemTags();
-    }
-
     private String requireCodeforcesHandle(User user) {
         if (user == null || user.getCodeforcesHandle() == null || user.getCodeforcesHandle().isBlank()) {
             throw new BusinessException(400, "please bind your Codeforces account first");
         }
         return user.getCodeforcesHandle();
-    }
-
-    @Override
-    public List<PracticeHistoryItem> getPracticeHistory(User user, int limit) {
-        List<UserPracticeDraw> draws = dailyProblemRepository.findPracticeDrawsByUserId(user.getId(), Math.max(1, Math.min(limit, 100)));
-        return draws.stream()
-                .map(d -> new PracticeHistoryItem(
-                        d.id(),
-                        d.drawDate().toString(),
-                        d.problemKey(),
-                        d.contestId(),
-                        d.problemIndex(),
-                        d.name(),
-                        d.rating(),
-                        d.tags(),
-                        d.sourceUrl(),
-                        null, // drawnAt not stored in current entity
-                        d.submissionId(),
-                        d.verdict()
-                ))
-                .toList();
     }
 
     @Override
@@ -364,11 +267,6 @@ public class DailyProblemServiceImpl implements DailyProblemService {
             log.debug("Problem pool is still initializing; home overview will be returned without daily slots");
             return false;
         }
-    }
-
-    @Override
-    public boolean deletePracticeDraw(User user, Long drawId) {
-        return dailyProblemRepository.deletePracticeDraw(drawId, user.getId());
     }
 
     /**
@@ -400,14 +298,14 @@ public class DailyProblemServiceImpl implements DailyProblemService {
             ensureDailySlots(target, false, "admin-redraw");
             dailyProblemRepository.markActiveSlotsRedrawn(target, slot);
 
-            ensureProblemPoolAvailable();
+            problemPoolService.ensureAvailable();
             LocalDate noRepeatAfterDate = target.minusDays(Math.max(1, noRepeatDays));
             CfProblem picked = "easy".equalsIgnoreCase(slot)
-                    ? dailyProblemRepository.findRandomProblem(easyMinRating, easyMaxRating, noRepeatAfterDate)
-                    .or(() -> dailyProblemRepository.findRandomProblem(easyMinRating, easyMaxRating))
+                    ? catalogRepository.findRandomProblem(easyMinRating, easyMaxRating, noRepeatAfterDate)
+                    .or(() -> catalogRepository.findRandomProblem(easyMinRating, easyMaxRating))
                     .orElseThrow(() -> new BusinessException(500, "failed to select easy problem"))
-                    : dailyProblemRepository.findRandomProblem(hardMinRating, hardMaxRating, noRepeatAfterDate)
-                    .or(() -> dailyProblemRepository.findRandomProblem(hardMinRating, hardMaxRating))
+                    : catalogRepository.findRandomProblem(hardMinRating, hardMaxRating, noRepeatAfterDate)
+                    .or(() -> catalogRepository.findRandomProblem(hardMinRating, hardMaxRating))
                     .orElseThrow(() -> new BusinessException(500, "failed to select hard problem"));
 
             var newSlot = dailyProblemRepository.insertDailySlot(target, slot, picked, "admin-redraw");
@@ -447,11 +345,11 @@ public class DailyProblemServiceImpl implements DailyProblemService {
                 dailyProblemRepository.deleteDailySlotsByDate(date);
             }
 
-            ensureProblemPoolAvailable();
+            problemPoolService.ensureAvailable();
             LocalDate noRepeatAfterDate = date.minusDays(Math.max(1, noRepeatDays));
-            CfProblem problem = dailyProblemRepository
+            CfProblem problem = catalogRepository
                     .findRandomProblem(defaultMinRating, defaultMaxRating, noRepeatAfterDate)
-                    .or(() -> dailyProblemRepository.findRandomProblem(defaultMinRating, defaultMaxRating))
+                    .or(() -> catalogRepository.findRandomProblem(defaultMinRating, defaultMaxRating))
                     .orElseThrow(() -> new BusinessException(500, "failed to select daily problem"));
             return dailyProblemRepository.insertDailyProblem(date, problem, generatedBy);
         }
@@ -477,17 +375,17 @@ public class DailyProblemServiceImpl implements DailyProblemService {
                 dailyProblemRepository.deleteDailySlotsByDate(date);
             }
 
-            ensureProblemPoolAvailable();
+            problemPoolService.ensureAvailable();
             LocalDate noRepeatAfterDate = date.minusDays(Math.max(1, noRepeatDays));
 
             // easy: 800 .. 1800 by default (independently configurable)
-            CfProblem easy = hasActiveEasy ? null : dailyProblemRepository.findRandomProblem(easyMinRating, easyMaxRating, noRepeatAfterDate)
-                    .or(() -> dailyProblemRepository.findRandomProblem(easyMinRating, easyMaxRating))
+            CfProblem easy = hasActiveEasy ? null : catalogRepository.findRandomProblem(easyMinRating, easyMaxRating, noRepeatAfterDate)
+                    .or(() -> catalogRepository.findRandomProblem(easyMinRating, easyMaxRating))
                     .orElse(null);
 
             // hard: 1900 .. 3000 by default; 1801..1899 is intentionally left out.
-            CfProblem hard = hasActiveHard ? null : dailyProblemRepository.findRandomProblem(hardMinRating, hardMaxRating, noRepeatAfterDate)
-                    .or(() -> dailyProblemRepository.findRandomProblem(hardMinRating, hardMaxRating))
+            CfProblem hard = hasActiveHard ? null : catalogRepository.findRandomProblem(hardMinRating, hardMaxRating, noRepeatAfterDate)
+                    .or(() -> catalogRepository.findRandomProblem(hardMinRating, hardMaxRating))
                     .orElse(null);
 
             if (easy != null) {
@@ -497,71 +395,6 @@ public class DailyProblemServiceImpl implements DailyProblemService {
                 dailyProblemRepository.insertDailySlot(date, "hard", hard, generatedBy);
             }
         }
-    }
-
-    /**
-     * 确保题库可用。
-     */
-    private void ensureProblemPoolAvailable() {
-        long count = dailyProblemRepository.countProblems();
-        if (count > 0) {
-            return;
-        }
-        startProblemPoolSyncAsync();
-        throw new BusinessException(503, "problem pool is initializing, please retry shortly");
-    }
-
-    /**
-     * 在后台触发一次题库同步。全局只允许一个同步任务运行，避免首次访问时重复拉取并阻塞请求线程。
-     */
-    private void startProblemPoolSyncAsync() {
-        if (!problemSyncInProgress.compareAndSet(false, true)) {
-            return;
-        }
-        Thread syncThread = new Thread(() -> {
-            try {
-                int synced = syncProblemPool();
-                if (synced > 0) {
-                    log.info("Codeforces problem pool sync completed: {} problems", synced);
-                } else {
-                    log.warn("Codeforces problem pool sync returned no problems; it will be retried later");
-                }
-            } catch (Exception ex) {
-                log.warn("Codeforces problem pool sync failed; it will be retried later", ex);
-            } finally {
-                problemSyncInProgress.set(false);
-            }
-        }, "cf-problem-sync");
-        syncThread.setDaemon(true);
-        syncThread.start();
-    }
-
-    /**
-     * 由定时任务同步题库；若已有同步任务则直接跳过本轮。
-     */
-    private int syncProblemPoolIfIdle() {
-        if (!problemSyncInProgress.compareAndSet(false, true)) {
-            log.debug("Codeforces problem pool sync skipped because another sync is in progress");
-            return 0;
-        }
-        try {
-            return syncProblemPool();
-        } finally {
-            problemSyncInProgress.set(false);
-        }
-    }
-
-    /**
-     * 从 Codeforces 同步题库。
-     *
-     * @return 同步条数。
-     */
-    private int syncProblemPool() {
-        List<CfProblem> problems = codeforcesApiService.fetchProblemSet();
-        if (problems.isEmpty()) {
-            return 0;
-        }
-        return dailyProblemRepository.upsertProblems(problems);
     }
 
     private boolean sameProblem(CodeforcesApiService.SubmissionStatus submission, Integer contestId,

@@ -18,24 +18,11 @@ export async function login(payload) {
   return res.data;
 }
 
-export async function logout(tokens) {
+export async function logout() {
   const res = await http.post(
     "/api/auth/logout",
     {},
     { headers: authHeaders() }
-  );
-  return res.data;
-}
-
-export async function refreshTokens() {
-  const auth = getStoredAuth();
-  const refreshToken = auth?.tokens?.refreshToken;
-  if (!refreshToken) throw new Error("missing refresh token");
-
-  const res = await http.post(
-    "/api/auth/refresh",
-    {},
-    { headers: { "X-Refresh-Token": refreshToken } }
   );
   return res.data;
 }
