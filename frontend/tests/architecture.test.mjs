@@ -57,3 +57,13 @@ test("feature APIs and home presentation keep their responsibility boundaries", 
   assert.match(page, /useHomeOverview\(user\?\.id\)/);
   assert.doesNotMatch(page, /setInterval|useEffect|getHomeOverview\(|getHeatmap\(/);
 });
+
+test("problem-list presentation delegates requests and editor state to its workspace hook", async () => {
+  const page = await readFile(path.join(root, "pages/ProblemListsPage.jsx"), "utf8");
+  assert.match(page, /useProblemLists\(sharedOnly\)/);
+  assert.doesNotMatch(page, /useEffect|useState|getProblemList\(|listProblemLists\(|function DialogFrame/);
+  for (const name of ["ProblemListSidebar", "ProblemListDetails", "ProblemListDialogs"]) {
+    const source = await readFile(path.join(root, `components/problem-lists/${name}.jsx`), "utf8");
+    assert.doesNotMatch(source, /from ["'][^"']*\/api\//);
+  }
+});

@@ -1,6 +1,8 @@
 package com.whut.training.service;
 
 import com.whut.training.common.TimeProvider;
+import com.whut.training.service.exporting.TrainingExportDataLoader;
+import com.whut.training.service.exporting.TrainingWorkbookWriter;
 import com.whut.training.domain.dto.TrainingExportRequest;
 import com.whut.training.domain.entity.User;
 import com.whut.training.domain.enums.MemberType;
@@ -71,7 +73,8 @@ class TrainingExcelExportServiceTest {
         ));
 
         TrainingExcelExportService service = new TrainingExcelExportService(
-                userRepository, dashboardRepository, ratingRepository, profileService, atCoderRepository, timeProvider
+                new TrainingExportDataLoader(userRepository, dashboardRepository, ratingRepository, profileService, atCoderRepository, timeProvider),
+                new TrainingWorkbookWriter()
         );
         TrainingExcelExportService.ExportResult result = service.export(
                 new TrainingExportRequest("WEEK", true, true, true)
@@ -101,12 +104,14 @@ class TrainingExcelExportServiceTest {
     @Test
     void rejectsExportWithoutAnySelectedDataType() {
         TrainingExcelExportService service = new TrainingExcelExportService(
-                mock(UserRepository.class),
-                mock(TrainingDashboardRepository.class),
-                mock(CodeforcesRatingHistoryRepository.class),
-                mock(CodeforcesProfileService.class),
-                mock(AtCoderTrackingRepository.class),
-                mock(TimeProvider.class)
+                new TrainingExportDataLoader(
+                        mock(UserRepository.class),
+                        mock(TrainingDashboardRepository.class),
+                        mock(CodeforcesRatingHistoryRepository.class),
+                        mock(CodeforcesProfileService.class),
+                        mock(AtCoderTrackingRepository.class),
+                        mock(TimeProvider.class)),
+                new TrainingWorkbookWriter()
         );
 
         assertThatThrownBy(() -> service.export(new TrainingExportRequest("WEEK", false, false, false)))

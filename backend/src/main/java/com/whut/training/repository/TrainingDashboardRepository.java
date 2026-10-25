@@ -134,13 +134,13 @@ public class TrainingDashboardRepository {
                         rs.getString("slot"),
                         rs.getString("problem_key"),
                         rs.getString("name"),
-                        (Integer) rs.getObject("rating"),
+                        rs.getObject("rating", Integer.class),
                         rs.getString("tags"),
                         rs.getString("source_url"),
                         rs.getObject("submission_id") != null,
-                        (Long) rs.getObject("submission_id"),
+                        rs.getObject("submission_id", Long.class),
                         rs.getString("verdict"),
-                        (Integer) rs.getObject("score")
+                        rs.getObject("score", Integer.class)
                 ),
                 arguments
         );

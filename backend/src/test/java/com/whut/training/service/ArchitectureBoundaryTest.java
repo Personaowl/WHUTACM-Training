@@ -1,6 +1,9 @@
 package com.whut.training.service;
 
 import com.whut.training.service.impl.UserServiceImpl;
+import com.whut.training.service.exporting.TrainingExportData;
+import com.whut.training.service.exporting.TrainingExportDataLoader;
+import com.whut.training.service.exporting.TrainingWorkbookWriter;
 import com.whut.training.repository.DailyProblemRepository;
 import com.whut.training.repository.PracticeDrawRepository;
 import com.whut.training.repository.ProblemCatalogRepository;
@@ -9,6 +12,17 @@ import java.util.Arrays;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ArchitectureBoundaryTest {
+    @Test void exportRenderingDoesNotDependOnRepositoriesExternalClientsOrLiveUsers() {
+        assertTrue(Arrays.stream(TrainingExcelExportService.class.getDeclaredFields())
+                .allMatch(field -> field.getType() == TrainingExportDataLoader.class || field.getType() == TrainingWorkbookWriter.class));
+        assertTrue(Arrays.stream(TrainingWorkbookWriter.class.getDeclaredFields())
+                .noneMatch(field -> field.getType().getSimpleName().endsWith("Repository")
+                        || field.getType() == CodeforcesProfileService.class));
+        assertTrue(Arrays.stream(TrainingExportDataLoader.class.getDeclaredFields())
+                .noneMatch(field -> field.getType().getName().startsWith("org.apache.poi.")));
+        assertTrue(Arrays.stream(TrainingExportData.Member.class.getRecordComponents())
+                .noneMatch(field -> field.getName().matches("(?i).*password.*|.*token.*|.*avatar.*")));
+    }
     @Test void siteAccountServiceDoesNotDependOnExternalPlatformClients() {
         assertTrue(Arrays.stream(UserServiceImpl.class.getDeclaredFields())
                 .noneMatch(field -> field.getType() == CodeforcesApiService.class || field.getType() == AtCoderApiService.class));

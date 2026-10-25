@@ -4,6 +4,7 @@ import http from "../src/api/http.js";
 import { setStoredAuth, clearStoredAuth } from "../src/auth.js";
 import * as binding from "../src/api/accountBinding.js";
 import * as practice from "../src/api/practice.js";
+import * as library from "../src/api/problemList.js";
 import { getCodeforcesOverview, refreshCodeforcesOverview } from "../src/api/platformOverview.js";
 
 const originalAdapter = http.defaults.adapter, originalWindow = globalThis.window;
@@ -34,6 +35,14 @@ for (const [name, invoke, method, url, body] of [
   ["delete practice draw", () => practice.deletePracticeDraw(12), "delete", "/api/practice/12"],
   ["CF overview", () => getCodeforcesOverview(7), "get", "/api/users/7/codeforces-overview"],
   ["refresh CF overview", () => refreshCodeforcesOverview(7), "post", "/api/users/7/codeforces-overview/refresh", {}],
+  ["list collections", () => library.listProblemLists(), "get", "/api/problem-lists"],
+  ["collection details", () => library.getProblemList(3), "get", "/api/problem-lists/3"],
+  ["create collection", () => library.createProblemList({ name: "DP", shared: false }), "post", "/api/problem-lists", { name: "DP", shared: false }],
+  ["edit collection", () => library.updateProblemList(3, { name: "DP", shared: true }), "patch", "/api/problem-lists/3", { name: "DP", shared: true }],
+  ["delete collection", () => library.deleteProblemList(3), "delete", "/api/problem-lists/3"],
+  ["add collection item", () => library.addProblemListItem(3, { link: "https://example.org/problem", rating: null }), "post", "/api/problem-lists/3/items", { link: "https://example.org/problem", rating: null }],
+  ["edit collection item", () => library.updateProblemListItem(3, 12, { title: "New title", rating: 1200 }), "patch", "/api/problem-lists/3/items/12", { title: "New title", rating: 1200 }],
+  ["delete collection item", () => library.deleteProblemListItem(3, 12), "delete", "/api/problem-lists/3/items/12"],
 ]) {
   test(`feature split preserves ${name} request and response`, async () => {
     assert.deepEqual(await invoke(), { code: 200, data: { marker: "unchanged" } });

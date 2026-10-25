@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 
-/** Real transaction boundaries and concurrent writes against the test H2 database, not mocked transactions. */
+/** Real transaction boundaries and concurrent writes against H2 or the disposable mysql-test database. */
 @SpringBootTest
 class ProductionConsistencyTest {
     @Autowired private DailyCheckInRecorder recorder;

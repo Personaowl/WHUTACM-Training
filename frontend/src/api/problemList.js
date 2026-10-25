@@ -1,5 +1,5 @@
-import http from "./http";
-import { authHeaders } from "./auth";
+import http from "./http.js";
+import { authHeaders } from "./auth.js";
 
 export async function listProblemLists() {
   const res = await http.get("/api/problem-lists", { headers: authHeaders() });

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { before, test } from "node:test";
 import { readFile } from "node:fs/promises";
+import { readGlobalStyles } from "./helpers/global-styles.mjs";
 import { fileURLToPath } from "node:url";
 import { build } from "vite";
 
@@ -72,23 +73,26 @@ test("richer problem surfaces preserve server difficulty and Codeforces rating c
 });
 
 test("library selection has a semantic state without changing editing permissions", async () => {
-  const source = await readFile(new URL("../src/pages/ProblemListsPage.jsx", import.meta.url), "utf8");
-  assert.match(source, /aria-pressed=\{selectedId === item.id\}/);
-  assert.match(source, /canAddProblem\(detail.list\)/);
-  assert.match(source, /canEditProblem\(detail.list, problem, user\?\.id, isAdmin\)/);
+  const sidebar = await readFile(new URL("../src/components/problem-lists/ProblemListSidebar.jsx", import.meta.url), "utf8");
+  const details = await readFile(new URL("../src/components/problem-lists/ProblemListDetails.jsx", import.meta.url), "utf8");
+  assert.match(sidebar, /aria-pressed=\{selectedId === item.id\}/);
+  assert.match(details, /canAddProblem\(detail.list\)/);
+  assert.match(details, /canEditProblem\(detail.list, problem, userId, isAdmin\)/);
 });
 
 let css;
 
 test("library row actions stay together and keep clear accessible names", async () => {
-  const source = await readFile(new URL("../src/pages/ProblemListsPage.jsx", import.meta.url), "utf8");
+  const page = await readFile(new URL("../src/pages/ProblemListsPage.jsx", import.meta.url), "utf8");
+  const source = await readFile(new URL("../src/components/problem-lists/ProblemListDetails.jsx", import.meta.url), "utf8");
+  const dialogs = await readFile(new URL("../src/components/problem-lists/ProblemListDialogs.jsx", import.meta.url), "utf8");
   assert.match(source, /className="library-problem-actions" role="group"/);
   assert.match(source, /aria-label="编辑题目" title="编辑题目"/);
   assert.match(source, /aria-label="移除题目" title="移除题目"/);
-  assert.match(source, /onOpenAutoFocus=\{\(\) => \{ returnFocus.current = document.activeElement;/);
-  assert.match(source, /onCloseAutoFocus=/);
-  assert.match(source, /target\?\.focus\(\{ preventScroll: true \}\)/);
-  assert.match(source, /<PageHeading icon=\{sharedOnly \? BookCopy : BookOpenText\}/);
+  assert.match(dialogs, /onOpenAutoFocus=\{\(\) => \{ returnFocus.current = document.activeElement;/);
+  assert.match(dialogs, /onCloseAutoFocus=/);
+  assert.match(dialogs, /target\?\.focus\(\{ preventScroll: true \}\)/);
+  assert.match(page, /<PageHeading icon=\{sharedOnly \? BookCopy : BookOpenText\}/);
   const styles = await readFile(new URL("../src/Refinements.css", import.meta.url), "utf8");
   assert.match(styles, /\.library-icon-button[^}]*width:\s*44px;[^}]*min-height:\s*44px/);
 });
@@ -117,7 +121,7 @@ test("auth retains its ink-blue cover with only restrained shared accents", asyn
   const styles = await readFile(new URL("../src/components/ui/AuthFrame.css", import.meta.url), "utf8");
   assert.match(styles, /linear-gradient\(135deg, #0b1729, #122942 62%, #1a3a55\)/);
   assert.match(styles, /\.auth-shell-bridge \.auth-intro-copy::after/);
-  const global = await readFile(new URL("../src/index.css", import.meta.url), "utf8");
+  const global = await readGlobalStyles();
   assert.doesNotMatch(global, /\.auth-seam-decoration|\.auth-geometry/);
 });
 
@@ -198,7 +202,7 @@ test("the locked dependency tree includes the native bindings used by Ubuntu CI"
 });
 
 test("shared reading sizes enlarge routed pages and dialogs without scaling the app", async () => {
-  const source = await readFile(new URL("../src/index.css", import.meta.url), "utf8");
+  const source = await readGlobalStyles();
   assert.match(source, /--ui-body:\s*17px/);
   assert.match(source, /--ui-small:\s*15px/);
   assert.match(source, /\.text-sm\s*\{[^}]*font-size:\s*var\(--ui-body\)/);
@@ -207,7 +211,7 @@ test("shared reading sizes enlarge routed pages and dialogs without scaling the 
 });
 
 test("page headings stay between 30 and 32px without resizing metric values", async () => {
-  const source = await readFile(new URL("../src/index.css", import.meta.url), "utf8");
+  const source = await readGlobalStyles();
   const refinements = await readFile(new URL("../src/Refinements.css", import.meta.url), "utf8");
   assert.match(source, /--page-title-size:\s*clamp\(30px,\s*2\.2vw,\s*32px\)/);
   assert.match(source, /\.auth-card-heading h1\s*\{[^}]*font-size:\s*var\(--page-title-size\)/);
@@ -216,7 +220,7 @@ test("page headings stay between 30 and 32px without resizing metric values", as
 });
 
 test("sidebar scrollbars are hidden while the navigation remains keyboard-scrollable", async () => {
-  const source = await readFile(new URL("../src/index.css", import.meta.url), "utf8");
+  const source = await readGlobalStyles();
   const sidebar = await readFile(new URL("../src/components/ui/Sidebar.jsx", import.meta.url), "utf8");
   assert.match(source, /\.sidebar-nav\s*\{[^}]*overflow:\s*hidden auto;[^}]*scrollbar-width:\s*none/s);
   assert.match(source, /\.sidebar-nav::\-webkit-scrollbar\s*\{[^}]*display:\s*none/);
@@ -224,14 +228,14 @@ test("sidebar scrollbars are hidden while the navigation remains keyboard-scroll
 });
 
 test("sidebar toggle matches navigation text size and control height", async () => {
-  const source = await readFile(new URL("../src/index.css", import.meta.url), "utf8");
+  const source = await readGlobalStyles();
   const sidebar = await readFile(new URL("../src/components/ui/Sidebar.jsx", import.meta.url), "utf8");
   assert.match(source, /\.sidebar-toggle\s*\{[^}]*height:\s*46px;[^}]*font-size:\s*var\(--ui-body\)/);
   assert.match(sidebar, /<PanelLeftOpen size=\{19\} \/>\s*:\s*<PanelLeftClose size=\{19\} \/>/);
 });
 
 test("auth keeps a larger form, legible fields and optional campus information", async () => {
-  const source = await readFile(new URL("../src/index.css", import.meta.url), "utf8");
+  const source = await readGlobalStyles();
   const register = await readFile(new URL("../src/pages/RegisterPage.jsx", import.meta.url), "utf8");
   assert.match(source, /\.auth-card\s*\{[^}]*width:\s*min\(100%,\s*620px\)/s);
   assert.match(source, /\.auth-field\s*\{[^}]*height:\s*58px;[^}]*font-size:\s*18px/s);
@@ -243,7 +247,7 @@ test("auth keeps a larger form, legible fields and optional campus information",
 });
 
 test("polished surfaces reuse tokens and preserve stationary interaction feedback", async () => {
-  const source = await readFile(new URL("../src/index.css", import.meta.url), "utf8");
+  const source = await readGlobalStyles();
   const refinements = await readFile(new URL("../src/Refinements.css", import.meta.url), "utf8");
   assert.match(source, /--shadow-surface:/);
   assert.match(source, /--radius-control:\s*12px/);

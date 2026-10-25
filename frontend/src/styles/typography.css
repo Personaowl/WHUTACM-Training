@@ -1,0 +1,93 @@
+/* Shared reading sizes also cover menus and portalled dialogs. */
+body {
+  font-size: var(--ui-body);
+  font-weight: 500;
+  line-height: 1.65;
+  letter-spacing: 0.002em;
+}
+
+.text-xs { font-size: var(--ui-small); line-height: 1.6; }
+.text-sm { font-size: var(--ui-body); line-height: 1.6; }
+.text-base { font-size: var(--ui-item); line-height: 1.5; }
+.text-lg { font-size: var(--ui-section); line-height: 1.45; }
+.text-xl { font-size: 26px; line-height: 1.4; }
+.text-2xl { font-size: var(--ui-title); line-height: 1.35; }
+[class~="text-[9px]"],
+[class~="text-[10px]"],
+[class~="text-[11px]"],
+[class~="text-[12px]"] { font-size: var(--ui-small); line-height: 1.6; }
+.text-text-secondary { color: var(--muted); }
+
+.form-input {
+  min-height: 48px;
+  padding: 10px 14px;
+  border-radius: var(--radius-control);
+  font-size: var(--ui-body);
+}
+
+.button-primary,
+.button-ghost {
+  min-height: 46px;
+  border-radius: 13px;
+  font-size: var(--ui-body);
+}
+
+.problem-list-add {
+  min-height: 40px;
+  border-radius: 11px;
+  font-size: var(--ui-small);
+}
+
+.sidebar-link {
+  height: 46px;
+  border-radius: 13px;
+  font-size: var(--ui-body);
+  font-weight: 600;
+}
+
+.sidebar-brand-copy strong { font-size: 17px; letter-spacing: .09em; }
+.sidebar-brand-copy small { font-size: 13px; letter-spacing: .08em; }
+.sidebar-toggle { height: 46px; font-family: inherit; font-size: var(--ui-body); font-weight: 600; line-height: 1.5; letter-spacing: 0; }
+.topbar-route,
+.topbar-context {
+  font-family: inherit;
+  font-size: var(--ui-body);
+}
+.topbar-date { font-size: var(--ui-small); }
+.user-menu-copy strong { font-size: var(--ui-label); }
+.user-menu-copy small { font-size: var(--ui-small); }
+.dropdown-item { min-height: 44px; height: auto; padding-block: 8px; font-size: var(--ui-body); border-radius: 10px; }
+.dashboard-hero { border-radius: 23px; }
+.dashboard-hero > div > p:last-child { font-size: 15px; }
+.dashboard-hero-action { min-height: 48px; border-radius: 14px; font-size: 14px; }
+.dashboard-user-chip { border-radius: 16px; }
+.dashboard-user-chip strong { font-size: 17px; }
+.dashboard-user-chip small { font-size: 13px; }
+.stat-card { border-radius: 17px; }
+.stat-card > p,
+.stat-card-top span { font-size: var(--ui-small); }
+.heatmap-summary-copy span { font-size: var(--ui-small); font-weight: 700; }
+.heatmap-months { font-size: var(--ui-small); }
+.heatmap-days span,
+.heatmap-legend span { font-size: var(--ui-small); }
+
+.page-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.page-heading p {
+  margin: 7px 0 0;
+  color: var(--muted);
+  font-size: var(--ui-body);
+}
+
+.page-title {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--page-title-size);
+  font-weight: 780;
+  letter-spacing: -0.025em;
+}

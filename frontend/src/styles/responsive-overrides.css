@@ -1,0 +1,24 @@
+@media (max-width: 640px) {
+  .page-heading { align-items: flex-start; flex-direction: column; }
+  .binding-summary { align-self: stretch; justify-content: center; }
+  .binding-card { min-height: auto; padding: 20px; }
+  .binding-input-row { flex-direction: column; }
+  .binding-input-row .button-primary { width: 100%; }
+  .cf-heatmap-card { padding: 18px 12px 22px; }
+  .heatmap-toolbar { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .heatmap-cf-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 15px; padding: 23px 4px 2px; }
+  .heatmap-cf-stat strong { font-size: 23px; }
+  .heatmap-cf-stat small { font-size: var(--ui-small); }
+}
+
+@media (max-width: 980px) {
+  :root { --ui-body: 16px; --ui-small: 14px; --ui-label: 15px; --ui-item: 18px; --ui-section: 20px; --ui-title: 28px; }
+}
+
+@media (min-width: 981px) {
+  .auth-register-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+  .auth-register-form fieldset { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; padding: 16px; background: #f7faff; }
+  .auth-register-form fieldset > label { margin: 0; }
+  .auth-register-form fieldset > label:last-child, .auth-register-form .auth-submit { grid-column: 1 / -1; }
+  .auth-register-form .auth-submit { margin-top: 0; }
+}

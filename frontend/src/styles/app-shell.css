@@ -1,0 +1,75 @@
+/* App shell */
+.app-shell {
+  position: relative;
+  display: flex;
+  min-height: 100vh;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 85% 0%, #e7f1ff 0%, transparent 48%),
+    radial-gradient(ellipse at 20% 100%, #edf8f3 0%, transparent 48%),
+    var(--canvas);
+}
+
+.ambient-grid {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.22;
+  background-image:
+    linear-gradient(rgba(17, 17, 17, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(17, 17, 17, 0.045) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 72%);
+}
+
+.app-frame {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.app-main {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  scroll-padding-block: 24px;
+}
+
+.app-content {
+  width: min(100%, 1540px);
+  margin: 0 auto;
+  padding: 34px 38px 56px;
+}
+
+.app-content > div {
+  animation: page-enter 180ms cubic-bezier(.2, .75, .25, 1) both;
+}
+
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.route-loader {
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(19, 34, 56, 0.16);
+  border-top-color: var(--ink);
+  border-radius: 50%;
+  animation: route-loader-spin 650ms linear infinite;
+}
+
+@keyframes route-loader-spin {
+  to { transform: rotate(360deg); }
+}
+
+.render-lazy {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 340px;
+}

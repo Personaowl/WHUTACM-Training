@@ -18,7 +18,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 使用 H2 MySQL 模式执行项目中的 MySQL 建表和 upsert 方言。
+ * 默认使用 H2 MySQL 模式；mysql-test profile 在隔离 MySQL 上执行相同建表和 upsert 回归。
  */
 @SpringBootTest
 @Transactional

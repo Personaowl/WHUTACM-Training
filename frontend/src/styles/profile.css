@@ -1,0 +1,101 @@
+/* Avatar editor */
+.profile-avatar-editor {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.profile-avatar-editor > img,
+.profile-avatar-editor > span {
+  border: 3px solid white;
+  box-shadow: 0 0 0 1px var(--line), 0 8px 20px rgba(17, 17, 17, 0.1);
+}
+
+.avatar-upload-button {
+  position: absolute;
+  right: -4px;
+  bottom: -3px;
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  color: white;
+  background: var(--ink);
+  border: 3px solid white;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 150ms ease;
+}
+
+.avatar-upload-button:hover {
+  transform: scale(1.08);
+}
+
+.avatar-upload-button input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.avatar-remove-button {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 6px;
+  margin-right: auto;
+  padding: 0 10px;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.avatar-remove-button:hover {
+  color: var(--ink);
+  background: #efefeb;
+}
+
+.stat-card {
+  min-height: 132px;
+  padding: 16px 18px;
+  background: rgba(255, 255, 255, 0.91);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 10px 32px rgba(17, 17, 17, 0.035);
+  transition: transform 180ms ease, border-color 180ms ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  border-color: #aaa;
+}
+
+.stat-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  color: #8a8a84;
+}
+
+.stat-card-top span {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+}
+
+.stat-card > p {
+  margin: 21px 0 2px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.stat-card > strong {
+  display: block;
+  font-size: 25px;
+  font-weight: 620;
+  letter-spacing: -0.04em;
+}

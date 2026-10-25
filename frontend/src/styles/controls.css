@@ -1,0 +1,111 @@
+/* Shared primitives */
+.form-input {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 12px;
+  border: 1px solid var(--control-line);
+  border-radius: var(--radius-control);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.form-input:focus {
+  border-color: #17324f;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(23, 50, 79, 0.08);
+}
+
+.button-primary,
+.button-ghost {
+  min-height: 38px;
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 1px solid var(--ink);
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.button-primary {
+  color: #fff;
+  background: linear-gradient(120deg, #132b46, #23527c);
+  box-shadow: 0 4px 0 #c9d8e7;
+}
+
+.button-primary:hover:not(:disabled) {
+  transform: none;
+  box-shadow: 0 6px 0 #bfd1e2;
+}
+
+.button-primary:active:not(:disabled) {
+  transform: none;
+  box-shadow: 0 2px 0 #c9d8e7;
+}
+
+.button-ghost {
+  color: var(--ink);
+  background: transparent;
+  border-color: transparent;
+}
+
+.button-ghost:hover {
+  background: var(--accent-soft);
+}
+
+.button-primary:disabled,
+.button-ghost:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.problem-list-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 11px;
+  border: 1px solid #c7d2de;
+  border-radius: 9px;
+  color: #17324f;
+  background: #f7f9fb;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease, transform 150ms ease;
+}
+
+.problem-list-add:hover:not(:disabled) {
+  border-color: #7890a8;
+  background: #edf3f8;
+  transform: translateY(-1px);
+}
+
+.problem-list-add.is-compact {
+  width: 40px;
+  min-height: 40px;
+  padding: 0;
+  border-radius: 8px;
+}
+
+.problem-list-add:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.problem-card {
+  background-image: linear-gradient(135deg, rgba(241, 246, 251, 0.45), transparent 46%);
+  box-shadow: var(--shadow-surface);
+  transition: border-color var(--motion-feedback) var(--ease-ui), box-shadow var(--motion-feedback) var(--ease-ui);
+}
+
+.problem-card:hover {
+  border-color: #bdc9d5;
+  box-shadow: 0 12px 32px rgba(8, 22, 39, 0.055);
+  transform: none;
+}

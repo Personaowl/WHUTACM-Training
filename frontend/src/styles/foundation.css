@@ -1,0 +1,136 @@
+@config "../../tailwind.config.js";
+
+/* Keep the established unlayered utility/component cascade and v3 defaults. */
+@theme {
+  --color-gray-200: #e5e7eb;
+  --color-gray-400: #9ca3af;
+  --default-ring-width: 3px;
+  --default-ring-color: #3b82f6;
+}
+
+/* Preserve sibling spacing when conditional fields or Radix portals are present. */
+@utility stack-y-* {
+  & > :not([hidden]) ~ :not([hidden]) {
+    --tw-space-y-reverse: 0;
+    margin-top: calc(--value(integer) * 0.25rem * (1 - var(--tw-space-y-reverse)));
+    margin-bottom: calc(--value(integer) * 0.25rem * var(--tw-space-y-reverse));
+  }
+}
+
+textarea {
+  background-color: white;
+}
+
+*,
+::before,
+::after,
+::backdrop,
+::file-selector-button {
+  border-color: #e5e7eb;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #5d7187;
+  opacity: 1;
+}
+
+button:not(:disabled),
+[role="button"]:not(:disabled) {
+  cursor: pointer;
+}
+
+:root {
+  color-scheme: light;
+  font-family: "Nunito Sans Variable", "Microsoft YaHei UI", "PingFang SC", ui-rounded, sans-serif;
+  font-synthesis: none;
+  --ink: #132238;
+  --ink-deep: #0b1729;
+  --ink-raised: #192d49;
+  --ink-border: #2b405e;
+  --muted: #53677d;
+  --line: #bdcfe3;
+  --line-strong: #8ba9cc;
+  --paper: #ffffff;
+  --canvas: #f5f8fc;
+  --soft: #edf3fa;
+  --accent: #245fc0;
+  --accent-strong: #194b91;
+  --accent-soft: #e2edff;
+  --teal-soft: #def5e9;
+  --violet-soft: #ece1fc;
+  --surface-subtle: #f7faff;
+  --control-line: #7292b6;
+  --border-ui: 2px;
+  --icon-stroke: 2.2;
+  --radius-control: 12px;
+  --radius-card: 20px;
+  --shadow-surface: 0 2px 5px #18334c03, 0 8px 24px #18334c07;
+  --shadow-raised: 0 4px 10px #18334c06, 0 12px 30px #18334c0d;
+  --shadow-dialog: 0 24px 80px #0d264333;
+  --shadow-control: 0 2px 5px #132c4510;
+  --motion-feedback: 140ms;
+  --ease-ui: cubic-bezier(.2, .7, .3, 1);
+  --blue-ink: #2457a8;
+  --mint-ink: #146b52;
+  --violet-ink: #673ba4;
+  --amber-ink: #835711;
+  --blue-line: #abc7f0;
+  --mint-line: #9dd5bf;
+  --violet-line: #c7b0e9;
+  --amber-soft: #fff5e3;
+  --ui-body: 17px;
+  --ui-small: 15px;
+  --ui-label: 16px;
+  --ui-item: 19px;
+  --ui-section: 22px;
+  --ui-title: 32px;
+  --page-title-size: clamp(30px, 2.2vw, 32px);
+  --sidebar-expanded: 240px;
+  --sidebar-collapsed: 64px;
+  --topbar-height: 68px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--canvas);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  color: white;
+  background: var(--ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}

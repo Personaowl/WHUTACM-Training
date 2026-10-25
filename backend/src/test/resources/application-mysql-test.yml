@@ -1,0 +1,19 @@
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${MYSQL_TEST_URL}
+    username: ${MYSQL_TEST_USERNAME}
+    password: ${MYSQL_TEST_PASSWORD}
+    hikari:
+      maximum-pool-size: 8
+      minimum-idle: 0
+
+app:
+  platform-statistics:
+    enabled: false
+  daily-problem:
+    initial-sync-enabled: false
+  atcoder-tracking:
+    initial-delay-ms: 3600000
+  weekly-training:
+    roster-initial-delay-ms: 3600000
