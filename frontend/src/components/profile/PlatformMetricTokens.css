@@ -1,0 +1,2 @@
+:root { --platform-number-size: 36px; }
+@media (max-width: 640px) { :root { --platform-number-size: 30px; } }

@@ -1,6 +1,7 @@
 import { ExternalLink, RefreshCw } from "lucide-react";
 import { formatPlatformMetric, matchingPlatformOverview, platformRatingMeta } from "../../utils/platformOverview";
 import "./PlatformStatistics.css";
+import "./PlatformMetricTokens.css";
 
 export default function PlatformStatistics({ platform, accountId, overview, loading, error, onRetry }) {
   const data = matchingPlatformOverview(overview, accountId);

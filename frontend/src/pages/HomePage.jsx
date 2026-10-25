@@ -25,8 +25,7 @@ import {
   Send,
   Trophy,
 } from "lucide-react";
-import PlatformStatistics from "../components/profile/PlatformStatistics";
-import usePlatformOverviews from "../hooks/usePlatformOverviews";
+import PlatformDataPanel from "../components/profile/PlatformDataPanel";
 import { PageIcon } from "../components/ui/PageHeading";
 import SurfaceSheen from "../components/ui/SurfaceSheen";
 import { getCurrentUserPoints } from "../utils/home.js";
@@ -34,7 +33,6 @@ import "./HomePage.css";
 
 export default function HomePage() {
   const { user } = useAuth();
-  const platformStatistics = usePlatformOverviews(user?.id, Boolean(user?.codeforcesHandle));
   const [data, setData] = useState(null);
   const [heatmapData, setHeatmapData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -178,20 +176,7 @@ export default function HomePage() {
         </section>
 
         <aside className="home-training-aside" aria-label="个人训练概览">
-          {user?.codeforcesHandle ? (
-            <section className="home-platform-overview">
-              <div className="home-section-heading"><h2>Codeforces 概览</h2><Link to="/profile">查看完整数据 <ArrowUpRight size={15} aria-hidden="true" /></Link></div>
-              <PlatformStatistics platform="codeforces" accountId={user.codeforcesHandle}
-                overview={platformStatistics.overviews.codeforces} loading={platformStatistics.loading}
-                error={platformStatistics.error} onRetry={platformStatistics.reload} />
-            </section>
-          ) : (
-            <section className="home-binding-prompt">
-              <img src="/platforms/codeforces.png" alt="" width="32" height="32" />
-              <div><h2>连接 Codeforces</h2><p>查看你的 Rating 和做题数据</p></div>
-              <Link to="/account-binding" className="home-text-link">绑定账号 <ArrowUpRight size={15} aria-hidden="true" /></Link>
-            </section>
-          )}
+          <PlatformDataPanel profile={user} compact />
           <nav className="home-shortcuts" aria-label="训练快捷入口">
             <Link to="/upsolve"><NotebookPen size={19} aria-hidden="true" /><span>补题计划</span><ArrowUpRight size={16} aria-hidden="true" /></Link>
             <Link to="/weekly-training"><CalendarRange size={19} aria-hidden="true" /><span>我的周训练</span><ArrowUpRight size={16} aria-hidden="true" /></Link>

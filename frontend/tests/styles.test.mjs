@@ -48,17 +48,20 @@ test("library row actions stay together and keep clear accessible names", async 
   assert.match(styles, /\.library-icon-button[^}]*width:\s*44px;[^}]*min-height:\s*44px/);
 });
 
-test("light pass is finite, non-interactive and hidden under reduced motion", async () => {
+test("light pass repeats slowly, remains non-interactive and stops under reduced motion", async () => {
   const source = await readFile(new URL("../src/Refinements.css", import.meta.url), "utf8");
   const effect = source.match(/\.surface-sheen\s*\{([^}]+)\}/)?.[1];
   assert.ok(effect);
   assert.match(effect, /pointer-events:\s*none/);
-  assert.match(effect, /animation:\s*surface-light-pass 1600ms ease-out 300ms 1 both/);
-  assert.doesNotMatch(effect, /infinite|filter|backdrop-filter|will-change/);
+  assert.match(effect, /animation:\s*surface-light-pass 14s linear 600ms infinite both/);
+  assert.doesNotMatch(effect, /filter|backdrop-filter|will-change/);
   assert.match(source, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.surface-sheen\s*\{\s*display:\s*none;\s*animation:\s*none/);
   const component = await readFile(new URL("../src/components/ui/SurfaceSheen.jsx", import.meta.url), "utf8");
   assert.match(component, /aria-hidden="true"/);
-  assert.doesNotMatch(component, /useEffect|requestAnimationFrame|setInterval|fetch\(/);
+  assert.doesNotMatch(component, /requestAnimationFrame|setInterval|setTimeout|fetch\(|<button/);
+  assert.match(component, /animationPlayState: visible \? "running" : "paused"/);
+  assert.match(component, /observer\?\.disconnect\(\)/);
+  assert.match(component, /removeEventListener\("visibilitychange", update\)/);
 });
 
 test("auth retains its ink-blue cover with only restrained shared accents", async () => {

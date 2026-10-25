@@ -199,4 +199,4 @@ dataStatus 为 UNBOUND（未绑定）、NOT_SUPPORTED（无统计适配器）、
 
 缺失字段时 partial=true，前端显示“— / 部分数据”；syncedAt 不是实时保证。上游限流、验证页或页面结构变化时保留上次成功快照，首次失败则显示暂不可用。抓取只访问固定 HTTPS 地址，校验账号标识/页面身份，禁用重定向，不携带用户 Cookie、不执行网页脚本，响应上限 1 MiB、超时有界。不绕过登录/验证码。
 
-首页 CF 概览与绑定页共用 PlatformStatistics；个人中心 PlatformDataPanel 从同一接口读取四平台基础数据，切换只改变本地展示，不逐次请求外部平台；缺失指标省略，真实零值仍显示。CF 更多统计展开后复用既有详情接口，其余平台不伪造逐题图表，公开成员页权限不变。前端仅在 PENDING/SYNCING 时串行重读本地接口，间隔 2.5 秒起逐次延长至最多 10 秒，最多追加 12 次，隐藏页停止续查、离页取消；之后可点击重新加载。ABC 训练验收不变。AtCoder Problems 数据来源及速率规则见[维护者文档](https://github.com/kenkoooo/AtCoderProblems/blob/main/doc/api.md)。
+首页和个人中心复用 PlatformDataPanel（首页为紧凑模式），与绑定页 PlatformStatistics 均从本接口读取四平台基础数据。切换只改变本地展示，不逐次请求外部平台；缺失指标省略，真实零值仍显示。首页通过 `/profile?platform=平台键` 跳转到相同平台；只有白名单中的四种平台键有效。CF 更多统计展开后才动态加载详情组件、复用既有详情接口，其余平台不伪造逐题图表，公开成员页权限不变。前端仅在 PENDING/SYNCING 时串行重读本地接口，间隔 2.5 秒起逐次延长至最多 10 秒，最多追加 12 次，隐藏页停止续查、离页取消；之后可点击重新加载。ABC 训练验收不变。AtCoder Problems 数据来源及速率规则见[维护者文档](https://github.com/kenkoooo/AtCoderProblems/blob/main/doc/api.md)。

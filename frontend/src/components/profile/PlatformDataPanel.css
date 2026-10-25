@@ -14,8 +14,8 @@
 .profile-platform-body.tone-amber { background: linear-gradient(120deg, color-mix(in srgb, var(--amber-soft) 45%, white), var(--paper) 70%); }
 .profile-platform-body.tone-mint { background: linear-gradient(120deg, color-mix(in srgb, var(--teal-soft) 45%, white), var(--paper) 70%); }
 .profile-platform-body.tone-violet { background: linear-gradient(120deg, color-mix(in srgb, var(--violet-soft) 45%, white), var(--paper) 70%); }
-.profile-platform-summary { display: grid; grid-template-columns: minmax(180px, .85fr) minmax(0, 2fr); gap: 32px; align-items: center; min-height: 150px; }
-.profile-platform-account { min-width: 0; }
+.profile-platform-summary { display: grid; grid-template-columns: minmax(180px, .85fr) minmax(0, 2fr); gap: 28px; align-items: stretch; min-height: 136px; }
+.profile-platform-account { min-width: 0; display: flex; align-items: center; padding-right: 24px; border-right: 2px solid var(--control-line); }
 .profile-platform-identity { display: flex; align-items: center; gap: 15px; min-width: 0; }
 .profile-platform-identity > div { min-width: 0; }
 .profile-platform-identity h3 { margin: 0 0 10px; font-size: 26px; font-weight: 800; color: var(--ink); }
@@ -24,13 +24,12 @@
 .profile-platform-identity a:hover { text-decoration: underline; text-underline-offset: 4px; }
 .profile-platform-account-state { font-size: var(--ui-small); color: var(--muted); }
 .profile-platform-verified { display: inline-flex; flex-shrink: 0; align-items: center; gap: 6px; font-size: var(--ui-small); color: #21724c; }
-.profile-platform-metrics { display: flex; align-items: flex-start; margin: 0; min-width: 0; }
-.profile-platform-metrics > div { flex: 1; min-width: 0; padding: 6px 22px; border-left: 1px solid var(--line); }
+.profile-platform-metrics { display: flex; align-items: stretch; margin: 0; min-width: 0; }
+.profile-platform-metrics > div { flex: 1; min-width: 0; padding: 8px 22px; border-left: 2px solid var(--control-line); }
 .profile-platform-metrics > .is-primary { padding-left: 0; border-left: 0; }
-.profile-platform-metrics > .metric-solvedCount:not(.is-primary) { flex: .8; }
+.profile-platform-metrics > .metric-solvedCount:not(.is-primary) { flex: 1; }
 .profile-platform-metrics dt { color: var(--muted); font-size: var(--ui-body); }
-.profile-platform-metrics dd { margin: 10px 0 0; font-size: 30px; line-height: 1.2; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -.035em; color: var(--ink); overflow-wrap: anywhere; }
-.profile-platform-metrics .is-primary dd { font-size: 42px; }
+.profile-platform-metrics dd { margin: 10px 0 0; font-size: var(--platform-number-size); line-height: 1.2; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -.035em; color: var(--ink); overflow-wrap: anywhere; }
 .profile-platform-metrics small { display: block; margin-top: 7px; font-size: var(--ui-small); }
 .profile-platform-footer { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px 20px; margin-top: 16px; font-size: var(--ui-small); color: var(--muted); }
 .profile-platform-footer > span { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
@@ -40,7 +39,7 @@
 .profile-platform-source { color: var(--muted); font-size: var(--ui-small); margin: 4px 0 0; }
 .profile-platform-empty, .profile-platform-loading { min-height: 140px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 12px; color: var(--muted); font-size: var(--ui-body); }
 .profile-platform-empty p { margin: 0; }
-.profile-platform-details { border-top: 1px solid var(--line); margin-top: 18px; padding-top: 10px; }
+.profile-platform-details { border-top: 2px solid var(--line-strong); margin-top: 18px; padding-top: 10px; }
 .profile-platform-disclosure { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 10px 0; min-height: 48px; border: 0; background: transparent; color: var(--ink); font-size: var(--ui-body); font-weight: 750; text-align: left; }
 .profile-platform-disclosure > span { display: inline-flex; align-items: center; gap: 9px; }
 .profile-platform-disclosure[aria-expanded="true"] > svg { transform: rotate(180deg); }
@@ -48,7 +47,10 @@
 .profile-platform-details .cf-overview-toolbar { flex-wrap: wrap; }
 .profile-platform-details .cf-overview-toolbar > .button-primary { white-space: nowrap; flex-shrink: 0; }
 @media (max-width: 800px) { .profile-platform-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 1100px) { .profile-platform-summary { grid-template-columns: minmax(0, 1fr); gap: 22px; } }
+@media (max-width: 1100px) {
+  .profile-platform-summary { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+  .profile-platform-account { border-right: 0; border-bottom: 2px solid var(--control-line); padding: 0 0 18px; }
+}
 @media (max-width: 540px) {
   .profile-platform-title { padding: 16px 18px 12px; }
   .profile-platform-tabs { padding: 0 18px 16px; gap: 8px; }
@@ -58,9 +60,26 @@
   .profile-platform-identity h3 { font-size: 23px; }
   .profile-platform-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 20px; }
   .profile-platform-metrics > div { padding: 0 12px; }
-  .profile-platform-metrics .is-primary dd { font-size: 36px; }
-  .profile-platform-metrics dd { font-size: 28px; }
-  .profile-platform-metrics > .metric-solvedCount:not(.is-primary) { grid-column: 1 / -1; padding: 16px 0 0; border-left: 0; border-top: 1px solid var(--line); display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .profile-platform-metrics > .metric-solvedCount:not(.is-primary) { grid-column: 1 / -1; padding: 16px 0 0; border-left: 0; border-top: 2px solid var(--control-line); display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
   .profile-platform-metrics > .metric-solvedCount:not(.is-primary) dd { margin-top: 0; }
 }
+.home-page .profile-platform-panel.is-compact { padding: 0; }
+.profile-platform-panel.is-compact .profile-platform-title { padding: 16px 18px 10px; }
+.profile-platform-panel.is-compact .profile-platform-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 0 18px 16px; }
+.profile-platform-panel.is-compact .profile-platform-tabs > button { min-height: 48px; gap: 8px; padding: 8px; font-size: var(--ui-small); }
+.profile-platform-panel.is-compact .profile-platform-tabs img { width: 22px; height: 22px; }
+.profile-platform-panel.is-compact .profile-platform-body { padding: 18px; }
+.profile-platform-panel.is-compact .profile-platform-summary { grid-template-columns: minmax(0, 1fr); gap: 18px; min-height: 0; }
+.profile-platform-panel.is-compact .profile-platform-account { border-right: 0; border-bottom: 2px solid var(--control-line); padding: 0 0 16px; }
+.profile-platform-panel.is-compact .profile-platform-identity h3 { font-size: 21px; margin-bottom: 3px; }
+.profile-platform-panel.is-compact .profile-platform-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 0; }
+.profile-platform-panel.is-compact .profile-platform-metrics > div { padding: 0 14px; }
+.profile-platform-panel.is-compact .profile-platform-metrics > .is-primary { padding-left: 0; }
+.profile-platform-panel.is-compact .profile-platform-metrics > .metric-solvedCount:not(.is-primary) { grid-column: 1 / -1; padding: 14px 0 0; border-left: 0; border-top: 2px solid var(--control-line); display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.profile-platform-panel.is-compact .metric-solvedCount:not(.is-primary) dd { margin-top: 0; }
+.profile-platform-panel.is-compact .profile-platform-metrics dt { font-size: var(--ui-small); }
+.profile-platform-summary[data-unbound="true"] { grid-template-columns: minmax(0, 1fr); gap: 12px; text-align: center; }
+.profile-platform-summary[data-unbound="true"] .profile-platform-account { justify-content: center; padding: 0; border: 0; }
+.profile-platform-summary[data-unbound="true"] .profile-platform-empty { min-height: 0; align-items: center; }
+.profile-platform-empty > :is(.button-primary, .button-ghost) { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 18px; line-height: 1.25; text-align: center; white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) { .profile-platform-tabs > button { transition: none; } }

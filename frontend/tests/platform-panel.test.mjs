@@ -37,20 +37,41 @@ test("detail request and charts are mounted only after the user expands CF detai
   const source = await readFile(new URL("../src/components/profile/PlatformDataPanel.jsx",import.meta.url),"utf8");
   assert.ok(source.includes('role="tablist"')); assert.ok(source.includes('role="tab"')); assert.ok(source.includes('role="tabpanel"'));
   assert.ok(source.includes('aria-selected={selectedKey === platform.key}'));
-  assert.ok(source.includes('detailsOpen && <CodeforcesOverview'));
+  assert.ok(source.includes('detailsOpen && <Suspense'));
+  assert.ok(source.includes('lazy(() => import("./CodeforcesOverview"))'));
   assert.ok(source.includes('detailsOnly onUpdated={reload}'));
   assert.ok(!source.includes('fetch('));
 });
 
-test("account and current rating lead the summary without repeated platform logos", async () => {
+test("account summary has clear separators and equal-sized metrics without repeated logos", async () => {
   const component = await readFile(new URL("../src/components/profile/PlatformDataPanel.jsx",import.meta.url),"utf8");
   const css = await readFile(new URL("../src/components/profile/PlatformDataPanel.css",import.meta.url),"utf8");
   assert.ok(component.includes('className="profile-platform-summary"'));
   assert.ok(component.includes('index === 0 ? " is-primary"'));
   assert.ok(component.includes('`UID ${account}`'));
   assert.ok(!component.includes('src={selected.icon}'));
-  assert.ok(css.includes('.profile-platform-metrics .is-primary dd { font-size: 42px; }'));
+  assert.ok(css.includes('font-size: var(--platform-number-size)'));
+  assert.ok(!css.includes('.is-primary dd { font-size:'));
+  assert.ok(css.includes('border-left: 2px solid var(--control-line)'));
+  assert.ok(css.includes('border-right: 2px solid var(--control-line)'));
   const profile = await readFile(new URL("../src/pages/ProfilePage.jsx",import.meta.url),"utf8");
   assert.ok(!profile.includes('Codeforces rating'));
   assert.ok(!profile.includes('`Codeforces: ${currentProfile.codeforcesHandle}'));
+});
+
+test("home compact panel preserves the selected platform in its detail link and omits charts", async () => {
+  const source = await readFile(new URL("../src/components/profile/PlatformDataPanel.jsx",import.meta.url),"utf8");
+  assert.ok(source.includes('to={`/profile?platform=${selectedKey}`}'));
+  assert.ok(source.includes('!compact && selectedKey === "codeforces"'));
+  assert.ok(source.includes('item.key === searchParams.get("platform")'));
+  const bindingCss = await readFile(new URL("../src/components/profile/PlatformStatistics.css",import.meta.url),"utf8");
+  assert.ok(bindingCss.includes('font-size: var(--platform-number-size)'));
+});
+
+test("unbound account guidance is one centered group with a centered 44px action", async () => {
+  const component = await readFile(new URL("../src/components/profile/PlatformDataPanel.jsx",import.meta.url),"utf8");
+  const css = await readFile(new URL("../src/components/profile/PlatformDataPanel.css",import.meta.url),"utf8");
+  assert.ok(component.includes('data-unbound={!loading && !account || undefined}'));
+  assert.match(css, /\.profile-platform-summary\[data-unbound="true"\]\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)[^}]*text-align:\s*center/);
+  assert.match(css, /\.profile-platform-empty > :is\(\.button-primary, \.button-ghost\)\s*\{[^}]*display:\s*inline-flex[^}]*align-items:\s*center[^}]*justify-content:\s*center[^}]*min-height:\s*44px/);
 });

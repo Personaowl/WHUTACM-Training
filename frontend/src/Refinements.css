@@ -145,7 +145,7 @@
 .auth-card { position: relative; background: linear-gradient(145deg, #f7fbff, #fff 22%, #fff 85%, #f6fbf9); }
 .auth-card::before { content: ""; position: absolute; height: 3px; top: 0; left: 30px; right: 30px; border-radius: 0 0 8px 8px; background: linear-gradient(90deg, #a2c7ee, #bbdcd3, #d2c1eb); pointer-events: none; }
 
-/* Stronger outlines and a single, finite light pass. */
+/* Stronger outlines and a low-frequency light pass. */
 .app-shell .lucide, .auth-shell .lucide, [role="dialog"] .lucide { stroke-width: var(--icon-stroke); }
 .app-main article.bg-white, .app-main .bg-white.border, .app-content .form-input,
 .app-content .binding-card, .app-content .cf-heatmap-card, .app-content .upsolve-panel,
@@ -171,8 +171,8 @@
 .library-icon-button.is-danger:hover { color: #942e39; background: #ffe9ec; border-color: #d08d96; }
 .library-icon-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .app-content .problem-list-add.is-compact { min-width: 44px; width: 44px; min-height: 44px; }
-.surface-sheen { position: absolute; z-index: 2; inset: -40% auto -40% 0; width: 34%; pointer-events: none; opacity: 0; background: linear-gradient(90deg, transparent, #ffffff80, transparent); transform: translateX(-160%) skewX(-18deg); animation: surface-light-pass 1600ms ease-out 300ms 1 both; }
-@keyframes surface-light-pass { 0% { transform: translateX(-160%) skewX(-18deg); opacity: 0; } 18% { opacity: .7; } 100% { transform: translateX(440%) skewX(-18deg); opacity: 0; } }
+.surface-sheen { position: absolute; z-index: 2; inset: -40% auto -40% 0; width: 34%; pointer-events: none; opacity: 0; background: linear-gradient(90deg, transparent, #ffffff70, transparent); transform: translateX(-160%) skewX(-18deg); animation: surface-light-pass 14s linear 600ms infinite both; }
+@keyframes surface-light-pass { 0% { transform: translateX(-160%) skewX(-18deg); opacity: 0; } 6% { opacity: .38; } 35% { opacity: .38; } 43%, 100% { transform: translateX(440%) skewX(-18deg); opacity: 0; } }
 @media (max-width: 760px) {
   .library-problem-row { grid-template-columns: 34px minmax(0,1fr); gap: 12px; padding: 16px; }
   .library-problem-index { width: 34px; height: 34px; border-radius: 9px; }

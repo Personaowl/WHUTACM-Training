@@ -31,12 +31,13 @@ test("only bound pending and syncing statistics need bounded polling", () => {
   assert.equal(needsPlatformPolling([{connected:false,dataStatus:"PENDING"}]),false);
 });
 
-test("home and binding reuse the same metrics and request hook", async () => {
+test("home uses the four-platform panel and binding reuses the local statistics hook", async () => {
   const { readFile } = await import("node:fs/promises");
-  for (const name of ["HomePage", "AccountBindingPage"]) {
-    const page = await readFile(new URL(`../src/pages/${name}.jsx`, import.meta.url), "utf8");
-    assert.ok(page.includes("<PlatformStatistics")); assert.ok(page.includes("usePlatformOverviews"));
-  }
+  const home = await readFile(new URL("../src/pages/HomePage.jsx", import.meta.url), "utf8");
+  assert.ok(home.includes('<PlatformDataPanel profile={user} compact />'));
+  assert.ok(!home.includes('Boolean(user?.codeforcesHandle)'));
+  const binding = await readFile(new URL("../src/pages/AccountBindingPage.jsx", import.meta.url), "utf8");
+  assert.ok(binding.includes("<PlatformStatistics")); assert.ok(binding.includes("usePlatformOverviews"));
   const hook = await readFile(new URL("../src/hooks/usePlatformOverviews.js", import.meta.url), "utf8");
   assert.ok(hook.includes("polls++ < 12")); assert.ok(hook.includes("controller.abort()"));
   assert.ok(hook.includes("window.clearTimeout(timer)"));

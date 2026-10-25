@@ -1,20 +1,25 @@
-import { useId, useRef, useState } from "react";
-import { Link } from "react-router-dom";
-import { ChartNoAxesCombined, CheckCircle2, ChevronDown, ExternalLink, Link2, RefreshCw } from "lucide-react";
+import { lazy, Suspense, useId, useRef, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import { ArrowUpRight, ChartNoAxesCombined, CheckCircle2, ChevronDown, ExternalLink, Link2, RefreshCw } from "lucide-react";
 import usePlatformOverviews from "../../hooks/usePlatformOverviews";
 import { formatPlatformMetric, matchingPlatformOverview, platformRatingMeta } from "../../utils/platformOverview";
 import { PROFILE_PLATFORMS, availablePlatformMetrics, nextPlatformTab, platformProfileUrl, profilePlatformAccount } from "../../utils/platformPanel";
-import CodeforcesOverview from "./CodeforcesOverview";
+import { CardSkeleton } from "../ui/Skeleton";
 import "./PlatformDataPanel.css";
+import "./PlatformMetricTokens.css";
 
-export default function PlatformDataPanel({ profile }) {
+const CodeforcesOverview = lazy(() => import("./CodeforcesOverview"));
+
+export default function PlatformDataPanel({ profile, compact = false }) {
+  const [searchParams] = useSearchParams();
   const { overviews, loading, error, reload } = usePlatformOverviews(profile?.id);
   const [choice, setChoice] = useState(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const tabs = useRef([]);
   const id = useId();
+  const requested = !compact && PROFILE_PLATFORMS.some(item => item.key === searchParams.get("platform")) ? searchParams.get("platform") : null;
   const selectedKey = choice?.userId === profile?.id ? choice.platform
-    : PROFILE_PLATFORMS.find(item => profilePlatformAccount(item.key, profile, overviews))?.key || "codeforces";
+    : requested || PROFILE_PLATFORMS.find(item => profilePlatformAccount(item.key, profile, overviews))?.key || "codeforces";
   const selected = PROFILE_PLATFORMS.find(item => item.key === selectedKey);
   const account = profilePlatformAccount(selectedKey, profile, overviews);
   const data = matchingPlatformOverview(overviews[selectedKey], account);
@@ -38,9 +43,10 @@ export default function PlatformDataPanel({ profile }) {
     tabs.current[next]?.focus();
   }
 
-  return <section className="profile-platform-panel" aria-labelledby={`${id}-heading`}>
-    <div className="profile-platform-title"><span><ChartNoAxesCombined size={21} aria-hidden="true" /><h2 id={`${id}-heading`}>平台数据</h2></span>
-      <Link to="/account-binding"><Link2 size={16} aria-hidden="true" />管理绑定</Link>
+  return <section className={`profile-platform-panel${compact ? " is-compact" : ""}`} aria-labelledby={`${id}-heading`}>
+    <div className="profile-platform-title"><span><ChartNoAxesCombined size={21} aria-hidden="true" /><h2 id={`${id}-heading`}>{compact ? "平台概览" : "平台数据"}</h2></span>
+      {compact ? <Link to={`/profile?platform=${selectedKey}`}>详细数据<ArrowUpRight size={16} aria-hidden="true" /></Link>
+        : <Link to="/account-binding"><Link2 size={16} aria-hidden="true" />管理绑定</Link>}
     </div>
     <div role="tablist" aria-label="选择数据平台" className="profile-platform-tabs">
       {PROFILE_PLATFORMS.map((platform, index) => <button key={platform.key} type="button" role="tab"
@@ -52,7 +58,7 @@ export default function PlatformDataPanel({ profile }) {
     </div>
     <div role="tabpanel" id={`${id}-panel`} aria-labelledby={`${id}-tab-${selectedKey}`} tabIndex={0}
       className={`profile-platform-body tone-${selected.tone}`} aria-busy={loading}>
-      <div className="profile-platform-summary">
+      <div className="profile-platform-summary" data-unbound={!loading && !account || undefined}>
       <div className="profile-platform-account">
         <div className="profile-platform-identity">
           <div><h3>{account ? <a href={profileUrl} style={{ color: accountColor }} target="_blank" rel="noopener noreferrer">{accountLabel}<ExternalLink size={16} aria-hidden="true" /></a> : selected.label}</h3>
@@ -86,13 +92,13 @@ export default function PlatformDataPanel({ profile }) {
               <button type="button" onClick={reload} disabled={loading}><RefreshCw size={15} aria-hidden="true" />{failed ? "重试" : "重新加载"}</button>
             </div>
             {selectedKey === "atcoder" && data?.solvedCount != null && <p className="profile-platform-source">解题数来自 AtCoder Problems</p>}
-            {selectedKey === "codeforces" && <div className="profile-platform-details">
+            {!compact && selectedKey === "codeforces" && <div className="profile-platform-details">
               <button type="button" className="profile-platform-disclosure" aria-expanded={detailsOpen}
                 aria-controls={`${id}-details`} onClick={() => setDetailsOpen(open => !open)}>
                 <span><ChartNoAxesCombined size={18} aria-hidden="true" />题目分布与近期比赛</span><ChevronDown size={18} aria-hidden="true" />
               </button>
-              <div id={`${id}-details`} hidden={!detailsOpen}>{detailsOpen && <CodeforcesOverview key={`${profile.id}-${account}`}
-                userId={profile.id} handle={account} canRefresh detailsOnly onUpdated={reload} />}</div>
+              <div id={`${id}-details`} hidden={!detailsOpen}>{detailsOpen && <Suspense fallback={<CardSkeleton />}><CodeforcesOverview key={`${profile.id}-${account}`}
+                userId={profile.id} handle={account} canRefresh detailsOnly onUpdated={reload} /></Suspense>}</div>
             </div>}
           </>}
     </div>
