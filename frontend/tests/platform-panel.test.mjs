@@ -41,3 +41,16 @@ test("detail request and charts are mounted only after the user expands CF detai
   assert.ok(source.includes('detailsOnly onUpdated={reload}'));
   assert.ok(!source.includes('fetch('));
 });
+
+test("account and current rating lead the summary without repeated platform logos", async () => {
+  const component = await readFile(new URL("../src/components/profile/PlatformDataPanel.jsx",import.meta.url),"utf8");
+  const css = await readFile(new URL("../src/components/profile/PlatformDataPanel.css",import.meta.url),"utf8");
+  assert.ok(component.includes('className="profile-platform-summary"'));
+  assert.ok(component.includes('index === 0 ? " is-primary"'));
+  assert.ok(component.includes('`UID ${account}`'));
+  assert.ok(!component.includes('src={selected.icon}'));
+  assert.ok(css.includes('.profile-platform-metrics .is-primary dd { font-size: 42px; }'));
+  const profile = await readFile(new URL("../src/pages/ProfilePage.jsx",import.meta.url),"utf8");
+  assert.ok(!profile.includes('Codeforces rating'));
+  assert.ok(!profile.includes('`Codeforces: ${currentProfile.codeforcesHandle}'));
+});

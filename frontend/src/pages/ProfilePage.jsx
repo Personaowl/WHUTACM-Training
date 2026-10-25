@@ -6,7 +6,6 @@ import {
   getUserById,
   updateMyProfile,
 } from "../api/user";
-import { getRatingMeta } from "../utils/cf";
 import UserAvatar from "../components/ui/UserAvatar";
 import Heatmap from "../components/ui/Heatmap";
 import { CardSkeleton } from "../components/ui/Skeleton";
@@ -107,7 +106,6 @@ export default function ProfilePage() {
   }
 
   const currentProfile = profile || user;
-  const ratingMeta = getRatingMeta(currentProfile?.codeforcesRating);
 
   if (loading) {
     return (
@@ -134,7 +132,6 @@ export default function ProfilePage() {
         </p>
       )}
 
-      {/* CF-style profile card */}
       <div className="bg-white border border-border rounded-ui overflow-hidden">
         <div className="flex items-start gap-4 p-5">
           <div className="profile-avatar-editor">
@@ -156,18 +153,11 @@ export default function ProfilePage() {
             <p className="text-xs text-text-secondary mt-0.5 mb-1">
               @{currentProfile?.username || "-"}
             </p>
-            <p className="text-sm m-0" style={{ color: currentProfile?.codeforcesHandle ? ratingMeta.color : undefined }}>
-              {currentProfile?.codeforcesHandle
-                ? `Codeforces: ${currentProfile.codeforcesHandle} · ${ratingMeta.label}`
-                : "尚未绑定 Codeforces"}
-            </p>
             {currentProfile?.bio && (
               <p className="text-xs text-text-secondary mt-0.5 m-0">{currentProfile.bio}</p>
             )}
             <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-text-secondary">
-              <span>UID: {currentProfile?.uid ?? "-"}</span>
               <span>积分: {currentProfile?.totalPoints ?? 0}</span>
-              <span>角色: {currentProfile?.role || "-"}</span>
               <span>
                 身份: {currentProfile?.memberType === "ACTIVE_TEAM" ? "现役队员" : "普通成员"}
               </span>
@@ -176,15 +166,6 @@ export default function ProfilePage() {
                 <span>{[currentProfile.college, currentProfile.className].filter(Boolean).join(" · ")}</span>
               )}
             </div>
-          </div>
-          <div className="text-right shrink-0">
-            <p className="text-xs text-text-secondary m-0">Codeforces rating</p>
-            <p className="text-xl font-bold m-0" style={{ color: ratingMeta.color }}>
-              {currentProfile?.codeforcesRating ?? "-"}
-            </p>
-            <p className="text-xs text-text-secondary m-0">
-              max {currentProfile?.maxRating ?? "-"}
-            </p>
           </div>
         </div>
         <div className="border-t border-border px-5 py-2.5 flex flex-wrap items-center justify-end gap-2">
