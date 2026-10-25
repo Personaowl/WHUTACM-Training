@@ -37,6 +37,28 @@ test("upsolve actions keep comfortable spacing and consistent control targets", 
   assert.match(styles, /\.upsolve-actions\s*\{[^}]*grid-column: 1 \/ -1/);
 });
 
+test("home training shortcuts follow the library in the lower left column", async () => {
+  const source = await readFile(new URL("../src/pages/HomePage.jsx", import.meta.url), "utf8");
+  const overview = source.match(/<aside className="home-training-aside"[\s\S]*?<\/aside>/)?.[0];
+  assert.ok(overview);
+  assert.doesNotMatch(overview, /home-shortcuts/);
+  const lower = source.slice(source.indexOf('className="render-lazy home-community-grid"'));
+  assert.match(lower, /home-community-aside[\s\S]*home-shared-section[\s\S]*home-shortcuts[\s\S]*home-leaderboard-section/);
+  assert.equal((source.match(/aria-label="训练快捷入口"/g) || []).length, 1);
+  const styles = await readFile(new URL("../src/pages/HomePage.css", import.meta.url), "utf8");
+  assert.match(styles, /\.home-community-aside\s*\{[^}]*min-width: 0;[^}]*gap: 16px/);
+});
+
+test("home data cards align naturally without fixed heights or stretched content", async () => {
+  const styles = await readFile(new URL("../src/pages/HomePage.css", import.meta.url), "utf8");
+  const grid = styles.match(/\.home-training-grid\s*\{([^}]+)\}/)?.[1];
+  assert.match(grid, /align-items: stretch/);
+  assert.doesNotMatch(grid, /height:|transform:/);
+  assert.match(styles, /\.home-training-aside > \.profile-platform-panel\s*\{[^}]*display: flex; flex-direction: column/);
+  assert.match(styles, /\.home-training-grid:has\([^}]*profile-platform-empty[^}]*\)\s*\{\s*align-items: start/);
+  assert.match(styles, /\.home-training-grid, \.home-community-grid\s*\{[^}]*grid-template-columns: minmax\(0, 1fr\); align-items: start/);
+});
+
 test("richer problem surfaces preserve server difficulty and Codeforces rating colors", async () => {
   const card = await readFile(new URL("../src/components/ui/ProblemCard.jsx", import.meta.url), "utf8");
   assert.match(card, /getRatingMeta\(problem.rating\)/);

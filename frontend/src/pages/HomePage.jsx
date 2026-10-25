@@ -179,11 +179,6 @@ export default function HomePage() {
 
         <aside className="home-training-aside" aria-label="个人训练概览">
           <PlatformDataPanel profile={user} compact />
-          <nav className="home-shortcuts" aria-label="训练快捷入口">
-            <Link to="/upsolve"><NotebookPen size={19} aria-hidden="true" /><span>补题计划</span><ArrowUpRight size={16} aria-hidden="true" /></Link>
-            <Link to="/weekly-training"><CalendarRange size={19} aria-hidden="true" /><span>我的周训练</span><ArrowUpRight size={16} aria-hidden="true" /></Link>
-            <Link to="/practice"><Crosshair size={19} aria-hidden="true" /><span>自主练习</span><ArrowUpRight size={16} aria-hidden="true" /></Link>
-          </nav>
         </aside>
       </div>
 
@@ -203,6 +198,7 @@ export default function HomePage() {
       </section>
 
       <div className="render-lazy home-community-grid">
+        <div className="home-community-aside">
           <section className="home-section home-shared-section">
             <SectionHeading title="题单" icon={LibraryBig} tone="violet" />
             <nav className="home-library-links" aria-label="题单入口">
@@ -210,6 +206,12 @@ export default function HomePage() {
               <Link to="/shared-problem-lists"><LibraryBig size={19} aria-hidden="true" /><span>共享题单</span><ArrowUpRight size={16} aria-hidden="true" /></Link>
             </nav>
           </section>
+          <nav className="home-shortcuts" aria-label="训练快捷入口">
+            <Link to="/upsolve"><NotebookPen size={19} aria-hidden="true" /><span>补题计划</span><ArrowUpRight size={16} aria-hidden="true" /></Link>
+            <Link to="/weekly-training"><CalendarRange size={19} aria-hidden="true" /><span>我的周训练</span><ArrowUpRight size={16} aria-hidden="true" /></Link>
+            <Link to="/practice"><Crosshair size={19} aria-hidden="true" /><span>自主练习</span><ArrowUpRight size={16} aria-hidden="true" /></Link>
+          </nav>
+        </div>
 
           <section className="home-section home-leaderboard-section">
             <SectionHeading title="训练排行" icon={Medal} tone="amber" to="/leaderboard" linkText="完整排行" />

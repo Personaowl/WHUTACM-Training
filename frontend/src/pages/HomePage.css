@@ -95,7 +95,8 @@
 .home-stat dt { color: var(--muted); font-size: var(--ui-small); }
 .home-stat dd { margin: 4px 0 0; font-size: 32px; font-weight: 750; line-height: 1.2; font-variant-numeric: tabular-nums; letter-spacing: -0.025em; }
 
-.home-training-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr); align-items: start; gap: 20px; }
+.home-training-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr); align-items: stretch; gap: 20px; }
+.home-training-grid:has(.profile-platform-loading, .profile-platform-empty, .home-empty-state, [aria-label="正在加载今日题目"]) { align-items: start; }
 .home-section { min-width: 0; padding: 24px; background: var(--paper); border: var(--border-ui) solid var(--line); border-radius: var(--radius-card); }
 .home-section-heading { display: flex; min-height: 28px; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
 .home-section-heading h2 { margin: 0; font-size: var(--ui-section); font-weight: 750; letter-spacing: -0.02em; }
@@ -118,6 +119,8 @@
 .home-empty-state a { display: inline-flex; align-items: center; gap: 6px; color: #335b7c; font-size: var(--ui-body); font-weight: 650; }
 .home-daily-section > .home-empty-state { min-height: 280px; background: #f7f9fb; border: 1px dashed #d8e2eb; border-radius: 13px; }
 .home-training-aside { display: grid; min-width: 0; gap: 16px; }
+.home-training-aside > .profile-platform-panel { display: flex; flex-direction: column; }
+.home-training-aside .profile-platform-body { flex: 1; }
 .home-training-aside > section { border-radius: var(--radius-card); padding: 24px; }
 .home-page .home-training-aside .cf-compact-overview { background: white; box-shadow: none; backdrop-filter: none; }
 .home-training-aside .cf-compact-heading { margin-bottom: 18px; }
@@ -149,6 +152,7 @@
 .home-page .heatmap-cf-stat strong { color: var(--ink); font-size: 27px; font-weight: 650; }
 .home-page .heatmap-cf-stat strong span { font-size: 16px; font-weight: 500; }
 .home-community-grid { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); align-items: start; gap: 20px; }
+.home-community-aside { display: grid; min-width: 0; align-content: start; gap: 16px; }
 .home-content-label { display: flex; align-items: center; gap: 8px; color: #617d93; font-size: var(--ui-small); }
 .home-leaderboard { display: grid; margin: 0; padding: 0; list-style: none; }
 .home-leaderboard li + li { border-top: 1px solid #edf0f2; }
@@ -180,7 +184,7 @@
   .home-stat-icon { display: none; }
   .home-stat dt { font-size: var(--ui-small); }
   .home-stat dd { margin-top: 5px; font-size: 26px; white-space: nowrap; }
-  .home-training-grid, .home-community-grid { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  .home-training-grid, .home-community-grid { grid-template-columns: minmax(0, 1fr); align-items: start; gap: 18px; }
   .home-profile-identity { gap: 18px; }
   .home-section-heading h2 { font-size: var(--ui-section); }
   .home-section-heading > a { font-size: var(--ui-small); }
