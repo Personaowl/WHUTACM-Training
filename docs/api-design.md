@@ -182,7 +182,7 @@ week 归一到上海时区该周周一，不能选未来周。返回 WeeklyTrain
 
 记录字段：id、title、link、note、completed、createdAt、completedAt；时间为 ISO 字符串，未完成 completedAt 为空。重复链接（包括已完成记录）返回 409；非法链接/分页返回 400；记录不存在或非本人记录均为 404；未登录为 401。链接仅保存，不会触发外部站点访问。
 
-## 11. 统一平台统计（账号绑定页 / 首页）
+## 11. 统一平台统计（账号绑定页 / 首页 / 个人中心）
 
 `GET /api/users/{userId}/platform-overviews`，仅本人可读（包括管理员也不可读取他人的此接口）。返回固定顺序的 codeforces、atcoder、luogu、nowcoder 四项，每项字段为 platform、accountId、profileUrl、connected、rating、maxRating、solvedCount、syncedAt、dataStatus、partial。
 
@@ -199,4 +199,4 @@ dataStatus 为 UNBOUND（未绑定）、NOT_SUPPORTED（无统计适配器）、
 
 缺失字段时 partial=true，前端显示“— / 部分数据”；syncedAt 不是实时保证。上游限流、验证页或页面结构变化时保留上次成功快照，首次失败则显示暂不可用。抓取只访问固定 HTTPS 地址，校验账号标识/页面身份，禁用重定向，不携带用户 Cookie、不执行网页脚本，响应上限 1 MiB、超时有界。不绕过登录/验证码。
 
-首页 CF 概览与绑定页共用 PlatformStatistics；绑定页展示四平台，不新增详细看板。前端仅在 PENDING/SYNCING 时串行重读本地接口，间隔 2.5 秒起逐次延长至最多 10 秒，最多追加 12 次，隐藏页停止续查、离页取消；之后可点击重新加载。既有 CF 详细看板和 ABC 训练验收接口不变。AtCoder Problems 数据来源及速率规则见[维护者文档](https://github.com/kenkoooo/AtCoderProblems/blob/main/doc/api.md)。
+首页 CF 概览与绑定页共用 PlatformStatistics；个人中心 PlatformDataPanel 从同一接口读取四平台基础数据，切换只改变本地展示，不逐次请求外部平台；缺失指标省略，真实零值仍显示。CF 更多统计展开后复用既有详情接口，其余平台不伪造逐题图表，公开成员页权限不变。前端仅在 PENDING/SYNCING 时串行重读本地接口，间隔 2.5 秒起逐次延长至最多 10 秒，最多追加 12 次，隐藏页停止续查、离页取消；之后可点击重新加载。ABC 训练验收不变。AtCoder Problems 数据来源及速率规则见[维护者文档](https://github.com/kenkoooo/AtCoderProblems/blob/main/doc/api.md)。

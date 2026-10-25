@@ -28,6 +28,8 @@ export default function CodeforcesOverview({
   handle,
   canRefresh = false,
   compact = false,
+  detailsOnly = false,
+  onUpdated,
 }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(Boolean(userId && handle));
@@ -67,7 +69,10 @@ export default function CodeforcesOverview({
     setError("");
     try {
       const response = await refreshCodeforcesOverview(userId);
-      if (response.code === 200) setData(response.data);
+      if (response.code === 200) {
+        setData(response.data);
+        onUpdated?.();
+      }
       else setError(response.message || "刷新失败");
     } catch {
       setError("刷新失败，请稍后重试");
@@ -147,12 +152,12 @@ export default function CodeforcesOverview({
 
   return (
     <section className="stack-y-3">
-      <div className="flex items-start justify-between gap-3">
+      <div className="cf-overview-toolbar flex items-start justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold text-text-primary m-0">
-            Codeforces 数据
+            {detailsOnly ? "做题与比赛记录" : "Codeforces 数据"}
           </h2>
-          <div className="flex flex-wrap items-center gap-2 mt-1">
+          {!detailsOnly && <div className="flex flex-wrap items-center gap-2 mt-1">
             <a
               href={`https://codeforces.com/profile/${encodeURIComponent(handle)}`}
               target="_blank"
@@ -166,7 +171,7 @@ export default function CodeforcesOverview({
                 {data?.syncedAt ? "正在后台更新，当前显示上次快照" : "正在后台同步完整数据"}
               </span>
             )}
-          </div>
+          </div>}
         </div>
         {canRefresh && (
           <button
@@ -182,7 +187,7 @@ export default function CodeforcesOverview({
 
       {error && <p className="text-xs text-error m-0">{error}</p>}
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {!detailsOnly && <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <OverviewStat label="已解决题目" value={data?.solvedCount ?? 0} />
         <OverviewStat label="尝试过题目" value={data?.attemptedCount ?? 0} />
         <OverviewStat
@@ -192,7 +197,7 @@ export default function CodeforcesOverview({
           hint={`最高 ${data?.maxRating ?? "-"}`}
         />
         <OverviewStat label="Rated 比赛" value={data?.ratedContestCount ?? 0} />
-      </div>
+      </div>}
 
       {data?.submissionLimitReached && (
         <p className="text-[11px] text-text-secondary m-0">

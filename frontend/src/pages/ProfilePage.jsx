@@ -11,7 +11,7 @@ import UserAvatar from "../components/ui/UserAvatar";
 import Heatmap from "../components/ui/Heatmap";
 import { CardSkeleton } from "../components/ui/Skeleton";
 import ProfileEditDialog from "../components/profile/ProfileEditDialog";
-import CodeforcesOverview from "../components/profile/CodeforcesOverview";
+import PlatformDataPanel from "../components/profile/PlatformDataPanel";
 import { Camera, CalendarRange, Link2, Trash2, UserRound } from "lucide-react";
 import PageHeading from "../components/ui/PageHeading";
 
@@ -215,11 +215,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <CodeforcesOverview
-        userId={currentProfile?.id}
-        handle={currentProfile?.codeforcesHandle}
-        canRefresh
-      />
+      <PlatformDataPanel profile={currentProfile} />
 
       <section>
         <h2 className="text-base font-semibold text-text-primary m-0 mb-2">打卡热力图</h2>
