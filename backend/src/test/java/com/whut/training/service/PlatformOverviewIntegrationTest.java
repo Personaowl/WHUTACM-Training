@@ -25,6 +25,7 @@ class PlatformOverviewIntegrationTest {
     @Autowired UserRepository users;
     @Autowired CodeforcesProfileSnapshotRepository snapshots;
     @Autowired PlatformBindingRepository bindings;
+    @Autowired PlatformStatisticsSnapshotRepository platformSnapshots;
     @Autowired AuthTokenSessionRepository sessions;
     @Autowired MockMvc mvc;
 
@@ -57,15 +58,35 @@ class PlatformOverviewIntegrationTest {
         assertThat(cf.accountId()).isEqualTo("new-account");
         assertThat(cf.dataStatus()).isEqualTo(PlatformOverview.DataStatus.PENDING);
     }
-    @Test void verifiedPlatformsWithoutStatisticsHaveExplicitUnsupportedStatus() {
+    @Test void newlySupportedPlatformsWithoutSnapshotsArePending() {
         var user=user("overview-verified"); user.setAtcoderHandle("at-user"); users.save(user);
         bindings.ensure(user.getId(),"nowcoder"); bindings.finish(user.getId(),"nowcoder","123",1);
         for(String key:List.of("atcoder","nowcoder")) {
             var p=platform(user,key);
             assertThat(p.connected()).isTrue(); assertThat(p.rating()).isNull(); assertThat(p.solvedCount()).isNull();
-            assertThat(p.dataStatus()).isEqualTo(PlatformOverview.DataStatus.NOT_SUPPORTED);
+            assertThat(p.dataStatus()).isEqualTo(PlatformOverview.DataStatus.PENDING);
             assertThat(p.profileUrl()).startsWith("https://");
         }
+    }
+    @Test void otherPlatformsReadPersistedStatisticsAndRebindingHidesTheOldSnapshot() {
+        var user = user("overview-multi"); user.setAtcoderHandle("at-user"); users.save(user);
+        bindings.ensure(user.getId(), "luogu"); bindings.finish(user.getId(), "luogu", "123", 1);
+        bindings.ensure(user.getId(), "nowcoder"); bindings.finish(user.getId(), "nowcoder", "456", 1);
+        for (var pair : List.of(List.of("atcoder", "at-user"), List.of("luogu", "123"), List.of("nowcoder", "456"))) {
+            platformSnapshots.save(user.getId(), pair.get(0), pair.get(1),
+                    new PlatformStatisticsProvider.Statistics(0, null, 100, Instant.now(), true));
+            var data = platform(user, pair.get(0));
+            assertThat(data.dataStatus()).isEqualTo(PlatformOverview.DataStatus.READY);
+            assertThat(data.rating()).isZero(); assertThat(data.solvedCount()).isEqualTo(100);
+            assertThat(data.maxRating()).isNull(); assertThat(data.partial()).isTrue();
+        }
+        // A late result from the previous account cannot overwrite the new account's snapshot.
+        platformSnapshots.save(user.getId(), "atcoder", "new-user", new PlatformStatisticsProvider.Statistics(500, 600, 200, Instant.now(), false));
+        platformSnapshots.save(user.getId(), "atcoder", "at-user", new PlatformStatisticsProvider.Statistics(100, 100, 150, Instant.now(), false));
+        user.setAtcoderHandle("new-user"); users.save(user);
+        assertThat(platform(user, "atcoder").rating()).isEqualTo(500);
+        user.setAtcoderHandle("no-snapshot"); users.save(user);
+        assertThat(platform(user, "atcoder").rating()).isNull();
     }
     @Test void endpointIsSelfOnlyAndNeverContainsChallengeSecrets() throws Exception {
         var user=user("overview-self"); var other=user("overview-other"); user.setRole(UserRole.SUPER_ADMIN); users.save(user);

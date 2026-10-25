@@ -54,7 +54,7 @@ export default function AdditionalPlatformBinding({ userId, platform, label, onC
         </div>
       </div>
       <div className="binding-controls">
-      <p className="binding-card-description">仅绑定账号，暂不统计训练数据</p>
+      <p className="binding-card-description">比赛 Rating · 解题记录</p>
       <div className="binding-input-row">
         <input aria-label={label + " UID"} className="form-input" inputMode="numeric" maxLength={18}
           value={uid} onChange={event => { setUid(event.target.value.trim()); setSuccess(false); setMessage(""); }}

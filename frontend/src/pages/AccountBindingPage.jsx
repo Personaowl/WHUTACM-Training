@@ -17,7 +17,7 @@ import {
 import { CardSkeleton } from "../components/ui/Skeleton";
 import AdditionalPlatformBinding from "../components/profile/AdditionalPlatformBinding";
 import PlatformStatistics from "../components/profile/PlatformStatistics";
-import { getPlatformOverviews } from "../api/platformOverview";
+import usePlatformOverviews from "../hooks/usePlatformOverviews";
 import "./AccountBindingPage.css";
 import PageHeading from "../components/ui/PageHeading";
 
@@ -25,15 +25,11 @@ export default function AccountBindingPage() {
   const { user, updateUser } = useAuth();
   const [profile, setProfile] = useState(null);
   const [additionalConnected, setAdditionalConnected] = useState({});
-  const [overviews, setOverviews] = useState({});
-  const [statisticsLoading, setStatisticsLoading] = useState(true);
-  const [statisticsError, setStatisticsError] = useState("");
-  const [statisticsRevision, setStatisticsRevision] = useState(0);
-  const reloadStatistics = () => setStatisticsRevision(value => value + 1);
   function onAdditionalConnected(platform, connected) {
     setAdditionalConnected(current => ({ ...current, [platform]: connected }));
   }
   const [loading, setLoading] = useState(true);
+  const { overviews, loading: statisticsLoading, error: statisticsError, reload: reloadStatistics } = usePlatformOverviews(user?.id, !loading);
   const [pageError, setPageError] = useState("");
   const [cfHandle, setCfHandle] = useState("");
   const [cfActive, setCfActive] = useState(false);
@@ -46,19 +42,6 @@ export default function AccountBindingPage() {
   const [atCoderExpiresAt, setAtCoderExpiresAt] = useState(null);
   const [atCoderLoading, setAtCoderLoading] = useState(false);
   const [atCoderMessage, setAtCoderMessage] = useState("");
-
-  useEffect(() => {
-    if (loading || !user?.id) return undefined;
-    let active = true;
-    const controller = new AbortController();
-    setStatisticsLoading(true);
-    setStatisticsError("");
-    getPlatformOverviews(user.id, controller.signal).then(data => {
-      if (active) setOverviews(Object.fromEntries(data.map(item => [item.platform, item])));
-    }).catch(error => { if (active) setStatisticsError(error.message || "统计暂时无法加载"); })
-      .finally(() => { if (active) setStatisticsLoading(false); });
-    return () => { active = false; controller.abort(); };
-  }, [user?.id, loading, statisticsRevision]);
 
   useEffect(() => {
     if (!user?.id) return undefined;

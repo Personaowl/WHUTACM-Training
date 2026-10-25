@@ -128,7 +128,7 @@ public class AtCoderApiService {
         return origin + "/users/" + handle;
     }
 
-    private void acquireSubmissionRequestSlot() throws InterruptedException {
+    void acquireSubmissionRequestSlot() throws InterruptedException {
         synchronized (submissionRateLock) {
             long waitMillis = 1_100 - (System.currentTimeMillis() - lastSubmissionRequestAtMillis);
             if (waitMillis > 0) Thread.sleep(waitMillis);

@@ -25,7 +25,8 @@ import {
   Send,
   Trophy,
 } from "lucide-react";
-import CodeforcesOverview from "../components/profile/CodeforcesOverview";
+import PlatformStatistics from "../components/profile/PlatformStatistics";
+import usePlatformOverviews from "../hooks/usePlatformOverviews";
 import { PageIcon } from "../components/ui/PageHeading";
 import SurfaceSheen from "../components/ui/SurfaceSheen";
 import { getCurrentUserPoints } from "../utils/home.js";
@@ -33,6 +34,7 @@ import "./HomePage.css";
 
 export default function HomePage() {
   const { user } = useAuth();
+  const platformStatistics = usePlatformOverviews(user?.id, Boolean(user?.codeforcesHandle));
   const [data, setData] = useState(null);
   const [heatmapData, setHeatmapData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -177,7 +179,12 @@ export default function HomePage() {
 
         <aside className="home-training-aside" aria-label="个人训练概览">
           {user?.codeforcesHandle ? (
-            <CodeforcesOverview userId={user?.id} handle={user.codeforcesHandle} compact />
+            <section className="home-platform-overview">
+              <div className="home-section-heading"><h2>Codeforces 概览</h2><Link to="/profile">查看完整数据 <ArrowUpRight size={15} aria-hidden="true" /></Link></div>
+              <PlatformStatistics platform="codeforces" accountId={user.codeforcesHandle}
+                overview={platformStatistics.overviews.codeforces} loading={platformStatistics.loading}
+                error={platformStatistics.error} onRetry={platformStatistics.reload} />
+            </section>
           ) : (
             <section className="home-binding-prompt">
               <img src="/platforms/codeforces.png" alt="" width="32" height="32" />

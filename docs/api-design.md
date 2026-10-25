@@ -182,10 +182,21 @@ week 归一到上海时区该周周一，不能选未来周。返回 WeeklyTrain
 
 记录字段：id、title、link、note、completed、createdAt、completedAt；时间为 ISO 字符串，未完成 completedAt 为空。重复链接（包括已完成记录）返回 409；非法链接/分页返回 400；记录不存在或非本人记录均为 404；未登录为 401。链接仅保存，不会触发外部站点访问。
 
-## 11. 统一平台统计（账号绑定页）
+## 11. 统一平台统计（账号绑定页 / 首页）
 
 `GET /api/users/{userId}/platform-overviews`，仅本人可读（包括管理员也不可读取他人的此接口）。返回固定顺序的 codeforces、atcoder、luogu、nowcoder 四项，每项字段为 platform、accountId、profileUrl、connected、rating、maxRating、solvedCount、syncedAt、dataStatus、partial。
 
-dataStatus 为 UNBOUND（未绑定）、NOT_SUPPORTED（统计尚未接入）、PENDING（已接入但无本地快照）、READY（已有快照）、UNAVAILABLE（该统计提供器读取异常）。未知指标均为 null，不用 0 代替；真实零值仍返回 0。待验证 UID 和验证码不返回，换绑后旧账号快照不会用于新账号。
+dataStatus 为 UNBOUND（未绑定）、NOT_SUPPORTED（无统计适配器）、PENDING（首次后台同步）、SYNCING（展示旧快照并后台更新）、READY（已有快照）、UNAVAILABLE（读取异常或首次同步失败处于退避期）。未知指标均为 null，不用 0 代替；真实零值仍返回 0。待验证 UID 和验证码不返回，换绑后旧账号快照不会用于新账号。
 
-当前仅 Codeforces 从匹配账号的已有本地快照读取统计；该接口不触发外部 API 请求、后台刷新或轮询。solvedCount 沿用 CF 统计最近最多 10000 条提交的范围，达到采样上限时 partial=true；syncedAt 为快照时间，不代表实时。其他平台目前只展示已验证绑定及统计占位，ABC 训练检查仍按原接口运行。未来通过 PlatformStatisticsProvider 实现新增平台本地统计读取，另行建设同步任务即可复用前端数据区。
+四个平台均已接入基础统计。请求仅等待本地快照读取；缺失或过期时提交后台同步，不在 HTTP 请求线程抓外部网站。默认缓存 30 分钟；新增三平台用独立 2 工作者 / 40 排队槽，同账号同步去重，失败退避 5 分钟（满队列 30 秒）。`app.platform-statistics.enabled=false` 可停止此概览入口触发同步；`app.platform-statistics.cache-minutes` 控制新增平台快照时效，CF 沿用原有 profile-cache-minutes。
+
+| 平台 | Rating / 最高 | 解题数 | 边界 |
+| --- | --- | --- | --- |
+| Codeforces | 原有公开统计快照 | 最近最多 10000 条提交去重 AC | 超过采样范围 partial=true；复用原有后台更新 |
+| AtCoder | 英文公开主页 Algorithm Rating / Highest Rating | AtCoder Problems 的 user/ac_rank.count | 与每周 ABC 提交请求共享 >1 秒间隔；不是 Heuristic Rating |
+| 洛谷 | 公开主页 user.eloValue；最高暂为 null | user.passedProblemCount | 不用 gu.rating（咕值）代替比赛 Rating；隐私字段可为 null |
+| Nowcoder | 公开竞赛练习主页 Rating；最高暂为 null | “题已通过” | 不把 Rating 排名或提交次数当作指标 |
+
+缺失字段时 partial=true，前端显示“— / 部分数据”；syncedAt 不是实时保证。上游限流、验证页或页面结构变化时保留上次成功快照，首次失败则显示暂不可用。抓取只访问固定 HTTPS 地址，校验账号标识/页面身份，禁用重定向，不携带用户 Cookie、不执行网页脚本，响应上限 1 MiB、超时有界。不绕过登录/验证码。
+
+首页 CF 概览与绑定页共用 PlatformStatistics；绑定页展示四平台，不新增详细看板。前端仅在 PENDING/SYNCING 时串行重读本地接口，间隔 2.5 秒起逐次延长至最多 10 秒，最多追加 12 次，隐藏页停止续查、离页取消；之后可点击重新加载。既有 CF 详细看板和 ABC 训练验收接口不变。AtCoder Problems 数据来源及速率规则见[维护者文档](https://github.com/kenkoooo/AtCoderProblems/blob/main/doc/api.md)。

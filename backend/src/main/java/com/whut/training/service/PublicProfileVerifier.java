@@ -49,7 +49,7 @@ public class PublicProfileVerifier {
         }
     }
 
-    private static final class LimitedBody implements HttpResponse.BodySubscriber<String> {
+    static final class LimitedBody implements HttpResponse.BodySubscriber<String> {
         private final HttpResponse.BodySubscriber<String> delegate =
                 HttpResponse.BodySubscribers.ofString(java.nio.charset.StandardCharsets.UTF_8);
         private java.util.concurrent.Flow.Subscription subscription;

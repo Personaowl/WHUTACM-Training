@@ -6,6 +6,8 @@ spring:
     password: ""
 
 app:
+  platform-statistics:
+    enabled: false
   database:
     type: mysql
   daily-problem:

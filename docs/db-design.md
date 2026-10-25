@@ -2,14 +2,14 @@
 
 [文档索引](README.md) · [接口参考](api-design.md) · [数据迁移](migration.md)
 
-按 2026-10-23 当前 [MySqlInitializer](../backend/src/main/java/com/whut/training/config/MySqlInitializer.java) 和 [Repository](../backend/src/main/java/com/whut/training/repository/) 核对。下文说明表用途、关键字段及约束；完整类型、默认值和建表 SQL 以初始化器为准，避免在文档复制一份容易失效的 DDL。
+按 2026-10-25 当前 [MySqlInitializer](../backend/src/main/java/com/whut/training/config/MySqlInitializer.java) 和 [Repository](../backend/src/main/java/com/whut/training/repository/) 核对。下文说明表用途、关键字段及约束；完整类型、默认值和建表 SQL 以初始化器为准，避免在文档复制一份容易失效的 DDL。
 
 ## 1. 存储与初始化
 
 - 业务库默认名 whut_training，可通过 MYSQL_URL 修改。当前使用 MySQL、InnoDB、utf8mb4_unicode_ci 和 JdbcTemplate，不使用 ORM、SQLite 或 Redis。
 - 推荐服务器 MySQL 8.0；开发用 compose.yaml 实际固定 mysql:8.4。迁移时优先同版本恢复演练，不能把二者当作相同版本或直接复制数据目录。
 - 启动创建缺失表，并执行代码中列出的补字段、补索引和修正 SQL；**CREATE TABLE IF NOT EXISTS 不代表自动对齐任意旧表结构**，当前没有 Flyway/Liquibase 的版本化迁移体系。
-- 当前初始化器创建下列 **21 张表**；旧库可能还有已废弃的表，数量不能作为迁移成功的唯一判据。
+- 当前初始化器创建下列 **22 张表**；旧库可能还有已废弃的表，数量不能作为迁移成功的唯一判据。
 - ID 通常为 BIGINT 自增，周记录及 ABC 关系表使用复合主键。代码未声明外键级联约束，关联完整性与删除流程由应用维护，不能假设删父记录会自动删子记录。
 - date / week_start 等业务日期为 VARCHAR(10) 的 YYYY-MM-DD；多数过程时间为 VARCHAR(64) 的 ISO 字符串；部分创建时间为 TIMESTAMP，外部平台时间为 BIGINT Unix 秒。恢复必须保留这些语义，业务周按 Asia/Shanghai 计算。
 
@@ -88,11 +88,12 @@ cf_problem 另有 idx_cf_practice_filter (is_interactive,source_contest_id,ratin
 
 旧 push_pool、push_submissions、daily_push 三表如存在，仅保留历史数据。当前不创建、不读写，不执行旧状态修正，不自动删除或迁移内容。
 
-## 5. CF 统计（2 表）
+## 5. 平台统计（3 表）
 
 | 表 | 主要字段 | 约束与用途 |
 | --- | --- | --- |
 | cf_profile_snapshot | user_id、codeforces_handle、payload_json LONGTEXT、synced_at | user_id 主键、Handle 索引；持久化统计快照，配合进程内缓存先读后后台刷新 |
+| platform_statistics_snapshot | user_id、platform、account_id、rating、max_rating、solved_count、synced_at、partial | (user_id,platform,account_id) 主键；AtCoder / 洛谷 / Nowcoder 本地快照，账号隔离，未知指标为 NULL，不存验证码或网页源码 |
 | cf_rating_change | id、user_id、contest_id、contest_name、contest_rank、old_rating、new_rating、rating_change、rating_update_time_seconds、contest_url | (user_id,contest_id) 唯一；时间和 (user_id,时间) 索引；支持 Rated 比赛查询和导出 |
 
 CF 概览统计最多读取最近 10000 条提交，不能宣称覆盖任意大账号全部历史。每日题校验的“最近 30 条”是另一个独立查询，不影响上述概览上限。

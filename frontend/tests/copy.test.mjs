@@ -10,7 +10,8 @@ test("home shortcuts do not repeat explanatory slogans", async () => {
 });
 test("shorter binding copy still explains limitations and verification safety", async () => {
   const binding = await source("components/profile/AdditionalPlatformBinding.jsx");
-  assert.ok(binding.includes("暂不统计训练数据"));
+  assert.ok(binding.includes("比赛 Rating · 解题记录"));
+  assert.ok(!binding.includes("暂不统计训练数据"));
   assert.ok(binding.includes("不要把验证码发到讨论、评论或题解中"));
   assert.ok(binding.includes("完整验证码并保存"));
 });

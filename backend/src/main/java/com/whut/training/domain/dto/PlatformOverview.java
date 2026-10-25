@@ -15,5 +15,5 @@ public record PlatformOverview(
         DataStatus dataStatus,
         boolean partial
 ) {
-    public enum DataStatus { UNBOUND, NOT_SUPPORTED, PENDING, READY, UNAVAILABLE }
+    public enum DataStatus { UNBOUND, NOT_SUPPORTED, PENDING, SYNCING, READY, UNAVAILABLE }
 }
