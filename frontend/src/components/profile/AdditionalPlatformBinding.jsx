@@ -3,6 +3,7 @@ import { CheckCircle2, ExternalLink } from "lucide-react";
 import http from "../../api/http";
 import { authHeaders } from "../../api/auth";
 import PlatformStatistics from "./PlatformStatistics";
+import SurfaceContours from "../ui/SurfaceContours";
 
 export default function AdditionalPlatformBinding({ userId, platform, label, onConnected, onVerified, overview, statisticsLoading, statisticsError, onRetryStatistics }) {
   const [binding, setBinding] = useState(null);
@@ -45,7 +46,8 @@ export default function AdditionalPlatformBinding({ userId, platform, label, onC
   }
   return (
     <section className="binding-card" style={{ "--binding-accent": platform === "luogu" ? "#3498db" : "#e68a31" }}>
-      <div className="binding-card-head">
+      <div className="binding-card-head surface-contour-host">
+        <SurfaceContours />
         <div className="binding-platform-mark"><img src={`/platforms/${platform}.ico`} alt={`${label} 官方图标`} /></div>
         <div><h2>{label}</h2>
           <span className={binding?.accountId ? "is-connected" : ""}>

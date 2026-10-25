@@ -132,6 +132,7 @@
 .daily-page details > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
 .app-content .weekly-training-page > div.bg-white.border { background: linear-gradient(140deg, #f6fbf9, #fff 35%); }
 .app-content .profile-page > .bg-white.border { background: linear-gradient(115deg, #f1f7ff, #fff 60%, #f3faf7); }
+.profile-identity-header { background: linear-gradient(110deg, #f3f7ff, #fff 64%, #f2faf7); }
 .app-content .library-stats > div.bg-white.border { background: linear-gradient(125deg, #f0f6ff, #fff 80%); border-color: var(--blue-line); }
 .app-content .library-stats > div.bg-white.border:nth-child(2) { background: linear-gradient(125deg, #f6f0ff, #fff 80%); border-color: var(--violet-line); }
 .app-content .library-stats > div.bg-white.border:nth-child(3) { background: linear-gradient(125deg, #edf9f4, #fff 80%); border-color: var(--mint-line); }

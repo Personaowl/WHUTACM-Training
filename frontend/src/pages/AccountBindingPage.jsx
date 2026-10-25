@@ -20,6 +20,7 @@ import PlatformStatistics from "../components/profile/PlatformStatistics";
 import usePlatformOverviews from "../hooks/usePlatformOverviews";
 import "./AccountBindingPage.css";
 import PageHeading from "../components/ui/PageHeading";
+import SurfaceContours from "../components/ui/SurfaceContours";
 
 export default function AccountBindingPage() {
   const { user, updateUser } = useAuth();
@@ -263,7 +264,8 @@ export default function AccountBindingPage() {
 function BindingCard({ platform, accent, iconSrc, connectedHandle, message, success, children, statistics }) {
   return (
     <section className="binding-card" style={{ "--binding-accent": accent }}>
-      <div className="binding-card-head">
+      <div className="binding-card-head surface-contour-host">
+        <SurfaceContours />
         <div className="binding-platform-mark">
           <img src={iconSrc} alt={`${platform} 官方图标`} />
         </div>

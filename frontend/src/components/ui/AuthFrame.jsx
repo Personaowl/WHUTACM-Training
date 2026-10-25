@@ -12,10 +12,10 @@ export default function AuthFrame({ title, subtitle, children, footer }) {
           <span className="brand-mark">
             <img src="/whut-acm-logo.png" alt="" aria-hidden="true" />
           </span>
-          <span>WHUT-ACM</span>
+          <span className="auth-brand-title">WHUT-ACM</span>
         </Link>
         <div className="auth-intro-copy">
-          <h2>WHUT-ACM<br />训练平台</h2>
+          <h2><span className="auth-brand-title">WHUT-ACM</span><br />训练平台</h2>
           <p className="auth-intro-affiliation">武汉理工大学ACM协会</p>
         </div>
         <div className="auth-cover-decoration" aria-hidden="true"><span /><span /><i /></div>
@@ -49,6 +49,12 @@ export default function AuthFrame({ title, subtitle, children, footer }) {
           </div>
         </div>
       </section>
+
+      <svg className="auth-bottom-orbits" viewBox="0 0 688 248" width="688" height="248" fill="none" aria-hidden="true" focusable="false">
+        <circle cx="344" cy="368" r="344" />
+        <circle cx="344" cy="368" r="312" />
+        <circle cx="344" cy="368" r="280" />
+      </svg>
     </main>
   );
 }

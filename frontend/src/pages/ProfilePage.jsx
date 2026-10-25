@@ -13,6 +13,7 @@ import ProfileEditDialog from "../components/profile/ProfileEditDialog";
 import PlatformDataPanel from "../components/profile/PlatformDataPanel";
 import { Camera, CalendarRange, Link2, Trash2, UserRound } from "lucide-react";
 import PageHeading from "../components/ui/PageHeading";
+import SurfaceContours from "../components/ui/SurfaceContours";
 
 export default function ProfilePage() {
   const { user, updateUser } = useAuth();
@@ -133,7 +134,8 @@ export default function ProfilePage() {
       )}
 
       <div className="bg-white border border-border rounded-ui overflow-hidden">
-        <div className="flex items-start gap-4 p-5">
+        <div className="profile-identity-header surface-contour-host flex items-start gap-4 p-5">
+          <SurfaceContours tone="mint" />
           <div className="profile-avatar-editor">
             <UserAvatar user={currentProfile} size={76} />
             <label className="avatar-upload-button" title="更换头像">

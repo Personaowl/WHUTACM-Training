@@ -29,6 +29,7 @@ import { canAddProblem, canEditProblem, visibleProblemLists } from "../utils/pro
 import EmptyState from "../components/ui/EmptyState";
 import AddToProblemListButton from "../components/ui/AddToProblemListButton";
 import PageHeading from "../components/ui/PageHeading";
+import SurfaceContours from "../components/ui/SurfaceContours";
 
 const EMPTY_LIST_FORM = { name: "", description: "", shared: false };
 const EMPTY_PROBLEM_FORM = {
@@ -289,7 +290,8 @@ export default function ProblemListsPage({ sharedOnly = false }) {
             </div>
           ) : detail ? (
             <>
-              <div className="library-detail-heading border-b border-border p-5 sm:p-6">
+              <div className="library-detail-heading surface-contour-host border-b border-border p-5 sm:p-6">
+                <SurfaceContours tone="violet" />
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">

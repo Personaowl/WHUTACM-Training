@@ -1,8 +1,9 @@
 .binding-page { max-width: 1240px; margin-inline: auto; }
 .platform-binding-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 22px; align-items: start; }
 .binding-page .binding-card { display: flex; flex-direction: column; min-height: 0; padding: 0; background: var(--paper); border-color: var(--line); box-shadow: var(--shadow-surface); border-radius: var(--radius-card); }
-.binding-page .binding-card::before { width: auto; height: 3px; inset: 0 0 auto; opacity: .8; }
+.binding-page .binding-card::before { width: auto; height: 3px; inset: 0 0 auto; opacity: .8; z-index: 2; pointer-events: none; }
 .binding-page .binding-card-head { padding: 24px 24px 20px; gap: 14px; background: linear-gradient(120deg, color-mix(in srgb, var(--binding-accent) 10%, white), white 85%); border-bottom: 1px solid color-mix(in srgb, var(--binding-accent) 14%, white); }
+.binding-card-head { --surface-contour-color: var(--binding-accent); }
 .binding-page .binding-platform-mark { width: 54px; height: 54px; padding: 11px; border-radius: 16px; border-color: color-mix(in srgb, var(--binding-accent) 22%, white); box-shadow: 0 4px 12px color-mix(in srgb, var(--binding-accent) 10%, transparent); background: #fff; flex-shrink: 0; }
 .binding-page .binding-card h2 { font-size: 24px; letter-spacing: -.035em; }
 .binding-page .binding-card-head span { font-size: var(--ui-small); margin-top: 5px; }

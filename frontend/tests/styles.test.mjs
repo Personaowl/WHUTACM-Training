@@ -14,6 +14,29 @@ test("page icon tiles remain decorative and use one stroke language", async () =
   assert.match(refinements, /\.page-heading-identity \.page-title\s*\{[^}]*overflow-wrap:\s*anywhere/);
 });
 
+test("internal header contours remain static, decorative and behind content", async () => {
+  const source = await readFile(new URL("../src/components/ui/SurfaceContours.jsx", import.meta.url), "utf8");
+  assert.match(source, /aria-hidden="true" focusable="false"/);
+  assert.doesNotMatch(source, /useEffect|setInterval|setTimeout|requestAnimationFrame|fetch\(|<image|<animate/);
+  const styles = await readFile(new URL("../src/components/ui/SurfaceContours.css", import.meta.url), "utf8");
+  assert.match(styles, /\.surface-contour-host\s*\{[^}]*isolation: isolate/);
+  assert.match(styles, /\.surface-contour-host > :not\(\.surface-contours\):not\(\.surface-sheen\)\s*\{[^}]*z-index: 1/);
+  assert.match(styles, /\.surface-contours\s*\{[^}]*z-index: 0;[^}]*pointer-events: none/);
+  assert.doesNotMatch(styles, /animation:|filter:|backdrop-filter:|will-change:/);
+  assert.match(styles, /@media \(forced-colors: active\)\s*\{\s*\.surface-contours\s*\{\s*display: none/);
+  const binding = await readFile(new URL("../src/pages/AccountBindingPage.css", import.meta.url), "utf8");
+  assert.match(binding, /\.binding-page \.binding-card::before\s*\{[^}]*z-index: 2; pointer-events: none/);
+});
+
+test("upsolve actions keep comfortable spacing and consistent control targets", async () => {
+  const styles = await readFile(new URL("../src/pages/UpsolvePlanPage.css", import.meta.url), "utf8");
+  assert.match(styles, /\.upsolve-actions\s*\{[^}]*gap: 8px/);
+  assert.match(styles, /\.upsolve-icon-button\s*\{[^}]*min-width: 44px; min-height: 44px/);
+  assert.match(styles, /\.upsolve-pagination button\s*\{[^}]*width: 44px; height: 44px/);
+  assert.match(styles, /\.upsolve-checkbox\s*\{[^}]*width: 24px; height: 24px/);
+  assert.match(styles, /\.upsolve-actions\s*\{[^}]*grid-column: 1 \/ -1/);
+});
+
 test("richer problem surfaces preserve server difficulty and Codeforces rating colors", async () => {
   const card = await readFile(new URL("../src/components/ui/ProblemCard.jsx", import.meta.url), "utf8");
   assert.match(card, /getRatingMeta\(problem.rating\)/);
@@ -76,15 +99,42 @@ test("auth retains its ink-blue cover with only restrained shared accents", asyn
   assert.doesNotMatch(global, /\.auth-seam-decoration|\.auth-geometry/);
 });
 
-test("auth background blends independently of text and keeps static artwork behind the form", async () => {
+test("auth has a crisp curved edge and keeps static artwork behind the form", async () => {
   const source = await readFile(new URL("../src/components/ui/AuthFrame.jsx", import.meta.url), "utf8");
   assert.match(source, /className="auth-background-lines"[^>]*aria-hidden="true" focusable="false"/);
   const styles = await readFile(new URL("../src/components/ui/AuthFrame.css", import.meta.url), "utf8");
-  assert.match(styles, /\.auth-shell-bridge \.auth-intro::before\s*\{[^}]*pointer-events: none;[^}]*mask-image: linear-gradient\(90deg/);
-  assert.match(styles, /@media \(max-width: 980px\)\s*\{[^}]*mask-image: linear-gradient\(#000/);
+  assert.match(styles, /\.auth-shell-bridge \.auth-intro\s*\{[^}]*border-radius: 0 72px 72px 0 \/ 0 50% 50% 0; box-shadow: 4px 0 0/);
+  assert.match(styles, /@media \(max-width: 980px\)\s*\{[^}]*border-radius: 0 0 50% 50% \/ 0 0 24px 24px/);
+  assert.doesNotMatch(styles, /mask-image:/);
   assert.match(styles, /\.auth-background-lines\s*\{[^}]*z-index: 0;[^}]*height: auto;[^}]*pointer-events: none/);
   assert.match(styles, /\.auth-shell-bridge \.auth-card\s*\{[^}]*z-index: 1/);
   assert.doesNotMatch(styles, /animation:|filter:|backdrop-filter:|will-change:/);
+});
+
+test("bottom rings connect the cover without covering form controls or adding motion", async () => {
+  const source = await readFile(new URL("../src/components/ui/AuthFrame.jsx", import.meta.url), "utf8");
+  assert.match(source, /className="auth-bottom-orbits"[^>]*aria-hidden="true" focusable="false"/);
+  const styles = await readFile(new URL("../src/components/ui/AuthFrame.css", import.meta.url), "utf8");
+  assert.match(styles, /\.auth-bottom-orbits\s*\{[^}]*z-index: 2;[^}]*bottom: 0;[^}]*pointer-events: none/);
+  assert.match(styles, /\.auth-shell-bridge \.auth-card-wrap\s*\{[^}]*z-index: 3/);
+  assert.match(styles, /\.auth-bottom-orbits\s*\{\s*display: none/);
+});
+
+test("auth keeps a readable static brand accent with color fallback", async () => {
+  const source = await readFile(new URL("../src/components/ui/AuthFrame.jsx", import.meta.url), "utf8");
+  assert.equal((source.match(/className="auth-brand-title"/g) || []).length, 2);
+  const styles = await readFile(new URL("../src/components/ui/AuthFrame.css", import.meta.url), "utf8");
+  assert.match(styles, /\.auth-brand-title\s*\{[^}]*color: #b9d9ff/);
+  assert.match(styles, /@supports \(\(background-clip: text\)/);
+  assert.match(styles, /@media \(forced-colors: active\)\s*\{\s*\.auth-brand-title\s*\{[^}]*background: none; color: CanvasText/);
+  const luminance = (hex) => {
+    const rgb = hex.match(/[a-f\d]{2}/gi).map((part) => parseInt(part, 16) / 255)
+      .map((value) => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);
+    return rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722;
+  };
+  for (const color of ["a8cdff", "b6c5ff", "a6dfd0", "b9d9ff"]) {
+    assert.ok((luminance(color) + 0.05) / (luminance("243e62") + 0.05) >= 4.5);
+  }
 });
 
 before(async () => {

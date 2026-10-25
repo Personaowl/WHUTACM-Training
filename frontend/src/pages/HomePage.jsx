@@ -28,6 +28,7 @@ import {
 import PlatformDataPanel from "../components/profile/PlatformDataPanel";
 import { PageIcon } from "../components/ui/PageHeading";
 import SurfaceSheen from "../components/ui/SurfaceSheen";
+import SurfaceContours from "../components/ui/SurfaceContours";
 import { getCurrentUserPoints } from "../utils/home.js";
 import "./HomePage.css";
 
@@ -116,7 +117,8 @@ export default function HomePage() {
 
   return (
     <div className="home-page">
-      <header className="home-profile-panel">
+      <header className="home-profile-panel surface-contour-host">
+        <SurfaceContours wide />
         <SurfaceSheen />
         <div className="home-profile-identity">
           <UserAvatar user={user} size={76} />
