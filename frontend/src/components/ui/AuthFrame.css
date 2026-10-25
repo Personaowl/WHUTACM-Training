@@ -1,6 +1,7 @@
 .auth-shell-bridge.auth-shell { background: radial-gradient(ellipse at 88% 12%, #e9e0fa70, transparent 42%), linear-gradient(125deg, #e9f1fc, #f6f9ff 65%, #edf8f2); }
 .auth-shell-bridge.auth-shell::before { opacity: .18; background-size: 44px 44px; }
-.auth-shell-bridge .auth-intro { position: relative; isolation: isolate; overflow: hidden; color: #f8fbff; background: radial-gradient(ellipse at 94% 16%, #426ab836, transparent 45%), radial-gradient(ellipse at 5% 100%, #347e7130, transparent 38%), linear-gradient(135deg, #0b1729, #122942 62%, #1a3a55); }
+.auth-shell-bridge .auth-intro { position: relative; isolation: isolate; overflow: hidden; color: #f8fbff; background: none; }
+.auth-shell-bridge .auth-intro::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(ellipse at 94% 16%, #426ab836, transparent 45%), radial-gradient(ellipse at 5% 100%, #347e7130, transparent 38%), linear-gradient(135deg, #0b1729, #122942 62%, #1a3a55); mask-image: linear-gradient(90deg, #000 calc(100% - clamp(64px, 6vw, 112px)), transparent); }
 .auth-shell-bridge .auth-intro-copy { position: relative; z-index: 1; }
 .auth-shell-bridge .auth-intro-copy h2 { font-weight: 650; }
 .auth-shell-bridge .auth-intro-copy > p.auth-intro-affiliation { color: #c2d9ee; letter-spacing: .1em; }
@@ -10,19 +11,29 @@
 .auth-cover-decoration > span { position: absolute; display: block; border: 1px solid #c4d9f21a; border-radius: 50%; }
 .auth-cover-decoration > span:first-child { width: 350px; height: 350px; right: -150px; top: 14%; }
 .auth-cover-decoration > span:nth-child(2) { width: 250px; height: 250px; left: -125px; bottom: -85px; }
-.auth-cover-decoration > i { position: absolute; right: 16px; top: 20%; bottom: 20%; width: 22px; background-image: radial-gradient(circle, #b8d0ec40 1px, transparent 1.5px); background-size: 14px 14px; }
+.auth-cover-decoration > i { position: absolute; right: clamp(72px, 7vw, 128px); top: 20%; bottom: 20%; width: 22px; background-image: radial-gradient(circle, #b8d0ec40 1px, transparent 1.5px); background-size: 14px 14px; }
 .auth-shell-bridge .auth-intro > .surface-sheen { background: linear-gradient(90deg, transparent, #b9d9ff22, transparent); }
-.auth-shell-bridge .auth-card { background: linear-gradient(145deg, #f8fbff, #fff 24%, #fff 85%, #f6fbf8); border-width: var(--border-ui); border-color: #acc4e3; box-shadow: 8px 8px 0 #dce8f480, 0 20px 54px #224b7b10; }
+.auth-shell-bridge .auth-card-wrap { isolation: isolate; }
+.auth-background-lines { position: absolute; z-index: 0; right: -56px; bottom: -48px; width: min(660px, 88%); height: auto; pointer-events: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.auth-contour-blue { stroke: #6e9bce; opacity: .28; }
+.auth-contour-mint { stroke: #65af9e; opacity: .35; }
+.auth-contour-violet { stroke: #a18bc5; opacity: .25; }
+.auth-contour-nodes { stroke: #7c9ec6; fill: #f1f6fd; opacity: .5; }
+.auth-shell-bridge .auth-card { position: relative; z-index: 1; background: linear-gradient(145deg, #f8fbff, #fff 24%, #fff 85%, #f6fbf8); border-width: var(--border-ui); border-color: #acc4e3; box-shadow: 8px 8px 0 #dce8f480, 0 20px 54px #224b7b10; }
 .auth-shell-bridge .auth-card::before { height: 3px; left: 44px; right: 44px; background: linear-gradient(90deg, #92b5ed, #b5a0d5 52%, #93c9b3); }
 .auth-shell-bridge .auth-field { border-width: var(--border-ui); border-color: var(--control-line); background: #f7faff; }
 .auth-shell-bridge .auth-field:focus { border-color: var(--accent); box-shadow: 0 0 0 3px #245fc01c; }
 .auth-shell-bridge .auth-submit { background: linear-gradient(115deg, #18334f, #225aba); border-color: #1f4c82; box-shadow: 0 4px 10px #1c4b8a20; }
 .auth-shell-bridge .auth-submit:hover:not(:disabled) { box-shadow: 0 6px 18px #1c4b8a2c; }
 @media (max-width: 980px) {
+  .auth-shell-bridge .auth-intro::before { mask-image: linear-gradient(#000 calc(100% - 52px), transparent); }
+  .auth-background-lines { width: min(580px, 82%); right: -64px; bottom: -64px; }
   .auth-cover-decoration > span:first-child { width: 260px; height: 260px; right: -80px; top: -80px; }
+  .auth-cover-decoration > i { right: 24px; }
   .auth-shell-bridge .auth-intro-copy::after { margin-top: 20px; }
 }
 @media (max-width: 640px) {
+  .auth-background-lines { width: 360px; right: -130px; bottom: -52px; opacity: .6; }
   .auth-shell-bridge .auth-card::before { left: 24px; right: 24px; }
   .auth-shell-bridge .auth-intro-copy::after { width: 60px; height: 3px; margin-top: 16px; }
   .auth-cover-decoration > i { display: none; }

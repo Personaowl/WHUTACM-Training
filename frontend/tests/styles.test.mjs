@@ -76,6 +76,17 @@ test("auth retains its ink-blue cover with only restrained shared accents", asyn
   assert.doesNotMatch(global, /\.auth-seam-decoration|\.auth-geometry/);
 });
 
+test("auth background blends independently of text and keeps static artwork behind the form", async () => {
+  const source = await readFile(new URL("../src/components/ui/AuthFrame.jsx", import.meta.url), "utf8");
+  assert.match(source, /className="auth-background-lines"[^>]*aria-hidden="true" focusable="false"/);
+  const styles = await readFile(new URL("../src/components/ui/AuthFrame.css", import.meta.url), "utf8");
+  assert.match(styles, /\.auth-shell-bridge \.auth-intro::before\s*\{[^}]*pointer-events: none;[^}]*mask-image: linear-gradient\(90deg/);
+  assert.match(styles, /@media \(max-width: 980px\)\s*\{[^}]*mask-image: linear-gradient\(#000/);
+  assert.match(styles, /\.auth-background-lines\s*\{[^}]*z-index: 0;[^}]*height: auto;[^}]*pointer-events: none/);
+  assert.match(styles, /\.auth-shell-bridge \.auth-card\s*\{[^}]*z-index: 1/);
+  assert.doesNotMatch(styles, /animation:|filter:|backdrop-filter:|will-change:/);
+});
+
 before(async () => {
   const result = await build({
     root: fileURLToPath(new URL("../", import.meta.url)),
