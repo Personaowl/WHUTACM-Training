@@ -1,5 +1,5 @@
 import { ExternalLink, RefreshCw } from "lucide-react";
-import { formatPlatformMetric, matchingPlatformOverview, platformRatingMeta } from "../../utils/platformOverview";
+import { formatPlatformMetric, matchingPlatformOverview, platformRatingMeta, platformAccountLabel } from "../../utils/platformOverview";
 import "./PlatformStatistics.css";
 import "./PlatformMetricTokens.css";
 
@@ -14,7 +14,7 @@ export default function PlatformStatistics({ platform, accountId, overview, load
   return <section className="platform-statistics" aria-label="平台统计" aria-busy={loading}>
     <div className="platform-statistics-heading">
       {accountId ? <a href={data?.profileUrl || undefined} target="_blank" rel="noopener noreferrer" style={{ color: rating.color }}>
-        <span>{accountId}</span>{data?.profileUrl && <ExternalLink size={13} />}
+        <span title={platformAccountLabel(platform, accountId, data)}>{platformAccountLabel(platform, accountId, data)}</span>{data?.profileUrl && <ExternalLink size={13} />}
       </a> : <span className="platform-empty-account">账号统计</span>}
       <span className="platform-data-state">{state || "本地快照"}</span>
     </div>

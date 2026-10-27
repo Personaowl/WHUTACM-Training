@@ -10,6 +10,33 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class PublicPlatformStatisticsServiceTest {
+    @Test void preUpgradeFreshSnapshotsBackfillNamesOnceWithoutBlockingOrRepeatedNullNameRefreshes() {
+        var repo=mock(PlatformStatisticsSnapshotRepository.class);var client=mock(PublicPlatformStatisticsClient.class);
+        var legacy=new Statistics(null,null,50,Instant.now().minusSeconds(5),true);
+        var stored=new java.util.concurrent.atomic.AtomicReference<>(legacy);
+        when(repo.find(1L,"nowcoder","123")).thenAnswer(call -> Optional.of(stored.get()));
+        doAnswer(call -> {stored.set(call.getArgument(3));return null;}).when(repo).save(anyLong(),anyString(),anyString(),any());
+        var jobs=new ArrayList<Runnable>();
+        var service=new PublicPlatformStatisticsService(repo,client,jobs::add,true,30);
+        for(int n=0;n<40;n++) assertThat(service.read(1L,"nowcoder","123").solvedCount()).isEqualTo(50);
+        assertThat(jobs).hasSize(1);verifyNoInteractions(client);
+        when(client.fetch("nowcoder","123")).thenAnswer(call -> new Statistics(null,null,51,Instant.now(),true,false,null));
+        jobs.remove(0).run();
+        for(int n=0;n<40;n++) assertThat(service.read(1L,"nowcoder","123").refreshing()).isFalse();
+        assertThat(jobs).isEmpty();verify(client,times(1)).fetch("nowcoder","123");
+    }
+
+    @Test void nicknameIsReturnedFromFreshAndStaleLocalSnapshotsWithoutARequestThreadFetch() {
+        var repo=mock(PlatformStatisticsSnapshotRepository.class);var client=mock(PublicPlatformStatisticsClient.class);
+        var jobs=new ArrayList<Runnable>();var service=new PublicPlatformStatisticsService(repo,client,jobs::add,true,30);
+        when(repo.find(1L,"luogu","123")).thenReturn(Optional.of(new Statistics(null,null,100,Instant.now(),true,false,"洛谷昵称")));
+        assertThat(service.read(1L,"luogu","123").displayName()).isEqualTo("洛谷昵称");
+        assertThat(jobs).isEmpty();
+        when(repo.find(1L,"luogu","123")).thenReturn(Optional.of(new Statistics(null,null,100,Instant.now().minusSeconds(3600),true,false,"洛谷昵称")));
+        assertThat(service.read(1L,"luogu","123").displayName()).isEqualTo("洛谷昵称");
+        assertThat(jobs).hasSize(1);verifyNoInteractions(client);
+    }
+
     @Test void coldAndExpiredReadsReturnImmediatelyAndDeduplicateBackgroundWork() {
         var repo = mock(PlatformStatisticsSnapshotRepository.class); var client = mock(PublicPlatformStatisticsClient.class);
         when(repo.find(1L,"luogu","123")).thenReturn(Optional.empty());

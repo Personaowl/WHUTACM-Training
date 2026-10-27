@@ -3,6 +3,7 @@ import { CheckCircle2, ExternalLink } from "lucide-react";
 import { getAdditionalBinding, startAdditionalBinding, finishAdditionalBinding } from "../../api/accountBinding";
 import PlatformStatistics from "./PlatformStatistics";
 import SurfaceContours from "../ui/SurfaceContours";
+import { platformAccountLabel } from "../../utils/platformOverview";
 
 export default function AdditionalPlatformBinding({ userId, platform, label, onConnected, onVerified, overview, statisticsLoading, statisticsError, onRetryStatistics }) {
   const [binding, setBinding] = useState(null);
@@ -27,6 +28,7 @@ export default function AdditionalPlatformBinding({ userId, platform, label, onC
   const pending = Boolean(binding?.verificationToken && binding?.pendingAccountId === uid);
   const legacyNowcoderToken = platform === "nowcoder" && pending && binding.verificationToken.length > 25;
   const active = pending && !legacyNowcoderToken;
+  const verifiedLabel = platformAccountLabel(platform, binding?.accountId, overview);
   async function submit() {
     if (!/^[1-9][0-9]{0,17}$/.test(uid)) {
       setSuccess(false); setMessage("请输入个人主页地址中的数字 UID，而非昵称"); return;
@@ -52,7 +54,7 @@ export default function AdditionalPlatformBinding({ userId, platform, label, onC
         <div className="binding-platform-mark"><img src={`/platforms/${platform}.ico`} alt={`${label} 官方图标`} /></div>
         <div><h2>{label}</h2>
           <span className={binding?.accountId ? "is-connected" : ""}>
-            {binding?.accountId ? <><CheckCircle2 size={14} /> 已验证 UID {binding.accountId}</> : "尚未绑定"}
+            {binding?.accountId ? <><CheckCircle2 size={14} /><span className="binding-verified-name" title={verifiedLabel}>已验证 {verifiedLabel}</span></> : "尚未绑定"}
           </span>
         </div>
       </div>

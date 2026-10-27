@@ -44,7 +44,7 @@ public class PlatformOverviewService {
             var stats = provider.read(user.getId(), account);
             if (stats == null) return empty(platform, account, DataStatus.PENDING);
             return new PlatformOverview(platform, account, profileUrl(platform, account), true, stats.rating(), stats.maxRating(),
-                    stats.solvedCount(), stats.syncedAt(), stats.refreshing() ? DataStatus.SYNCING : DataStatus.READY, stats.partial());
+                    stats.solvedCount(), stats.syncedAt(), stats.refreshing() ? DataStatus.SYNCING : DataStatus.READY, stats.partial(), stats.displayName());
         } catch (RuntimeException error) {
             log.warn("Local platform overview unavailable platform={} userId={} cause={}", platform, user.getId(), error.getClass().getSimpleName());
             return empty(platform, account, DataStatus.UNAVAILABLE);
@@ -53,7 +53,7 @@ public class PlatformOverviewService {
 
     private PlatformOverview empty(String platform, String account, DataStatus status) {
         return new PlatformOverview(platform, account, account == null ? null : profileUrl(platform, account),
-                account != null, null, null, null, null, status, false);
+                account != null, null, null, null, null, status, false, null);
     }
 
     private String profileUrl(String platform, String account) {

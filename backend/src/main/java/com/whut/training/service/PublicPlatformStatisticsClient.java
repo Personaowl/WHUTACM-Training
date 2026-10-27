@@ -92,7 +92,8 @@ public class PublicPlatformStatisticsClient {
             if (root.path("status").asInt() != 200 || !"user.show".equals(root.path("template").asText())
                     || !account.equals(user.path("uid").asText())) throw new IllegalArgumentException("Wrong Luogu identity");
             // gu.rating is 咕值, NOT contest Rating. Historical elo list is not an all-time maximum.
-            return checked(integer(user, "eloValue"), null, integer(user, "passedProblemCount"));
+            return checked(integer(user, "eloValue"), null, integer(user, "passedProblemCount"),
+                    user.path("name").isTextual() ? user.path("name").asText() : null);
         } catch (java.io.IOException error) { throw new IllegalArgumentException("Invalid Luogu profile", error); }
     }
 
@@ -100,7 +101,10 @@ public class PublicPlatformStatisticsClient {
         var doc = Jsoup.parse(html);
         if (doc.select(".profile-menu a[href='/acm/contest/profile/" + account + "/practice-coding']").isEmpty())
             throw new IllegalArgumentException("Wrong Nowcoder identity");
-        return checked(labelNumber(doc, "Rating"), null, labelNumber(doc, "题已通过"));
+        // Only use the verified target profile header, never a feed author or a global navigation label.
+        var name = doc.selectFirst(".profile-info-wrapper .coder-info-detail > .coder-name");
+        String displayName = name == null ? null : name.attr("data-title").isBlank() ? name.text() : name.attr("data-title");
+        return checked(labelNumber(doc, "Rating"), null, labelNumber(doc, "题已通过"), displayName);
     }
 
     private Integer tableNumber(Document doc, String label) {
@@ -133,7 +137,16 @@ public class PublicPlatformStatisticsClient {
     }
 
     private Statistics checked(Integer rating, Integer maximum, Integer solved) {
-        if (rating == null && maximum == null && solved == null) throw new IllegalArgumentException("No public statistics");
-        return new Statistics(rating, maximum, solved, Instant.now(), rating == null || maximum == null || solved == null);
+        return checked(rating, maximum, solved, null);
+    }
+
+    private Statistics checked(Integer rating, Integer maximum, Integer solved, String displayName) {
+        String name = displayName == null ? null : displayName.replaceAll("[\\p{Cc}\\p{Cf}]", "").strip();
+        if (name != null && name.isBlank()) name = null;
+        if (name != null) name = name.substring(0, name.offsetByCodePoints(0, Math.min(128, name.codePointCount(0, name.length()))));
+        if (rating == null && maximum == null && solved == null && name == null)
+            throw new IllegalArgumentException("No public statistics");
+        return new Statistics(rating, maximum, solved, Instant.now(), rating == null || maximum == null || solved == null,
+                false, name);
     }
 }

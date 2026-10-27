@@ -7,6 +7,10 @@
 .binding-page .binding-platform-mark { width: 54px; height: 54px; padding: 11px; border-radius: 16px; border-color: color-mix(in srgb, var(--binding-accent) 22%, white); box-shadow: 0 4px 12px color-mix(in srgb, var(--binding-accent) 10%, transparent); background: #fff; flex-shrink: 0; }
 .binding-page .binding-card h2 { font-size: 24px; letter-spacing: -.035em; }
 .binding-page .binding-card-head span { font-size: var(--ui-small); margin-top: 5px; }
+.binding-page .binding-card-head > div:last-child { min-width: 0; }
+.binding-page .binding-card-head .binding-verified-name { display: block; min-width: 0; margin-top: 0; overflow-wrap: anywhere; }
+.binding-page .binding-card-head .is-connected { max-width: 100%; }
+.binding-page .binding-card-head .is-connected > svg { flex-shrink: 0; }
 .binding-controls { padding: 16px 24px 24px; }
 .binding-page .binding-card-description { min-height: 0; margin: 0 0 16px; font-size: var(--ui-body); color: var(--muted); }
 .binding-page .binding-input-row .form-input { background: #f8fafc; border-color: var(--control-line); min-width: 0; }

@@ -98,4 +98,26 @@ class PlatformOverviewIntegrationTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(4))
                 .andExpect(jsonPath("$.data[0].verificationToken").doesNotExist());
     }
+
+    @Test void nicknamePersistsAndTravelsWithItsUidButNeverWithAnUnverifiedOrNewAccount() throws Exception {
+        var user=user("overview-nickname");
+        bindings.ensure(user.getId(),"luogu");bindings.finish(user.getId(),"luogu","123",1);
+        platformSnapshots.save(user.getId(),"luogu","123",new PlatformStatisticsProvider.Statistics(null,null,1349,Instant.now(),true,false,"猫头鹰"));
+        assertThat(platformSnapshots.find(user.getId(),"luogu","123")).get()
+                .satisfies(data -> assertThat(data.displayName()).isEqualTo("猫头鹰"));
+        assertThat(platform(user,"luogu")).satisfies(data -> {
+            assertThat(data.displayName()).isEqualTo("猫头鹰");
+            assertThat(data.accountId()).isEqualTo("123");
+            assertThat(data.profileUrl()).isEqualTo("https://www.luogu.com.cn/user/123");
+        });
+        long now=System.currentTimeMillis()/1000;
+        sessions.save(new AuthTokenSessionRepository.AuthTokenSession(user.getId(),"nickname-access","nickname-refresh",now+3600,now+7200,now));
+        mvc.perform(get("/api/users/"+user.getId()+"/platform-overviews").header("Authorization","Bearer nickname-access"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data[2].displayName").value("猫头鹰"))
+                .andExpect(jsonPath("$.data[2].accountId").value("123"));
+        bindings.finish(user.getId(),"luogu","456",2);
+        assertThat(platform(user,"luogu").displayName()).isNull();
+        platformSnapshots.save(user.getId(),"nowcoder","789",new PlatformStatisticsProvider.Statistics(100,null,1,Instant.now(),true,false,"未绑定昵称"));
+        assertThat(platform(user,"nowcoder").displayName()).isNull();
+    }
 }

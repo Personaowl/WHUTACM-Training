@@ -188,7 +188,9 @@ week 归一到上海时区该周周一，不能选未来周。返回 WeeklyTrain
 
 ## 11. 统一平台统计（账号绑定页 / 首页 / 个人中心）
 
-`GET /api/users/{userId}/platform-overviews`，仅本人可读（包括管理员也不可读取他人的此接口）。返回固定顺序的 codeforces、atcoder、luogu、nowcoder 四项，每项字段为 platform、accountId、profileUrl、connected、rating、maxRating、solvedCount、syncedAt、dataStatus、partial。
+`GET /api/users/{userId}/platform-overviews`，仅本人可读（包括管理员也不可读取他人的此接口）。返回固定顺序的 codeforces、atcoder、luogu、nowcoder 四项，每项字段为 platform、accountId、profileUrl、connected、rating、maxRating、solvedCount、syncedAt、dataStatus、partial、displayName。
+
+displayName 是洛谷 / Nowcoder 公开主页昵称，可为 null；它只用于展示，不是唯一标识，不参与验证、换绑或主页链接构造。accountId 始终保留原数字 UID，前端优先显示匹配当前已验证 UID 的昵称，缺失时回退 UID。昵称随统计快照后台更新；本次启动前缺少昵称的旧快照会触发补全，同轮请求去重、失败退避；本次启动后已成功抓取但昵称仍未公开的快照不因名字缺失而重复刷新。
 
 dataStatus 为 UNBOUND（未绑定）、NOT_SUPPORTED（无统计适配器）、PENDING（首次后台同步）、SYNCING（展示旧快照并后台更新）、READY（已有快照）、UNAVAILABLE（读取异常或首次同步失败处于退避期）。未知指标均为 null，不用 0 代替；真实零值仍返回 0。待验证 UID 和验证码不返回，换绑后旧账号快照不会用于新账号。
 

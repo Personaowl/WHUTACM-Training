@@ -7,9 +7,13 @@ public interface PlatformStatisticsProvider {
     String platform();
     Statistics read(Long userId, String accountId);
 
-    record Statistics(Integer rating, Integer maxRating, Integer solvedCount, Instant syncedAt, boolean partial, boolean refreshing) {
+    record Statistics(Integer rating, Integer maxRating, Integer solvedCount, Instant syncedAt, boolean partial,
+                      boolean refreshing, String displayName) {
         public Statistics(Integer rating, Integer maxRating, Integer solvedCount, Instant syncedAt, boolean partial) {
-            this(rating, maxRating, solvedCount, syncedAt, partial, false);
+            this(rating, maxRating, solvedCount, syncedAt, partial, false, null);
+        }
+        public Statistics(Integer rating, Integer maxRating, Integer solvedCount, Instant syncedAt, boolean partial, boolean refreshing) {
+            this(rating, maxRating, solvedCount, syncedAt, partial, refreshing, null);
         }
     }
 }

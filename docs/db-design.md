@@ -93,7 +93,7 @@ cf_problem 另有 idx_cf_practice_filter (is_interactive,source_contest_id,ratin
 | 表 | 主要字段 | 约束与用途 |
 | --- | --- | --- |
 | cf_profile_snapshot | user_id、codeforces_handle、payload_json LONGTEXT、synced_at | user_id 主键、Handle 索引；持久化统计快照，配合进程内缓存先读后后台刷新 |
-| platform_statistics_snapshot | user_id、platform、account_id、rating、max_rating、solved_count、synced_at、partial | (user_id,platform,account_id) 主键；AtCoder / 洛谷 / Nowcoder 本地快照，账号隔离，未知指标为 NULL，不存验证码或网页源码 |
+| platform_statistics_snapshot | user_id、platform、account_id、display_name、rating、max_rating、solved_count、synced_at、partial | (user_id,platform,account_id) 主键；AtCoder / 洛谷 / Nowcoder 本地快照。display_name 为可空 VARCHAR(128)，保存洛谷 / Nowcoder 昵称，UID 仍为账号标识；账号隔离，未知指标为 NULL，不存验证码或网页源码 |
 | cf_rating_change | id、user_id、contest_id、contest_name、contest_rank、old_rating、new_rating、rating_change、rating_update_time_seconds、contest_url | (user_id,contest_id) 唯一；时间和 (user_id,时间) 索引；支持 Rated 比赛查询和导出 |
 | contest_source_snapshot | platform、payload_json MEDIUMTEXT、synced_at | platform 主键；四平台最近一次成功公开赛程，空的成功列表也会保存，失败不覆盖。重启仅恢复一天内且尚未结束的比赛，并在后台重新验证 |
 

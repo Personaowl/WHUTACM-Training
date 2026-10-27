@@ -21,6 +21,8 @@
 .profile-platform-identity h3 { margin: 0 0 10px; font-size: 26px; font-weight: 800; color: var(--ink); }
 .profile-platform-identity a { display: inline-flex; align-items: center; gap: 9px; max-width: 100%; min-height: 44px; overflow-wrap: anywhere; }
 .profile-platform-identity a svg { flex-shrink: 0; }
+.profile-platform-name { min-width: 0; overflow-wrap: anywhere; }
+.profile-platform-uid { display: block; color: var(--muted); font-size: var(--ui-small); margin: 0 0 8px; overflow-wrap: anywhere; }
 .profile-platform-identity a:hover { text-decoration: underline; text-underline-offset: 4px; }
 .profile-platform-account-state { font-size: var(--ui-small); color: var(--muted); }
 .profile-platform-verified { display: inline-flex; flex-shrink: 0; align-items: center; gap: 6px; font-size: var(--ui-small); color: #21724c; }

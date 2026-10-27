@@ -13,7 +13,8 @@ public record PlatformOverview(
         Integer solvedCount,
         Instant syncedAt,
         DataStatus dataStatus,
-        boolean partial
+        boolean partial,
+        String displayName
 ) {
     public enum DataStatus { UNBOUND, NOT_SUPPORTED, PENDING, SYNCING, READY, UNAVAILABLE }
 }

@@ -2,7 +2,7 @@ import { lazy, Suspense, useId, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { ArrowUpRight, ChartNoAxesCombined, CheckCircle2, ChevronDown, ExternalLink, Link2, RefreshCw } from "lucide-react";
 import usePlatformOverviews from "../../hooks/usePlatformOverviews";
-import { formatPlatformMetric, matchingPlatformOverview, platformRatingMeta } from "../../utils/platformOverview";
+import { formatPlatformMetric, matchingPlatformOverview, platformRatingMeta, platformAccountLabel } from "../../utils/platformOverview";
 import { PROFILE_PLATFORMS, availablePlatformMetrics, nextPlatformTab, platformProfileUrl, profilePlatformAccount } from "../../utils/platformPanel";
 import { CardSkeleton } from "../ui/Skeleton";
 import "./PlatformDataPanel.css";
@@ -24,7 +24,8 @@ export default function PlatformDataPanel({ profile, compact = false }) {
   const account = profilePlatformAccount(selectedKey, profile, overviews);
   const data = matchingPlatformOverview(overviews[selectedKey], account);
   const metrics = availablePlatformMetrics(selectedKey, data);
-  const accountLabel = account && ["luogu", "nowcoder"].includes(selectedKey) ? `UID ${account}` : account;
+  const accountLabel = platformAccountLabel(selectedKey, account, data);
+  const showUid = account && ["luogu", "nowcoder"].includes(selectedKey) && accountLabel !== `UID ${account}`;
   const accountColor = platformRatingMeta(selectedKey, data?.rating).color;
   const syncing = ["PENDING", "SYNCING"].includes(data?.dataStatus);
   const failed = Boolean(error || data?.dataStatus === "UNAVAILABLE");
@@ -61,7 +62,8 @@ export default function PlatformDataPanel({ profile, compact = false }) {
       <div className="profile-platform-summary" data-unbound={!loading && !account || undefined}>
       <div className="profile-platform-account">
         <div className="profile-platform-identity">
-          <div><h3>{account ? <a href={profileUrl} style={{ color: accountColor }} target="_blank" rel="noopener noreferrer">{accountLabel}<ExternalLink size={16} aria-hidden="true" /></a> : selected.label}</h3>
+          <div><h3>{account ? <a href={profileUrl} style={{ color: accountColor }} target="_blank" rel="noopener noreferrer"><span className="profile-platform-name">{accountLabel}</span><ExternalLink size={16} aria-hidden="true" /></a> : selected.label}</h3>
+            {showUid && <span className="profile-platform-uid">UID {account}</span>}
             {account ? <span className="profile-platform-verified"><CheckCircle2 size={15} aria-hidden="true" />{selected.label} 已绑定</span>
               : <span className="profile-platform-account-state">{loading ? "读取账号中" : failed ? "账号状态暂不可用" : "尚未绑定"}</span>}
           </div>

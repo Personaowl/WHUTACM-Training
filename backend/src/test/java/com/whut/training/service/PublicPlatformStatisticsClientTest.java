@@ -55,4 +55,39 @@ class PublicPlatformStatisticsClientTest {
             assertThatThrownBy(() -> client.fetch(platform, "../admin?x=http://localhost"))
                     .isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test void luoguNicknameComesFromTheMatchingUserAndDoesNotInventMetrics() {
+        var data=client.parseLuogu("123", luogu("\"name\":\"  猫头鹰  \",\"passedProblemCount\":1349"));
+        assertThat(data.displayName()).isEqualTo("猫头鹰");
+        assertThat(data.solvedCount()).isEqualTo(1349);
+        assertThat(client.parseLuogu("123",luogu("\"name\":\"Only Name\"")).rating()).isNull();
+        assertThat(client.parseLuogu("123",luogu("\"name\":\"Only Name\"")).partial()).isTrue();
+        assertThatThrownBy(() -> client.parseLuogu("456",luogu("\"name\":\"Wrong User\"")))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test void nowcoderNicknameUsesOnlyTheTargetProfileHeaderNotFeedAuthors() {
+        String html="""
+                <a class='coder-name' data-title='Unrelated Name'>Unrelated Name</a>
+                <ul class='profile-menu'><li><a href='/acm/contest/profile/123/practice-coding'>TA的练习</a></li></ul>
+                <div class='profile-info-wrapper'><div class='coder-info-detail'>
+                  <a class='coder-name rate-score3' data-title='猫头鹰与笨笨鱼'>猫头鹰与笨笨鱼</a>
+                </div></div>
+                <div class='status-item'><div class='state-num'>1234</div><span>Rating</span></div>
+                """;
+        var data=client.parseNowcoder("123",html);
+        assertThat(data.displayName()).isEqualTo("猫头鹰与笨笨鱼");
+        assertThat(data.rating()).isEqualTo(1234);
+        assertThatThrownBy(() -> client.parseNowcoder("456",html)).isInstanceOf(IllegalArgumentException.class);
+        assertThat(client.parseNowcoder("123",html.replace("data-title='猫头鹰与笨笨鱼'", "")).displayName())
+                .isEqualTo("猫头鹰与笨笨鱼");
+        assertThat(client.parseNowcoder("123",html.replace("class='profile-info-wrapper'", "class='feed'" )).displayName()).isNull();
+    }
+
+    @Test void profileNamesAreOptionalAndBoundedWithoutSplittingUnicodeCharacters() {
+        String name="😀".repeat(140);
+        var data=client.parseLuogu("123",luogu("\"name\":\""+name+"\",\"passedProblemCount\":0"));
+        assertThat(data.displayName()).isEqualTo("😀".repeat(128));
+        assertThat(client.parseLuogu("123",luogu("\"name\":\"\\n \",\"passedProblemCount\":0")).displayName()).isNull();
+    }
 }

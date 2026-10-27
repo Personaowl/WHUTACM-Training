@@ -38,6 +38,7 @@ public class MySqlInitializer implements DatabaseInitializer {
                     user_id BIGINT NOT NULL,
                     platform VARCHAR(16) NOT NULL,
                     account_id VARCHAR(64) NOT NULL,
+                    display_name VARCHAR(128),
                     rating INT,
                     max_rating INT,
                     solved_count INT,
@@ -402,6 +403,8 @@ public class MySqlInitializer implements DatabaseInitializer {
                 SELECT 1, 1, 24, ? WHERE NOT EXISTS (SELECT 1 FROM atcoder_tracking_setting WHERE id = 1)
                 """, java.time.OffsetDateTime.now().toString());
 
+        ensureColumn("platform_statistics_snapshot", "display_name",
+                "ALTER TABLE platform_statistics_snapshot ADD COLUMN display_name VARCHAR(128)");
         ensureColumn("users", "atcoder_handle", "ALTER TABLE users ADD COLUMN atcoder_handle VARCHAR(64)");
         ensureColumn("users", "pending_atcoder_handle", "ALTER TABLE users ADD COLUMN pending_atcoder_handle VARCHAR(64)");
         ensureColumn("users", "atcoder_binding_token", "ALTER TABLE users ADD COLUMN atcoder_binding_token VARCHAR(64)");

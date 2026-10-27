@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { formatPlatformMetric, matchingPlatformOverview, platformRatingMeta, needsPlatformPolling } from "../src/utils/platformOverview.js";
+import { formatPlatformMetric, matchingPlatformOverview, platformRatingMeta, needsPlatformPolling, platformAccountLabel } from "../src/utils/platformOverview.js";
 
 test("unknown metrics are not confused with measured zero", () => {
   assert.equal(formatPlatformMetric(null), "—");
@@ -8,6 +8,24 @@ test("unknown metrics are not confused with measured zero", () => {
   assert.equal(formatPlatformMetric(0), "0");
   assert.equal(formatPlatformMetric(1961), "1,961");
   assert.equal(formatPlatformMetric(NaN), "—");
+});
+
+test("UID platforms prefer their verified site's nickname while retaining an ID fallback", () => {
+  for (const platform of ["luogu", "nowcoder"]) {
+    const row = { platform, connected:true, accountId:"123", displayName:"  猫头鹰  " };
+    assert.equal(platformAccountLabel(platform, "123", row), "猫头鹰");
+    assert.equal(platformAccountLabel(platform, "456", row), "UID 456");
+    assert.equal(platformAccountLabel(platform, "123", {...row,connected:false}), "UID 123");
+    assert.equal(platformAccountLabel(platform, "123", {...row,platform:"another"}), "UID 123");
+    for (const displayName of [null, undefined, "", "  ", 12, {}])
+      assert.equal(platformAccountLabel(platform, "123", {...row,displayName}), "UID 123");
+    assert.equal(platformAccountLabel(platform, null, row), null);
+  }
+});
+
+test("handles and profile links never change to nickname values", () => {
+  for (const platform of ["codeforces", "atcoder"])
+    assert.equal(platformAccountLabel(platform, "handle", {connected:true,accountId:"handle",displayName:"Other Name"}), "handle");
 });
 test("codeforces rating colors are not applied to other platform ratings", () => {
   assert.equal(platformRatingMeta("codeforces",1961).color,"#aa00aa");
