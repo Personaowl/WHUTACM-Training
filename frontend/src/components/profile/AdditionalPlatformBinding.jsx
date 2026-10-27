@@ -24,7 +24,9 @@ export default function AdditionalPlatformBinding({ userId, platform, label, onC
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [userId, platform]);
-  const active = Boolean(binding?.verificationToken && binding?.pendingAccountId === uid);
+  const pending = Boolean(binding?.verificationToken && binding?.pendingAccountId === uid);
+  const legacyNowcoderToken = platform === "nowcoder" && pending && binding.verificationToken.length > 25;
+  const active = pending && !legacyNowcoderToken;
   async function submit() {
     if (!/^[1-9][0-9]{0,17}$/.test(uid)) {
       setSuccess(false); setMessage("请输入个人主页地址中的数字 UID，而非昵称"); return;
@@ -37,7 +39,9 @@ export default function AdditionalPlatformBinding({ userId, platform, label, onC
       onConnected(platform, Boolean(data.data.accountId));
       setSuccess(true);
       if (active) onVerified?.();
-      setMessage(active ? "所有权验证成功，可恢复原个人介绍" : "请将下方验证码临时加入个人介绍并保存");
+      setMessage(active ? "所有权验证成功，可恢复原个人介绍"
+        : platform === "nowcoder" ? "请先备份原简介，再用下方完整验证码临时替换简介并保存"
+        : "请将下方验证码临时加入个人介绍并保存");
     } catch (error) { setMessage(error.message || "验证失败，请稍后重试"); }
     finally { setBusy(false); }
   }
@@ -59,19 +63,23 @@ export default function AdditionalPlatformBinding({ userId, platform, label, onC
           value={uid} onChange={event => { setUid(event.target.value.trim()); setSuccess(false); setMessage(""); }}
           placeholder={label + "数字 UID"} disabled={busy || loading} />
         <button type="button" className="button-primary" onClick={submit} disabled={busy || loading}>
-          {busy ? "处理中..." : loading ? "加载中..." : active ? "我已保存，完成验证" : "开始验证"}
+          {busy ? "处理中..." : loading ? "加载中..." : legacyNowcoderToken ? "重新验证" : active ? "我已保存，完成验证" : "开始验证"}
         </button>
       </div>
       <p className="binding-uid-hint">UID 位于主页地址末尾，如 {platform === "luogu" ? "luogu.com.cn/user/123" : "nowcoder.com/users/123"}</p>
-      {active && <div className="binding-step">
+      {pending && <div className="binding-step">
         <div className="binding-step-title">验证账号所有权</div>
-        <div className="binding-step-copy">
+        {legacyNowcoderToken ? <p role="alert" className="notice notice-error">旧验证码超过 25 字符，请重新发起验证。</p>
+        : <div className="binding-step-copy">
           前往 <a href={binding.profileUrl} target="_blank" rel="noreferrer">{label}个人主页 <ExternalLink size={13} /></a>，
-          编辑{platform === "luogu" ? "个人介绍" : "个人简介"}，临时加入下面的完整验证码并保存：
+          {platform === "nowcoder"
+            ? "个人简介最多 25 字符，请先备份原简介，再临时替换为下面的完整验证码并保存："
+            : "编辑个人介绍，临时加入下面的完整验证码并保存："}
           <code style={{ overflowWrap: "anywhere" }}>{binding.verificationToken}</code>
+          {platform === "nowcoder" && <span>验证码共 {binding.verificationToken.length} 字符，请勿附加其他文字。</span>}
           验证成功后可删除验证码。不要把验证码发到讨论、评论或题解中。
-        </div>
-        <small>截止时间：{new Date(binding.expiresAtSeconds * 1000).toLocaleTimeString()}</small>
+        </div>}
+        {!legacyNowcoderToken && <small>截止时间：{new Date(binding.expiresAtSeconds * 1000).toLocaleTimeString()}</small>}
         <button type="button" className="home-text-link" disabled={busy} onClick={() => setBinding(current => ({ ...current, verificationToken: null }))}>重新发起验证</button>
       </div>}
       {message && <div role="status" className={`notice ${success ? "notice-success" : "notice-error"}`}>{message}</div>}

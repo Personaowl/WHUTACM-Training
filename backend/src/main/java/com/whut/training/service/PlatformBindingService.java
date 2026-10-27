@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.HexFormat;
 
 @Service
@@ -31,7 +32,10 @@ public class PlatformBindingService {
         platform(platform);
         if (uid == null || !uid.matches("[1-9][0-9]{0,17}")) throw new BusinessException(400, "请输入平台主页中的数字 UID（不超过18位）");
         byte[] bytes = new byte[16]; random.nextBytes(bytes);
-        String token = "WHUT-" + HexFormat.of().formatHex(bytes);
+        // Nowcoder allows only 25 introduction characters. Keep all 128 random bits in 24 ASCII characters.
+        String token = "nowcoder".equals(platform)
+                ? "W-" + Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
+                : "WHUT-" + HexFormat.of().formatHex(bytes);
         transaction.executeWithoutResult(status -> {
             repository.ensure(userId, platform);
             var old = repository.find(userId, platform, true).orElseThrow();

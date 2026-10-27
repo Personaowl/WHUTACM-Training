@@ -14,6 +14,10 @@ test("shorter binding copy still explains limitations and verification safety", 
   assert.ok(!binding.includes("暂不统计训练数据"));
   assert.ok(binding.includes("不要把验证码发到讨论、评论或题解中"));
   assert.ok(binding.includes("完整验证码并保存"));
+  assert.ok(binding.includes("个人简介最多 25 字符"));
+  assert.ok(binding.includes("请先备份原简介"));
+  assert.ok(binding.includes("旧验证码超过 25 字符，请重新发起验证"));
+  assert.ok(binding.includes('role="alert"'));
 });
 test("contest timezone and practice tag matching rules remain explicit", async () => {
   assert.ok((await source("pages/ContestsPage.jsx")).includes("北京时间（UTC+8）"));

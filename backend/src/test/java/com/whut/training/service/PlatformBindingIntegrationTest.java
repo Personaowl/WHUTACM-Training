@@ -97,4 +97,46 @@ class PlatformBindingIntegrationTest {
         code(() -> service.finish(a.getId(),"luogu"),400);
         assertThat(service.get(a.getId(),"luogu").accountId()).isEqualTo("123");
     }
+
+    @Test void nowcoderProofFitsIntroductionLimitWithoutReducingRandomBytes() {
+        User a=user("platform-nowcoder-short"), b=user("platform-nowcoder-distinct");
+        var first=service.start(a.getId(),"nowcoder","456");
+        var second=service.start(b.getId(),"nowcoder","789");
+        assertThat(first.verificationToken()).hasSize(24).matches("W-[A-Za-z0-9_-]{22}");
+        assertThat(java.util.Base64.getUrlDecoder().decode(first.verificationToken().substring(2))).hasSize(16);
+        assertThat(second.verificationToken()).isNotEqualTo(first.verificationToken());
+        Long started=jdbc.queryForObject("SELECT started_at FROM user_platform_binding WHERE user_id=? AND platform='nowcoder'",Long.class,a.getId());
+        assertThat(first.expiresAtSeconds()).isEqualTo(started+600);
+        when(verifier.introduction("nowcoder","456")).thenReturn(first.verificationToken());
+        assertThat(service.finish(a.getId(),"nowcoder").accountId()).isEqualTo("456");
+        code(() -> service.finish(a.getId(),"nowcoder"),400);
+    }
+
+    @Test void nowcoderRejectsTruncatedAndOtherUsersProofAndKeepsLuoguFormat() {
+        User a=user("platform-nowcoder-exact"), b=user("platform-nowcoder-other");
+        var first=service.start(a.getId(),"nowcoder","456");
+        var other=service.start(b.getId(),"nowcoder","789");
+        when(verifier.introduction("nowcoder","456")).thenReturn(first.verificationToken().substring(0,23));
+        code(() -> service.finish(a.getId(),"nowcoder"),400);
+        jdbc.update("UPDATE user_platform_binding SET last_attempt_at=0 WHERE user_id=?",a.getId());
+        when(verifier.introduction("nowcoder","456")).thenReturn(other.verificationToken());
+        code(() -> service.finish(a.getId(),"nowcoder"),400);
+        assertThat(service.get(a.getId(),"nowcoder").accountId()).isNull();
+        assertThat(service.start(a.getId(),"luogu","123").verificationToken()).matches("WHUT-[0-9a-f]{32}");
+    }
+
+    @Test void oldLongNowcoderChallengeCanBeReplacedButCannotVerifyTheNewChallenge() {
+        User a=user("platform-nowcoder-legacy");
+        service.start(a.getId(),"nowcoder","456");
+        String legacy="WHUT-"+"a".repeat(32);
+        jdbc.update("UPDATE user_platform_binding SET verification_token=?,started_at=0 WHERE user_id=? AND platform='nowcoder'",legacy,a.getId());
+        assertThat(service.get(a.getId(),"nowcoder").verificationToken()).isEqualTo(legacy);
+        var renewed=service.start(a.getId(),"nowcoder","456");
+        assertThat(renewed.verificationToken()).hasSize(24).isNotEqualTo(legacy);
+        when(verifier.introduction("nowcoder","456")).thenReturn(legacy);
+        code(() -> service.finish(a.getId(),"nowcoder"),400);
+        jdbc.update("UPDATE user_platform_binding SET last_attempt_at=0 WHERE user_id=?",a.getId());
+        when(verifier.introduction("nowcoder","456")).thenReturn(renewed.verificationToken());
+        assertThat(service.finish(a.getId(),"nowcoder").accountId()).isEqualTo("456");
+    }
 }

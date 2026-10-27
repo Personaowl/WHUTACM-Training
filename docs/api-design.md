@@ -65,6 +65,8 @@ CF 绑定窗口为 120 秒，要求验证窗口内向 CF 1A 提交 Compilation E
 | POST /api/users/{userId}/platform-bindings/{platform}/start | JSON：uid，1～18 位正整数文本；生成 10 分钟挑战，不直接绑定 |
 | POST /api/users/{userId}/platform-bindings/{platform}/finish | 无业务请求体；读取对应账号简介验证随机码，成功后消费挑战并保存绑定 |
 
+Nowcoder 新挑战使用 24 字符的 `W-` + 无填充 Base64URL 编码，底层仍为 16 个安全随机字节，适配简介 25 字符上限。洛谷继续使用 37 字符的 `WHUT-` + 十六进制格式；不截断旧验证码进行匹配，不改变 UID 绑定、有效期、重试节流和单次消费规则。已有长码可重新开始获取短码，已验证账号不受影响。
+
 返回字段：platform、accountId、verifiedAtSeconds、pendingAccountId、verificationToken、expiresAtSeconds、profileUrl。仅 accountId 非空代表已绑定；待验证不算成功。开始间隔 10 秒、验证间隔 5 秒，过密返回 429；未匹配/过期返回 400，重复账号或挑战已更新返回 409，外部页面无法安全读取返回 503。失败不会覆盖原已验证账号。本轮不增加两平台的训练统计、导出或公开资料字段。
 
 ## 3. 每日题与自主练习
