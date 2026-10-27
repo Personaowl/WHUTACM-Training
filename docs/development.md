@@ -35,6 +35,8 @@ docs/                     接口、数据库与生产部署说明
 - ABC 跟踪与周训练统计是两个服务：前者同步外部比赛，后者从本地记录聚合并管理情况说明。MySqlInitializer 负责建表/有限补结构，DataInitializer 负责初始化配置的超管。
 - 当前按单后端实例部署，缓存、任务和部分锁在进程内；没有微服务拆分、分布式任务队列或跨实例调度去重。层次分离不等于可直接横向扩容。
 - 四平台基础统计由 PlatformStatisticsProvider 统一返回；首页和个人中心共用 PlatformDataPanel，绑定页使用 PlatformStatistics，三者共用统计数字字号。新增三平台经 PublicPlatformStatisticsService 异步写入 platform_statistics_snapshot；默认 30 分钟缓存、失败退避 5 分钟，网页请求不等待外部网站。测试配置关闭外部同步，使用解析样例和 H2 快照回归；口径见[接口参考](api-design.md)。
+- 排行榜由 LeaderboardServiceImpl 合并短时重复请求，`app.leaderboard.cache-ms` 默认 3000、设为 0 关闭；缓存有页数/估算字符串内存上限，资料、身份、积分写入和事务结束会失效，事务内读取不共享。不是用户认证缓存。
+- 比赛成功来源快照保存在 `contest_source_snapshot`。`contests.warmup-enabled` 默认 true，应用就绪后只提交异步预热任务；每隔 `warmup-check-ms`（默认 60000）检查 15 分钟缓存是否到期。恢复时仅使用一天内的快照并去掉已结束场次；无可用快照且首次抓取仍未完成时，请求仍需等待。测试配置关闭预热，不能用真实外站压测。
 
 精确路径见 [后端源码](../backend/src/main/java/com/whut/training/) 与 [前端源码](../frontend/src/)，接口和表结构分别见 [接口参考](api-design.md)、[数据库结构](db-design.md)。
 

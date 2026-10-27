@@ -117,6 +117,8 @@ CF 绑定窗口为 120 秒，要求验证窗口内向 CF 1A 提交 Compilation E
 
 首页字段：`totalUsers, topUsers, todayProblem, dailySubmissionSummary, problemPoolInitializing, currentUserId, currentUserPoints`。历史命名 totalUsers 表示**过去 7 天有每日题记录的活跃用户数**，不是全部注册数。dailySubmissionSummary 包含 todaySubmissions、todayCheckedInUsers。currentUserPoints 为当前认证用户的数据库积分，不混入共享概览缓存。
 
+排行榜分页/总数默认共享 3 秒的有界缓存，资料、身份、积分写入会失效；完全同分同打卡时间时按 ID 升序稳定分页。比赛接口格式不变，优先返回内存或一天内的持久来源快照并后台刷新；首次没有任何快照时仍需等待抓取，不返回假造的空数据或跳过鉴权。
+
 排行榜只提供总积分排名，排除 SUPER_ADMIN。兼容参数 type 默认 total，当前不切换其他榜单，不能据此推断存在周榜/月榜。
 
 ## 6. 旧推题接口下线

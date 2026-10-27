@@ -34,6 +34,9 @@ codeforces:
 
 contests:
   cache-minutes: 15
+  warmup-enabled: true
+  warmup-check-ms: 60000
+  warmup-initial-delay-ms: 60000
   codeforces-url: https://codeforces.com/api/contest.list?gym=false
   atcoder-url: https://atcoder.jp/contests/?lang=en
   nowcoder-url: https://ac.nowcoder.com/acm/contest/vip-index
@@ -55,6 +58,8 @@ app:
   cors:
     allowed-origins: "${CORS_ALLOWED_ORIGINS:http://localhost:5173}"
   home:
+    cache-ms: 3000
+  leaderboard:
     cache-ms: 3000
   database:
     type: mysql

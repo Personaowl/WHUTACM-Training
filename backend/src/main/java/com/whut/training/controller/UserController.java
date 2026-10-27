@@ -85,7 +85,8 @@ public class UserController {
         if (!currentUser.getId().equals(id) && !isAdministrator(currentUser)) {
             throw new BusinessException(403, "forbidden");
         }
-        return ApiResponse.ok(userService.getById(id));
+        // Authentication already loaded this user for the current request; do not read the avatar twice.
+        return ApiResponse.ok(currentUser.getId().equals(id) ? currentUser : userService.getById(id));
     }
 
     /**

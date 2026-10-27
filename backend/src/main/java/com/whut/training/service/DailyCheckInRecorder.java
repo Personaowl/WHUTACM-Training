@@ -37,6 +37,9 @@ public class DailyCheckInRecorder {
         dailyProblemRepository.upsertUserDailyStatus(userId, date, submissionId, verdict, nextScore);
         if (nextScore > oldScore) {
             userRepository.incrementTotalPoints(userId, nextScore - oldScore);
+        } else {
+            // The tie-break timestamp may change even when the daily maximum score does not.
+            userRepository.invalidateRanking();
         }
         return new CheckInResultResponse(slot.toUpperCase(java.util.Locale.ROOT), true, submissionId, verdict, nextScore);
     }

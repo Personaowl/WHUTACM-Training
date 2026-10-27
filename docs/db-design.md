@@ -2,14 +2,14 @@
 
 [文档索引](README.md) · [接口参考](api-design.md) · [数据迁移](migration.md)
 
-按 2026-10-25 当前 [MySqlInitializer](../backend/src/main/java/com/whut/training/config/MySqlInitializer.java) 和 [Repository](../backend/src/main/java/com/whut/training/repository/) 核对。下文说明表用途、关键字段及约束；完整类型、默认值和建表 SQL 以初始化器为准，避免在文档复制一份容易失效的 DDL。
+按 2026-10-27 当前 [MySqlInitializer](../backend/src/main/java/com/whut/training/config/MySqlInitializer.java) 和 [Repository](../backend/src/main/java/com/whut/training/repository/) 核对。下文说明表用途、关键字段及约束；完整类型、默认值和建表 SQL 以初始化器为准，避免在文档复制一份容易失效的 DDL。
 
 ## 1. 存储与初始化
 
 - 业务库默认名 whut_training，可通过 MYSQL_URL 修改。当前使用 MySQL、InnoDB、utf8mb4_unicode_ci 和 JdbcTemplate，不使用 ORM、SQLite 或 Redis。
 - 推荐服务器 MySQL 8.0；开发用 compose.yaml 实际固定 mysql:8.4。迁移时优先同版本恢复演练，不能把二者当作相同版本或直接复制数据目录。
 - 启动创建缺失表，并执行代码中列出的补字段、补索引和修正 SQL；**CREATE TABLE IF NOT EXISTS 不代表自动对齐任意旧表结构**，当前没有 Flyway/Liquibase 的版本化迁移体系。
-- 当前初始化器创建下列 **22 张表**；旧库可能还有已废弃的表，数量不能作为迁移成功的唯一判据。
+- 当前初始化器创建下列 **23 张表**；旧库可能还有已废弃的表，数量不能作为迁移成功的唯一判据。
 - ID 通常为 BIGINT 自增，周记录及 ABC 关系表使用复合主键。代码未声明外键级联约束，关联完整性与删除流程由应用维护，不能假设删父记录会自动删子记录。
 - date / week_start 等业务日期为 VARCHAR(10) 的 YYYY-MM-DD；多数过程时间为 VARCHAR(64) 的 ISO 字符串；部分创建时间为 TIMESTAMP，外部平台时间为 BIGINT Unix 秒。恢复必须保留这些语义，业务周按 Asia/Shanghai 计算。
 
@@ -62,7 +62,7 @@
 | cf_problem | id、problem_key、contest_id、problem_index、name、rating、tags、is_interactive、source_contest_id、solved_count、source_url、last_synced_at | problem_key 唯一，通常为 contestId-index；有 rating 和比赛题号索引；仅题目元数据，不存题面、测试数据、代码 |
 | daily_problem | id、date、problem_key、contest_id、problem_index、name、rating、tags、source_url、generated_at、generated_by | date 唯一；兼容旧单题快照和 regenerate 接口，仍被代码使用，不能当废表删除 |
 | daily_problem_slot | id、date、slot、problem_key、contest_id、problem_index、name、rating、tags、source_url、generated_at、generated_by、is_redrawn | date 索引；当前 Easy/Hard 主表，重抽将旧行 is_redrawn=1；没有 (date,slot) 唯一键，因为保留历次题目 |
-| user_daily_status | id、user_id、date、submission_id、verdict、checked_at、score | (user_id,date) 唯一；每日汇总最高分，不是每题一行；有 user_id 和 (date,user_id) 索引 |
+| user_daily_status | id、user_id、date、submission_id、verdict、checked_at、score | (user_id,date) 唯一；每日汇总最高分，不是每题一行；有 user_id、(date,user_id)、(user_id,checked_at) 索引，最后一项支持排行时间查询 |
 | user_daily_slot_status | id、user_id、date、slot、problem_key、submission_id、verdict、checked_at、score | (user_id,date,problem_key) 唯一；保留题级完成；有 (user_id,date)、problem_key、(date,user_id) 索引 |
 | user_practice_draw | id、user_id、draw_date、problem_key、contest_id、problem_index、name、rating、tags、source_url、drawn_at、submission_id、verdict、checked_at | (user_id,draw_date) 索引；仅个人抽题历史，后三个校验字段为旧兼容字段，不代表仍提供练习校验 |
 
@@ -88,13 +88,14 @@ cf_problem 另有 idx_cf_practice_filter (is_interactive,source_contest_id,ratin
 
 旧 push_pool、push_submissions、daily_push 三表如存在，仅保留历史数据。当前不创建、不读写，不执行旧状态修正，不自动删除或迁移内容。
 
-## 5. 平台统计（3 表）
+## 5. 平台统计与赛事快照（4 表）
 
 | 表 | 主要字段 | 约束与用途 |
 | --- | --- | --- |
 | cf_profile_snapshot | user_id、codeforces_handle、payload_json LONGTEXT、synced_at | user_id 主键、Handle 索引；持久化统计快照，配合进程内缓存先读后后台刷新 |
 | platform_statistics_snapshot | user_id、platform、account_id、rating、max_rating、solved_count、synced_at、partial | (user_id,platform,account_id) 主键；AtCoder / 洛谷 / Nowcoder 本地快照，账号隔离，未知指标为 NULL，不存验证码或网页源码 |
 | cf_rating_change | id、user_id、contest_id、contest_name、contest_rank、old_rating、new_rating、rating_change、rating_update_time_seconds、contest_url | (user_id,contest_id) 唯一；时间和 (user_id,时间) 索引；支持 Rated 比赛查询和导出 |
+| contest_source_snapshot | platform、payload_json MEDIUMTEXT、synced_at | platform 主键；四平台最近一次成功公开赛程，空的成功列表也会保存，失败不覆盖。重启仅恢复一天内且尚未结束的比赛，并在后台重新验证 |
 
 CF 概览统计最多读取最近 10000 条提交，不能宣称覆盖任意大账号全部历史。每日题校验的“最近 30 条”是另一个独立查询，不影响上述概览上限。
 
@@ -134,5 +135,5 @@ review_status 默认 NONE，可为 PENDING / APPROVED / REJECTED；manual_status
 - 旧 user_fun_check_in 表若存在只作历史存档；当前不创建、不读写，也不会自动删除。不应将它写为现行签到模块。
 - daily_problem 与练习历史中的旧校验字段仍有兼容意义，不因页面删减就直接删表/列。
 - 库内头像、说明、会话摘要和所有业务数据都随完整业务库备份迁移；没有单独的头像 uploads 目录。备份包含私人信息与认证材料，须限制权限、异机保存。
-- 进程内校验任务、请求队列和缓存不在数据库里，重启/迁移后重建。
+- 进程内校验任务、请求队列和排行榜缓存不在数据库里，重启/迁移后重建。平台统计与赛事来源的持久快照则随整库备份迁移。
 - 不要在生产手工按本文重建表，也不要清库“修复结构”。准确操作见 [部署](deployment.md) 与 [停写迁移](migration.md)；上线前备份，在演练库验证目标版本的初始化修正。

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.whut.training.aspect.annotation.ServiceLog;
 import com.whut.training.domain.dto.UpcomingContestItem;
 import com.whut.training.exception.BusinessException;
+import com.whut.training.repository.ContestSnapshotRepository;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -14,6 +15,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Scheduled;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -64,7 +68,10 @@ public class AtCoderContestService implements ContestService {
     private final Duration cacheDuration;
     private final Executor contestFetchExecutor;
     private final Clock clock;
+    private final ContestSnapshotRepository snapshots;
+    private final boolean warmupEnabled;
     private final Object refreshLock = new Object();
+    private boolean snapshotsLoaded;
     private CompletableFuture<List<UpcomingContestItem>> refreshing;
     private volatile Instant retryAfter = Instant.EPOCH;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -78,7 +85,7 @@ public class AtCoderContestService implements ContestService {
             String nowcoderUrl,
             String luoguUrl
     ) {
-        this(atCoderUrl, cacheMinutes, codeforcesUrl, nowcoderUrl, luoguUrl, ForkJoinPool.commonPool());
+        this(atCoderUrl, cacheMinutes, codeforcesUrl, nowcoderUrl, luoguUrl, ForkJoinPool.commonPool(), Clock.systemUTC());
     }
 
     @Autowired
@@ -88,13 +95,22 @@ public class AtCoderContestService implements ContestService {
             @Value("${contests.codeforces-url:https://codeforces.com/api/contest.list?gym=false}") String codeforcesUrl,
             @Value("${contests.nowcoder-url:https://ac.nowcoder.com/acm/contest/vip-index}") String nowcoderUrl,
             @Value("${contests.luogu-url:https://www.luogu.com.cn/contest/list}") String luoguUrl,
-            @Qualifier("contestFetchExecutor") Executor contestFetchExecutor
+            @Qualifier("contestFetchExecutor") Executor contestFetchExecutor,
+            ContestSnapshotRepository snapshots,
+            @Value("${contests.warmup-enabled:true}") boolean warmupEnabled
     ) {
-        this(atCoderUrl, cacheMinutes, codeforcesUrl, nowcoderUrl, luoguUrl, contestFetchExecutor, Clock.systemUTC());
+        this(atCoderUrl, cacheMinutes, codeforcesUrl, nowcoderUrl, luoguUrl, contestFetchExecutor,
+                Clock.systemUTC(), snapshots, warmupEnabled);
     }
 
     AtCoderContestService(String atCoderUrl, long cacheMinutes, String codeforcesUrl, String nowcoderUrl,
                          String luoguUrl, Executor contestFetchExecutor, Clock clock) {
+        this(atCoderUrl, cacheMinutes, codeforcesUrl, nowcoderUrl, luoguUrl, contestFetchExecutor, clock, null, false);
+    }
+
+    AtCoderContestService(String atCoderUrl, long cacheMinutes, String codeforcesUrl, String nowcoderUrl,
+                         String luoguUrl, Executor contestFetchExecutor, Clock clock,
+                         ContestSnapshotRepository snapshots, boolean warmupEnabled) {
         this.atCoderUrl = atCoderUrl;
         this.codeforcesUrl = codeforcesUrl;
         this.nowcoderUrl = nowcoderUrl;
@@ -102,10 +118,23 @@ public class AtCoderContestService implements ContestService {
         this.cacheDuration = Duration.ofMinutes(Math.max(1, cacheMinutes));
         this.contestFetchExecutor = contestFetchExecutor;
         this.clock = clock;
+        this.snapshots = snapshots;
+        this.warmupEnabled = warmupEnabled;
+    }
+
+    // Only local snapshot loading and task submission happen here; no waiting for external OJs.
+    @EventListener(ApplicationReadyEvent.class)
+    @Scheduled(fixedDelayString = "${contests.warmup-check-ms:60000}",
+            initialDelayString = "${contests.warmup-initial-delay-ms:60000}")
+    public void warmCache() {
+        if (!warmupEnabled) return;
+        restoreSnapshots();
+        refreshIfNeeded();
     }
 
     @Override
     public List<UpcomingContestItem> getUpcomingContests() {
+        restoreSnapshots();
         Instant now = clock.instant();
         CacheSnapshot current = cacheSnapshot;
         if (now.isBefore(current.expiresAt())) {
@@ -153,7 +182,10 @@ public class AtCoderContestService implements ContestService {
                     if (failure != null) {
                         throw new BusinessException(503, "近期比赛暂时无法获取，请稍后重试");
                     }
-                    result.complete(mergeSources(tasks.stream().map(CompletableFuture::join).toList()));
+                    List<SourceResult> sources = tasks.stream().map(CompletableFuture::join).toList();
+                    result.complete(mergeSources(sources));
+                    // Complete waiting requests before writing the durable cache.
+                    persistSuccessfulSources(sources);
                 } catch (RuntimeException error) {
                     retryAfter = clock.instant().plusSeconds(30);
                     result.completeExceptionally(error);
@@ -188,7 +220,20 @@ public class AtCoderContestService implements ContestService {
             }
         }
 
-        List<UpcomingContestItem> combined = nextByPlatform.values().stream()
+        List<UpcomingContestItem> combined = combine(nextByPlatform);
+
+        if (successfulSources == 0 && nextByPlatform.isEmpty()) {
+            throw new BusinessException(503, "近期比赛暂时无法获取，请稍后重试");
+        }
+
+        lastSuccessfulByPlatform = Map.copyOf(nextByPlatform);
+        Duration nextRefresh = successfulSources == 0 ? Duration.ofSeconds(30) : cacheDuration;
+        cacheSnapshot = new CacheSnapshot(combined, clock.instant().plus(nextRefresh));
+        return combined;
+    }
+
+    private List<UpcomingContestItem> combine(Map<String, List<UpcomingContestItem>> sources) {
+        return sources.values().stream()
                 .flatMap(List::stream)
                 .collect(java.util.stream.Collectors.toMap(
                         item -> item.platform() + ":" + item.contestId(),
@@ -200,15 +245,50 @@ public class AtCoderContestService implements ContestService {
                 .sorted(Comparator.comparing(item -> OffsetDateTime.parse(item.startTime()).toInstant()))
                 .limit(120)
                 .toList();
+    }
 
-        if (successfulSources == 0 && nextByPlatform.isEmpty()) {
-            throw new BusinessException(503, "近期比赛暂时无法获取，请稍后重试");
+    private void restoreSnapshots() {
+        synchronized (refreshLock) {
+            if (snapshotsLoaded) return;
+            snapshotsLoaded = true;
+            if (snapshots == null) return;
+            try {
+                Map<String, List<UpcomingContestItem>> restored = new HashMap<>();
+                for (var snapshot : snapshots.findAll()) {
+                    if (!List.of("CODEFORCES", "ATCODER", "NOWCODER", "LUOGU").contains(snapshot.platform())
+                            || snapshot.syncedAt().isBefore(clock.instant().minus(Duration.ofDays(1)))) continue;
+                    try {
+                        restored.put(snapshot.platform(), snapshot.items().stream()
+                                .filter(item -> snapshot.platform().equals(item.platform()))
+                                .filter(item -> OffsetDateTime.parse(item.startTime()).toInstant()
+                                        .plus(Duration.ofMinutes(Math.max(0, item.durationMinutes()))).isAfter(clock.instant()))
+                                .toList());
+                    } catch (RuntimeException invalid) {
+                        log.warn("Ignoring invalid contest snapshot items platform={}", snapshot.platform());
+                    }
+                }
+                if (!restored.isEmpty()) {
+                    lastSuccessfulByPlatform = Map.copyOf(restored);
+                    // A restored snapshot is available immediately but always revalidated in the background.
+                    cacheSnapshot = new CacheSnapshot(combine(restored), Instant.EPOCH.plusNanos(1));
+                }
+            } catch (RuntimeException error) {
+                log.warn("Contest snapshot restore unavailable cause={}", error.getClass().getSimpleName());
+            }
         }
+    }
 
-        lastSuccessfulByPlatform = Map.copyOf(nextByPlatform);
-        Duration nextRefresh = successfulSources == 0 ? Duration.ofSeconds(30) : cacheDuration;
-        cacheSnapshot = new CacheSnapshot(combined, clock.instant().plus(nextRefresh));
-        return combined;
+    private void persistSuccessfulSources(List<SourceResult> sources) {
+        if (snapshots == null) return;
+        for (var source : sources) {
+            if (source.error() != null) continue;
+            try {
+                snapshots.save(source.platform(), source.items(), clock.instant());
+            } catch (RuntimeException error) {
+                log.warn("Contest snapshot save unavailable platform={} cause={}",
+                        source.platform(), error.getClass().getSimpleName());
+            }
+        }
     }
 
     private SourceResult fetchSource(String platform, Supplier<List<UpcomingContestItem>> fetcher) {

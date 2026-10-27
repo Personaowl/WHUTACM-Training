@@ -16,6 +16,20 @@ import java.util.Optional;
 public class UserRepository {
 
     private final JdbcTemplate jdbcTemplate;
+    private final java.util.concurrent.atomic.AtomicLong rankingVersion = new java.util.concurrent.atomic.AtomicLong();
+
+    public long rankingVersion() { return rankingVersion.get(); }
+
+    /** Invalidate both before and after transaction completion; never cache an intermediate write. */
+    public void invalidateRanking() {
+        rankingVersion.incrementAndGet();
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive()) {
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                    new org.springframework.transaction.support.TransactionSynchronization() {
+                        @Override public void afterCompletion(int status) { rankingVersion.incrementAndGet(); }
+                    });
+        }
+    }
 
     private static final String SELECT_COLUMNS =
             "id, username, email, password, role, uid, codeforces_rating, max_rating, is_online, last_online_time_seconds, avatar_url, avatar_customized, total_points, display_name, real_name, college, class_name, bio, " +
@@ -109,6 +123,7 @@ public class UserRepository {
                     user.getUsername()
             );
             user.setId(id);
+            invalidateRanking();
             return user;
         }
 
@@ -142,11 +157,13 @@ public class UserRepository {
                 !Boolean.FALSE.equals(user.getShowProblemTags()),
                 user.getId()
         );
+        invalidateRanking();
         return user;
     }
 
     public void incrementTotalPoints(Long userId, int delta) {
         jdbcTemplate.update("UPDATE users SET total_points = total_points + ? WHERE id = ?", delta, userId);
+        invalidateRanking();
     }
 
     /** Serialize score ledger writes in a short database transaction, after external validation. */
@@ -276,20 +293,26 @@ public class UserRepository {
     }
 
     public List<LeaderboardItem> findTopByTotalPoints(int limit) {
-        String sql = "SELECT u.id, u.username, u.display_name, u.avatar_url, u.total_points, " +
-                "(SELECT MAX(checked_at) FROM user_daily_status uds WHERE uds.user_id = u.id) AS last_checkin_at " +
-                "FROM users u WHERE u.role <> ? " +
-                "ORDER BY u.total_points DESC, last_checkin_at DESC " +
-                "LIMIT ?";
-        return jdbcTemplate.query(sql, leaderboardRowMapper(), UserRole.SUPER_ADMIN.name(), limit);
+        return findTopByTotalPoints(limit, 0);
     }
 
     public List<LeaderboardItem> findTopByTotalPoints(int limit, int offset) {
-        String sql = "SELECT u.id, u.username, u.display_name, u.avatar_url, u.total_points, " +
-                "(SELECT MAX(checked_at) FROM user_daily_status uds WHERE uds.user_id = u.id) AS last_checkin_at " +
-                "FROM users u WHERE u.role <> ? " +
-                "ORDER BY u.total_points DESC, last_checkin_at DESC " +
-                "LIMIT ? OFFSET ?";
+        // Materialize the small ranking page before loading potentially large uploaded avatars.
+        // LIMIT keeps MySQL from merging this derived table back into the outer query.
+        String sql = """
+                SELECT u.id, u.username, u.display_name, u.avatar_url, ranked.total_points,
+                       ranked.last_checkin_at
+                FROM (
+                    SELECT u.id, u.total_points,
+                           (SELECT MAX(checked_at) FROM user_daily_status uds
+                            WHERE uds.user_id = u.id) AS last_checkin_at
+                    FROM users u WHERE u.role <> ?
+                    ORDER BY u.total_points DESC, last_checkin_at DESC, u.id ASC
+                    LIMIT ? OFFSET ?
+                ) ranked
+                INNER JOIN users u ON u.id = ranked.id
+                ORDER BY ranked.total_points DESC, ranked.last_checkin_at DESC, ranked.id ASC
+                """;
         return jdbcTemplate.query(
                 sql,
                 leaderboardRowMapper(),
@@ -321,6 +344,7 @@ public class UserRepository {
 
     public void updateRole(Long userId, String newRole) {
         jdbcTemplate.update("UPDATE users SET role = ? WHERE id = ?", newRole, userId);
+        invalidateRanking();
     }
 
     public void updateMemberType(Long userId, MemberType memberType) {
