@@ -67,11 +67,11 @@ public class DailyProblemController {
     /**
      * 查询每日题历史。
      *
-     * @param days 查询天数，0 或不传表示全部记录。
+     * @param days 查询天数，默认且最多 30 天；非正数同样按 30 天查询。
      * @return 历史列表。
      */
     @GetMapping("/daily-problem/history")
-    public ApiResponse<List<DailyProblemHistoryItem>> history(@RequestParam(defaultValue = "0") int days) {
+    public ApiResponse<List<DailyProblemHistoryItem>> history(@RequestParam(defaultValue = "30") int days) {
         return ApiResponse.ok(dailyProblemService.getHistory(requireCurrentUser(), days));
     }
 

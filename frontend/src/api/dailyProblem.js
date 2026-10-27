@@ -39,7 +39,7 @@ export async function checkInToday(submissionId, { signal } = {}) {
   return { code: 503, message: "校验排队时间较长，请稍后再次查看今日状态", data: null };
 }
 
-export async function getDailyHistory(days = 0) {
+export async function getDailyHistory(days = 30) {
   const res = await http.get("/api/daily-problem/history", {
     headers: authHeaders(),
     params: { days },

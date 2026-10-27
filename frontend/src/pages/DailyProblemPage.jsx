@@ -58,7 +58,7 @@ export default function DailyProblemPage() {
     try {
       const [todayResp, historyResp] = await Promise.all([
         getTodayProblem(),
-        getDailyHistory(0),
+        getDailyHistory(30),
       ]);
 
       if (todayResp.code === 200) {
@@ -273,7 +273,7 @@ export default function DailyProblemPage() {
         <div className="mb-3">
           <h2 className="text-base font-semibold text-text-primary m-0">{TEXT.history}</h2>
           <p className="text-xs text-text-secondary mt-1 mb-0">
-            每日题目会自动保存，可按日期展开查看。
+            仅显示近 30 天，按日期展开查看。
           </p>
         </div>
         {historyDates.length === 0 ? (

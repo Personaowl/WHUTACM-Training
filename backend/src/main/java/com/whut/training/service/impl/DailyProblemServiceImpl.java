@@ -229,22 +229,18 @@ public class DailyProblemServiceImpl implements DailyProblemService {
     }
 
     /**
-     * 获取用户每日题历史（基于 slot 表，包含 is_redrawn）。
+     * 获取近 30 天内的用户每日题历史，仅返回当前有效题位。
      *
      * @param user 当前用户。
-     * @param days 查询天数，0 表示全部。
+     * @param days 查询天数，非正数取 30，正数最多 30；包含今天。
      * @return 历史列表。
      */
     @Override
     public List<DailyProblemHistoryItem> getHistory(User user, int days) {
         LocalDate today = timeProvider.today();
         ensureDailySlots(today, false, "history");
-        LocalDate startDate;
-        if (days <= 0) {
-            startDate = LocalDate.of(2020, 1, 1);
-        } else {
-            startDate = today.minusDays(days - 1L);
-        }
+        int historyDays = days <= 0 ? 30 : Math.min(days, 30);
+        LocalDate startDate = today.minusDays(historyDays - 1L);
         return dailyProblemRepository.findDailyHistoryForUser(user.getId(), startDate, today);
     }
 

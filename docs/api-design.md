@@ -76,7 +76,7 @@ CF 绑定窗口为 120 秒，要求验证窗口内向 CF 1A 提交 Compilation E
 | GET /api/daily-problem/today | data 为 problems、checkedIn、score；problems 为当前有效题位，checkedIn 表示任意题位完成，score 为当天最高分 |
 | POST /api/daily-problem/check-in | JSON：正整数 submissionId；**返回异步任务**而非直接返回最终校验结果 |
 | GET /api/daily-problem/check-in/{jobId} | 查询自己的任务；别人任务 403，不存在/已清理任务 404 |
-| GET /api/daily-problem/history | days 默认 0，非正数取全部现存范围（实现下限 2020-01-01）；不展开重抽旧题为额外题位 |
+| GET /api/daily-problem/history | days 默认且最多 30，非正数也取 30；包含今天的近 30 天，不展开重抽旧题为额外题位；仅限制查询，不删除旧记录 |
 | POST /api/practice/draw | 可选 JSON：minRating、maxRating、tags；返回 drawId、problem |
 | GET /api/practice/tags | 可选标签列表 |
 | GET /api/practice/history | limit 默认 20；个人抽题记录 |

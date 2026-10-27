@@ -6,6 +6,7 @@ import * as binding from "../src/api/accountBinding.js";
 import * as practice from "../src/api/practice.js";
 import * as library from "../src/api/problemList.js";
 import { getCodeforcesOverview, refreshCodeforcesOverview } from "../src/api/platformOverview.js";
+import { getDailyHistory } from "../src/api/dailyProblem.js";
 
 const originalAdapter = http.defaults.adapter, originalWindow = globalThis.window;
 let received;
@@ -32,6 +33,8 @@ for (const [name, invoke, method, url, body] of [
   ["practice draw", () => practice.drawPracticeProblem("800", "3500", ["dp"]), "post", "/api/practice/draw", { minRating: 800, maxRating: 3500, tags: ["dp"] }],
   ["practice tags", () => practice.getPracticeTags(), "get", "/api/practice/tags"],
   ["practice history", () => practice.getPracticeHistory(30), "get", "/api/practice/history"],
+  ["daily history default", () => getDailyHistory(), "get", "/api/daily-problem/history"],
+  ["daily history shorter window", () => getDailyHistory(7), "get", "/api/daily-problem/history"],
   ["delete practice draw", () => practice.deletePracticeDraw(12), "delete", "/api/practice/12"],
   ["CF overview", () => getCodeforcesOverview(7), "get", "/api/users/7/codeforces-overview"],
   ["refresh CF overview", () => refreshCodeforcesOverview(7), "post", "/api/users/7/codeforces-overview/refresh", {}],
@@ -51,6 +54,8 @@ for (const [name, invoke, method, url, body] of [
     assert.equal(received.headers["X-Refresh-Token"], "refresh");
     if (body !== undefined) assert.deepEqual(JSON.parse(received.data), body);
     if (name === "practice history") assert.deepEqual(received.params, { limit: 30 });
+    if (name === "daily history default") assert.deepEqual(received.params, { days: 30 });
+    if (name === "daily history shorter window") assert.deepEqual(received.params, { days: 7 });
     if (name === "refresh CF overview") assert.equal(received.timeout, 45000);
   });
 }
