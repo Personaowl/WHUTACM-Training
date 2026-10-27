@@ -19,8 +19,20 @@ public record CodeforcesOverview(
         Instant syncedAt,
         boolean stale,
         List<TagStat> tagStats,
-        List<RecentContest> recentContests
+        List<RecentContest> recentContests,
+        List<RatingStat> ratingStats
 ) {
+    /** Legacy constructors/snapshots have no difficulty distribution until their next refresh. */
+    public CodeforcesOverview(String handle, Integer currentRating, Integer maxRating,
+                              int solvedCount, int attemptedCount, int acceptedSubmissionCount,
+                              int ratedContestCount, Long lastSubmissionAtSeconds,
+                              boolean submissionLimitReached, Instant syncedAt, boolean stale,
+                              List<TagStat> tagStats, List<RecentContest> recentContests) {
+        this(handle, currentRating, maxRating, solvedCount, attemptedCount, acceptedSubmissionCount,
+                ratedContestCount, lastSubmissionAtSeconds, submissionLimitReached, syncedAt,
+                stale, tagStats, recentContests, null);
+    }
+
     public CodeforcesOverview withStale(boolean nextStale) {
         return new CodeforcesOverview(
                 handle,
@@ -35,11 +47,16 @@ public record CodeforcesOverview(
                 syncedAt,
                 nextStale,
                 tagStats,
-                recentContests
+                recentContests,
+                ratingStats
         );
     }
 
     public record TagStat(String tag, int count) {
+    }
+
+    /** A null rating represents solved problems without a public difficulty. */
+    public record RatingStat(Integer rating, int count) {
     }
 
     public record RecentContest(

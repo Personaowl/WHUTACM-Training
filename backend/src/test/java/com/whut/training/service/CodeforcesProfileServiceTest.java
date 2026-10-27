@@ -114,6 +114,7 @@ class CodeforcesProfileServiceTest {
         assertThat(overview.tagStats())
                 .extracting(stat -> stat.tag() + ":" + stat.count())
                 .containsExactly("dp:2", "math:1");
+        assertThat(overview.ratingStats()).containsExactly(new com.whut.training.domain.dto.CodeforcesOverview.RatingStat(1400, 2));
         assertThat(overview.recentContests())
                 .extracting(contest -> contest.contestName() + ":" + contest.ratingChange())
                 .containsExactly("Round 2:-20", "Round 1:100");
@@ -143,6 +144,69 @@ class CodeforcesProfileServiceTest {
 
         verify(ratingHistoryRepository).replaceForUser(9L, changes);
         verify(apiService, org.mockito.Mockito.never()).getUserSubmissions(any(), org.mockito.ArgumentMatchers.anyInt());
+    }
+
+    @Test
+    void difficultyCountsUseOnlyUniqueAcceptedProblemsAndKeepUnratedSeparate() {
+        UserRepository users = mock(UserRepository.class);
+        CodeforcesApiService api = mock(CodeforcesApiService.class);
+        CodeforcesProfileSnapshotRepository snapshots = mock(CodeforcesProfileSnapshotRepository.class);
+        User user = new User(7L, "member", null, "password", UserRole.USER);
+        user.setCodeforcesHandle("sample");
+        when(users.findById(7L)).thenReturn(Optional.of(user));
+        when(api.getUserRatingHistory("sample")).thenReturn(Optional.of(List.of()));
+        when(api.getUserSubmissions("sample", 10000)).thenReturn(Optional.of(List.of(
+                ratedSubmission(1L, "A", 800, "OK"), ratedSubmission(2L, "A", 800, "OK"),
+                ratedSubmission(3L, "B", 1900, "WRONG_ANSWER"), ratedSubmission(4L, "C", 1900, "OK"),
+                ratedSubmission(5L, "D", null, "OK"), ratedSubmission(6L, "E", 4000, "OK")
+        )));
+        var service = new CodeforcesProfileService(users, api, snapshots, mock(CodeforcesRatingHistoryRepository.class), 30);
+        var overview = service.refresh(7L);
+        assertThat(overview.ratingStats()).extracting(stat -> stat.rating() + ":" + stat.count())
+                .containsExactly("800:1", "1900:1", "4000:1", "null:1");
+        assertThat(overview.solvedCount()).isEqualTo(4);
+        assertThat(overview.withStale(true).ratingStats()).isEqualTo(overview.ratingStats());
+    }
+
+    @Test
+    void legacyJsonSnapshotsRemainReadableAndNewDistributionRoundTrips() throws Exception {
+        var mapper = new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules();
+        var legacy = mapper.readValue("""
+                {"handle":"old","solvedCount":4,"tagStats":[],"recentContests":[]}
+                """, com.whut.training.domain.dto.CodeforcesOverview.class);
+        assertThat(legacy.ratingStats()).isNull();
+        assertThat(legacy.withStale(true).solvedCount()).isEqualTo(4);
+        var current = new com.whut.training.domain.dto.CodeforcesOverview("new", null, null,
+                1, 1, 1, 0, null, false, java.time.Instant.now(), false, List.of(), List.of(),
+                List.of(new com.whut.training.domain.dto.CodeforcesOverview.RatingStat(1900, 1)));
+        assertThat(mapper.readValue(mapper.writeValueAsString(current), current.getClass())).isEqualTo(current);
+    }
+
+    @Test
+    void freshLegacySnapshotReturnsImmediatelyAndCoalescesBackfillWithoutRepeatingAfterSuccess() {
+        UserRepository users = mock(UserRepository.class);
+        CodeforcesApiService api = mock(CodeforcesApiService.class);
+        CodeforcesProfileSnapshotRepository snapshots = mock(CodeforcesProfileSnapshotRepository.class);
+        User user = new User(7L, "member", null, "password", UserRole.USER);
+        user.setCodeforcesHandle("sample");
+        when(users.findById(7L)).thenReturn(Optional.of(user));
+        var legacy = new com.whut.training.domain.dto.CodeforcesOverview("sample", null, null,
+                4, 4, 4, 0, null, false, java.time.Instant.now(), false, List.of(), List.of());
+        when(snapshots.find(7L, "sample")).thenReturn(Optional.of(new CodeforcesProfileSnapshotRepository.Snapshot(legacy, legacy.syncedAt())));
+        when(api.getUserSubmissions("sample", 10000)).thenReturn(Optional.of(List.of()));
+        when(api.getUserRatingHistory("sample")).thenReturn(Optional.of(List.of()));
+        var jobs = new java.util.ArrayList<Runnable>();
+        var service = new CodeforcesProfileService(users, api, snapshots, mock(CodeforcesRatingHistoryRepository.class), 30, jobs::add);
+        for (int index = 0; index < 30; index++) assertThat(service.getOverview(7L).solvedCount()).isEqualTo(4);
+        assertThat(jobs).hasSize(1);
+        verify(api, org.mockito.Mockito.never()).getUserSubmissions(any(), org.mockito.ArgumentMatchers.anyInt());
+        jobs.get(0).run();
+        assertThat(service.getOverview(7L).ratingStats()).isEmpty();
+        assertThat(jobs).hasSize(1);
+    }
+
+    private CodeforcesApiService.CodeforcesSubmission ratedSubmission(Long id, String index, Integer rating, String verdict) {
+        return new CodeforcesApiService.CodeforcesSubmission(id, 100, index, "Problem " + index, rating, List.of("dp"), verdict, id);
     }
 
     private CodeforcesApiService.CodeforcesSubmission submission(

@@ -49,6 +49,8 @@ LoginResponse 包含 `id, username, email, role, uid, codeforcesRating, maxRatin
 | POST /api/users/{id}/atcoder-binding/start | 仅本人 | JSON：handle；返回临时 Affiliation 验证码等信息 |
 | POST /api/users/{id}/atcoder-binding/finish | 仅本人 | 无请求体，验证后返回 User |
 
+CF 统计快照增加 `ratingStats: [{rating, count}]`，统计去重后的 AC 题目，按难度升序排列；`rating: null` 表示无公开难度的题目，放在末尾。旧快照的 `ratingStats` 为 `null`，读取时仍立即返回旧统计并后台补齐；新快照的空数组表示已同步但暂无 AC 题目。该字段复用现有提交同步和 JSON 快照，无额外外部请求或数据库表结构变更。
+
 资料更新字段：`username, email, password, displayName, realName, college, className, avatar, bio, showProblemTags`。不修改密码时应**省略 password**，不要发送空字符串（DTO 要求非空值长度 8～64）。头像传 `avatar` 而不是 `avatarUrl`，只接受 PNG/JPEG/WebP 的 Base64 data image，字符串最多 700000 字符，不接受外部 URL。前端负责裁剪压缩。
 
 公开资料只包含 `id, displayName, avatarUrl, bio, memberType, codeforcesHandle, atcoderHandle, codeforcesRating, maxRating, totalPoints`，不包含登录账号、邮箱、姓名、学院、班级或审核说明。

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { ExternalLink, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
@@ -7,21 +7,8 @@ import {
 } from "../../api/platformOverview";
 import { getRatingMeta } from "../../utils/cf";
 import { CardSkeleton } from "../ui/Skeleton";
+import { TagSolvedChart, RatingSolvedChart } from "./CodeforcesCharts";
 
-const CHART_COLORS = [
-  "#4f6fd1",
-  "#8bc96d",
-  "#f5bb45",
-  "#ef6262",
-  "#61b4d1",
-  "#43a983",
-  "#ff7648",
-  "#a65cc0",
-  "#ec64ae",
-  "#5b74be",
-  "#77c8c7",
-  "#9acd62",
-];
 
 export default function CodeforcesOverview({
   userId,
@@ -205,9 +192,10 @@ export default function CodeforcesOverview({
         </p>
       )}
 
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.4fr)] gap-3">
-        <TagDonutChart items={data?.tagStats || []} />
+      <div className="cf-detail-grid">
+        <TagSolvedChart items={data?.tagStats || []} />
         <RecentContests items={data?.recentContests || []} />
+        <RatingSolvedChart items={data?.ratingStats} stale={data?.stale} />
       </div>
 
       {data?.syncedAt && (
@@ -250,141 +238,6 @@ function CompactStat({ label, value, valueColor }) {
   );
 }
 
-function TagDonutChart({ items }) {
-  const [activeIndex, setActiveIndex] = useState(null);
-  const chartItems = useMemo(() => {
-    const top = items.slice(0, 11);
-    const otherCount = items.slice(11).reduce((sum, item) => sum + item.count, 0);
-    return otherCount > 0 ? [...top, { tag: "其他", count: otherCount }] : top;
-  }, [items]);
-  const total = chartItems.reduce((sum, item) => sum + item.count, 0);
-  const activeItem = activeIndex == null ? null : chartItems[activeIndex];
-  let cursor = 0;
-  const arcs = chartItems.map((item, index) => {
-    const sweep = total ? (item.count / total) * 360 : 0;
-    const gap = Math.min(2.4, sweep * 0.18);
-    const arc = {
-      ...item,
-      index,
-      startAngle: cursor + gap / 2,
-      endAngle: cursor + sweep - gap / 2,
-      percent: total ? (item.count / total) * 100 : 0,
-    };
-    cursor += sweep;
-    return arc;
-  });
-
-  return (
-    <div className="bg-white border border-border rounded-ui p-4 sm:p-5">
-      <div className="flex items-end justify-between gap-3 mb-2">
-        <h3 className="text-sm font-semibold text-text-primary m-0">题目标签分布</h3>
-        <span className="text-[11px] text-text-secondary">悬停查看详情</span>
-      </div>
-      {total === 0 ? (
-        <p className="text-sm text-text-secondary my-12 text-center">暂无 AC 题目标签</p>
-      ) : (
-        <div className="flex flex-col md:flex-row items-center gap-3 lg:gap-5">
-          <div className="relative w-[250px] h-[250px] shrink-0">
-            <svg
-              viewBox="0 0 260 260"
-              className="w-full h-full overflow-visible"
-              role="img"
-              aria-label="可交互的题目标签环形图"
-              onMouseLeave={() => setActiveIndex(null)}
-            >
-              <circle cx="130" cy="130" r="78" fill="none" stroke="#f1f2f3" strokeWidth="28" />
-              {arcs.map((arc) => {
-                const active = activeIndex === arc.index;
-                return (
-                  <path
-                    key={arc.tag}
-                    d={describeArc(130, 130, active ? 82 : 78, arc.startAngle, arc.endAngle)}
-                    fill="none"
-                    stroke={CHART_COLORS[arc.index % CHART_COLORS.length]}
-                    strokeWidth={active ? 31 : 26}
-                    strokeLinecap="round"
-                    className="cursor-pointer outline-hidden transition-all duration-200"
-                    style={{
-                      filter: active
-                        ? `drop-shadow(0 5px 6px ${CHART_COLORS[arc.index % CHART_COLORS.length]}55)`
-                        : "drop-shadow(0 2px 2px rgba(0,0,0,0.08))",
-                    }}
-                    onMouseEnter={() => setActiveIndex(arc.index)}
-                    onFocus={() => setActiveIndex(arc.index)}
-                    onBlur={() => setActiveIndex(null)}
-                    tabIndex={0}
-                    aria-label={`${arc.tag}：${arc.count}，${arc.percent.toFixed(1)}%`}
-                  />
-                );
-              })}
-            </svg>
-            <div className="pointer-events-none absolute inset-[30%] flex items-center justify-center text-center">
-              <span className="min-w-0">
-                {activeItem ? (
-                  <>
-                    <small className="block max-w-[92px] text-[11px] font-semibold text-text-secondary truncate">
-                      {activeItem.tag}
-                    </small>
-                    <strong className="block text-2xl leading-none mt-1 text-[#1769db]">
-                      {activeItem.count}
-                    </strong>
-                    <small className="block text-[11px] text-text-secondary mt-1">
-                      {((activeItem.count / total) * 100).toFixed(1)}%
-                    </small>
-                  </>
-                ) : (
-                  <>
-                    <strong className="block text-3xl leading-none text-[#1769db]">{total}</strong>
-                    <small className="block text-xs text-text-secondary mt-2">Total</small>
-                  </>
-                )}
-              </span>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 w-full min-w-0">
-            {chartItems.map((item, index) => (
-              <button
-                type="button"
-                key={item.tag}
-                className={`flex items-center gap-2 min-w-0 rounded-md px-1.5 py-1 text-left transition-colors ${
-                  activeIndex === index ? "bg-bg-secondary" : "bg-transparent hover:bg-bg-secondary"
-                }`}
-                onMouseEnter={() => setActiveIndex(index)}
-                onMouseLeave={() => setActiveIndex(null)}
-                onFocus={() => setActiveIndex(index)}
-                onBlur={() => setActiveIndex(null)}
-              >
-                <span
-                  className="w-2.5 h-2.5 rounded-full shrink-0"
-                  style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
-                />
-                <span className="text-xs text-text-secondary truncate flex-1">
-                  {item.tag}
-                </span>
-                <strong className="text-xs text-text-primary">{item.count}</strong>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function describeArc(cx, cy, radius, startAngle, endAngle) {
-  const start = polarPoint(cx, cy, radius, startAngle);
-  const end = polarPoint(cx, cy, radius, endAngle);
-  const largeArcFlag = endAngle - startAngle > 180 ? 1 : 0;
-  return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${end.x} ${end.y}`;
-}
-
-function polarPoint(cx, cy, radius, angle) {
-  const radians = ((angle - 90) * Math.PI) / 180;
-  return {
-    x: cx + radius * Math.cos(radians),
-    y: cy + radius * Math.sin(radians),
-  };
-}
 
 function RecentContests({ items }) {
   return (

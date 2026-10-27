@@ -90,6 +90,10 @@ public class CodeforcesProfileService {
 
         CacheEntry cached = memoryCache.get(userId);
         if (cached != null && handle.equalsIgnoreCase(cached.handle()) && isFresh(cached.syncedAt())) {
+            if (cached.overview().ratingStats() == null) {
+                refreshInBackground(userId);
+                return cached.overview().withStale(true);
+            }
             return cached.overview().withStale(false);
         }
 
@@ -97,7 +101,7 @@ public class CodeforcesProfileService {
         if (stored.isPresent()) {
             CodeforcesProfileSnapshotRepository.Snapshot snapshot = stored.get();
             memoryCache.put(userId, new CacheEntry(handle, snapshot.overview(), snapshot.syncedAt()));
-            if (isFresh(snapshot.syncedAt())) {
+            if (isFresh(snapshot.syncedAt()) && snapshot.overview().ratingStats() != null) {
                 return snapshot.overview().withStale(false);
             }
             refreshInBackground(userId);
@@ -212,7 +216,14 @@ public class CodeforcesProfileService {
         }
 
         Map<String, Integer> tagCounts = new HashMap<>();
+        Map<Integer, Integer> ratingCounts = new java.util.TreeMap<>();
+        int unratedCount = 0;
         for (CodeforcesApiService.CodeforcesSubmission submission : solvedProblems.values()) {
+            if (submission.rating() == null || submission.rating() <= 0) {
+                unratedCount++;
+            } else {
+                ratingCounts.merge(submission.rating(), 1, Integer::sum);
+            }
             for (String tag : submission.tags()) {
                 tagCounts.merge(tag, 1, Integer::sum);
             }
@@ -222,6 +233,9 @@ public class CodeforcesProfileService {
                         .thenComparing(Map.Entry.comparingByKey()))
                 .map(entry -> new CodeforcesOverview.TagStat(entry.getKey(), entry.getValue()))
                 .toList();
+        List<CodeforcesOverview.RatingStat> ratingStats = new ArrayList<>();
+        ratingCounts.forEach((rating, count) -> ratingStats.add(new CodeforcesOverview.RatingStat(rating, count)));
+        if (unratedCount > 0) ratingStats.add(new CodeforcesOverview.RatingStat(null, unratedCount));
 
         List<CodeforcesApiService.CodeforcesRatingChange> sortedChanges = new ArrayList<>(ratingChanges);
         sortedChanges.sort(Comparator.comparing(
@@ -251,7 +265,8 @@ public class CodeforcesProfileService {
                 syncedAt,
                 false,
                 tagStats,
-                recentContests
+                recentContests,
+                List.copyOf(ratingStats)
         );
 
         if (!java.util.Objects.equals(user.getCodeforcesRating(), currentRating)
