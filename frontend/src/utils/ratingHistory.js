@@ -35,8 +35,3 @@ export function ratingHistoryModel(points) {
   if (start === end) { start -= 86400; end += 86400; }
   return { min, max, ticks, start, end, peak: maximum, latest: points.at(-1).newRating };
 }
-
-export const CF_RATING_BANDS = [
-  [0,1200,"#e8edf3"], [1200,1400,"#e4f4e3"], [1400,1600,"#dcf3ef"],
-  [1600,1900,"#e4e7fc"], [1900,2100,"#f4def7"], [2100,2400,"#fff0d7"], [2400,10000,"#fbe1e3"],
-];

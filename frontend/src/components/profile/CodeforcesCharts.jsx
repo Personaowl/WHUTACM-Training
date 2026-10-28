@@ -66,7 +66,7 @@ export function RatingSolvedChart({ items, stale = false }) {
       <div className="cf-rating-scroll" tabIndex={0} role="region" aria-label="难度柱状图，可横向滚动；聚焦或点击柱子查看数量">
         <svg viewBox={`0 0 ${width} 310`} className="cf-rating-svg" role="group" aria-label="按题目难度统计的去重 AC 题数">
           <defs>{chart.bars.map(item => <linearGradient id={`${id}-${item.rating}`} key={item.rating} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={difficultyColor(item.rating)} /><stop offset="100%" stopColor={difficultyColor(item.rating)} stopOpacity="0.25" />
+            <stop offset="0%" stopColor={difficultyColor(item.rating)} /><stop offset="100%" stopColor={difficultyColor(item.rating)} stopOpacity="0.65" />
           </linearGradient>)}</defs>
           {[0, 1, 2, 3, 4].map(index => {
             const y = 258 - index * 57;

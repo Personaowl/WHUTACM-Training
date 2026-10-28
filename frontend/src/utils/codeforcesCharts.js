@@ -1,3 +1,5 @@
+import { ratingBand } from "./ratingPalette.js";
+
 export const TAG_COLORS = ["#5273d2", "#88bf59", "#efb744", "#ea6b73", "#58b2c9", "#3fa584", "#f47a52", "#a46ac6", "#d66bb0", "#6a83bc", "#68babb", "#9baac0"];
 
 export function tagDistribution(items = []) {
@@ -28,11 +30,5 @@ export function ratingDistribution(items) {
 }
 
 export function difficultyColor(rating) {
-  if (rating < 1200) return "#9ba3b2";
-  if (rating < 1400) return "#66bc73";
-  if (rating < 1600) return "#42b7b0";
-  if (rating < 1900) return "#8a80e9";
-  if (rating < 2100) return "#d56bd8";
-  if (rating < 2400) return "#efae53";
-  return "#ed6c76";
+  return ratingBand("codeforces", rating)?.color || "#747d8c";
 }
