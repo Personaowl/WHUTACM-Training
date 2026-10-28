@@ -23,12 +23,12 @@ public class CodeforcesStatisticsProvider implements PlatformStatisticsProvider 
             var overview = profiles.getOverview(userId); // existing local-first background refresh
             if (!accountId.equalsIgnoreCase(overview.handle()) || overview.syncedAt() == null) return null;
             return new Statistics(overview.currentRating(), overview.maxRating(), overview.solvedCount(),
-                    overview.syncedAt(), overview.submissionLimitReached(), overview.stale());
+                    overview.syncedAt(), overview.submissionLimitReached(), overview.stale(), null, overview.profileInfo());
         }
         return snapshots.find(userId, accountId).map(snapshot -> {
             var overview = snapshot.overview();
             return new Statistics(overview.currentRating(), overview.maxRating(), overview.solvedCount(),
-                    snapshot.syncedAt(), overview.submissionLimitReached());
+                    snapshot.syncedAt(), overview.submissionLimitReached(), false, null, overview.profileInfo());
         }).orElse(null);
     }
 }

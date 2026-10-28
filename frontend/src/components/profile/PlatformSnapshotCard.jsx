@@ -8,6 +8,7 @@ export default function PlatformSnapshotCard({ platform, accountId, overview, co
   if (!model) return null;
   const primary = model.metrics[0];
   const metrics = compact ? model.metrics : model.metrics.slice(1);
+  const facts = compact ? model.highlights : model.facts;
   return <article className={`platform-snapshot-card${compact ? " is-compact" : ""}`} aria-label={`${platform.label} 账号展示卡`}
     style={{ "--snapshot-accent": model.accent, "--snapshot-tint": model.tint }}>
     <header className="platform-snapshot-header">
@@ -39,5 +40,8 @@ export default function PlatformSnapshotCard({ platform, accountId, overview, co
         <div><dt>数据来源</dt><dd>{model.source}</dd></div>
       </dl>}
     </div>}
+    {facts.length>0 && <dl className="platform-snapshot-public" aria-label={`${platform.label} 公开资料`}>
+      {facts.map(fact=><div key={fact.key} data-field={fact.key}><dt>{fact.label}</dt><dd>{fact.value}</dd></div>)}
+    </dl>}
   </article>;
 }

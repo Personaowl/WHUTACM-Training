@@ -35,6 +35,20 @@ class PlatformOverviewIntegrationTest {
         snapshots.save(user.getId(),handle,new CodeforcesOverview(handle,1961,2040,solved,10,11,12,null,true,Instant.now(),false,List.of(),List.of()));
     }
 
+    @Test void publicProfileFactsTravelOnlyWithTheVerifiedAccountAndRemainSelfOnly() throws Exception {
+        var user=user("overview-profile-facts");
+        bindings.ensure(user.getId(),"nowcoder");bindings.finish(user.getId(),"nowcoder","123",1);
+        var info=new com.whut.training.domain.dto.PlatformProfileInfo(java.util.Map.of("followerCount","0","followingCount","13","email","hidden@example.test"));
+        platformSnapshots.save(user.getId(),"nowcoder","123",new PlatformStatisticsProvider.Statistics(1258,null,352,Instant.now(),true,false,"Nick",info));
+        long now=System.currentTimeMillis()/1000;
+        sessions.save(new AuthTokenSessionRepository.AuthTokenSession(user.getId(),"facts-access","facts-refresh",now+3600,now+7200,now));
+        mvc.perform(get("/api/users/"+user.getId()+"/platform-overviews").header("Authorization","Bearer facts-access"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data[3].profileInfo.fields.followerCount").value("0"))
+                .andExpect(jsonPath("$.data[3].profileInfo.fields.email").doesNotExist());
+        bindings.finish(user.getId(),"nowcoder","456",2);
+        assertThat(platform(user,"nowcoder").profileInfo()).isNull();
+    }
+
     @Test void unboundPlatformsHaveNullMetricsAndPendingChallengesDoNotCountAsConnected() {
         var user=user("overview-unbound");
         bindings.ensure(user.getId(),"luogu");

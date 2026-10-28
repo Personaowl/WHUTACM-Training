@@ -42,17 +42,18 @@ public class PublicPlatformStatisticsService {
         var snapshot = snapshots.find(userId, platform, account).orElse(null);
         var now = Instant.now();
         boolean failed = retryAfter.getOrDefault(key, Instant.MIN).isAfter(now);
-        // Backfill pre-upgrade names once without waiting for the full statistics TTL. A successful
-        // fetch after startup (even one with no public name) does not retrigger on every page read.
+        // Backfill pre-upgrade names/facts without waiting for the full TTL. A successful fetch
+        // after startup, even with no available public fields, does not retrigger on every read.
         boolean nameBackfill = snapshot != null && ("luogu".equals(platform) || "nowcoder".equals(platform))
                 && (snapshot.displayName() == null || snapshot.displayName().isBlank()) && snapshot.syncedAt().isBefore(startedAt);
-        if (enabled && !failed && (snapshot == null || nameBackfill || snapshot.syncedAt().plus(ttl).isBefore(now))) enqueue(key);
+        boolean profileBackfill = snapshot != null && snapshot.profileInfo() == null && snapshot.syncedAt().isBefore(startedAt);
+        if (enabled && !failed && (snapshot == null || nameBackfill || profileBackfill || snapshot.syncedAt().plus(ttl).isBefore(now))) enqueue(key);
         if (snapshot == null) {
             if (failed) throw new IllegalStateException("Platform statistics retry deferred");
             return null;
         }
         return new Statistics(snapshot.rating(), snapshot.maxRating(), snapshot.solvedCount(), snapshot.syncedAt(),
-                snapshot.partial(), refreshing.contains(key), snapshot.displayName());
+                snapshot.partial(), refreshing.contains(key), snapshot.displayName(), snapshot.profileInfo());
     }
 
     private void enqueue(Key key) {

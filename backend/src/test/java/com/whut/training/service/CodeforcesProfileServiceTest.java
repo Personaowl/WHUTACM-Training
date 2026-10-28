@@ -24,6 +24,19 @@ import static org.mockito.Mockito.when;
 
 class CodeforcesProfileServiceTest {
 
+    @Test void freshSnapshotsMissingOnlyPublicProfileFactsScheduleOneBackgroundBackfill() {
+        var users=mock(UserRepository.class);var api=mock(CodeforcesApiService.class);var repo=mock(CodeforcesProfileSnapshotRepository.class);
+        User user=new User(7L,"member",null,"pw",UserRole.USER);user.setCodeforcesHandle("sample");
+        when(users.findById(7L)).thenReturn(Optional.of(user));
+        var legacy=new com.whut.training.domain.dto.CodeforcesOverview("sample",1000,1200,4,4,4,2,null,false,java.time.Instant.now(),false,
+                List.of(),List.of(),List.of(),List.of(),List.of());
+        when(repo.find(7L,"sample")).thenReturn(Optional.of(new CodeforcesProfileSnapshotRepository.Snapshot(legacy,legacy.syncedAt())));
+        var jobs=new java.util.ArrayList<Runnable>();
+        var service=new CodeforcesProfileService(users,api,repo,mock(CodeforcesRatingHistoryRepository.class),30,jobs::add);
+        for(int i=0;i<40;i++){assertThat(service.getOverview(7L).solvedCount()).isEqualTo(4);assertThat(service.getOverview(7L).stale()).isTrue();}
+        assertThat(jobs).hasSize(1);org.mockito.Mockito.verifyNoInteractions(api);
+    }
+
     @Test
     void unavailableCodeforcesDoesNotTriggerARefreshOnEveryPagePoll() {
         UserRepository users = mock(UserRepository.class);
@@ -111,6 +124,9 @@ class CodeforcesProfileServiceTest {
         assertThat(overview.attemptedCount()).isEqualTo(3);
         assertThat(overview.acceptedSubmissionCount()).isEqualTo(3);
         assertThat(overview.lastSubmissionAtSeconds()).isEqualTo(400L);
+        assertThat(overview.profileInfo().fields()).containsEntry("ratedContestCount","2")
+                .containsEntry("attemptedCount","3").containsEntry("acceptedSubmissionCount","3");
+        assertThat(overview.withStale(true).profileInfo()).isEqualTo(overview.profileInfo());
         assertThat(overview.tagStats())
                 .extracting(stat -> stat.tag() + ":" + stat.count())
                 .containsExactly("dp:2", "math:1");
@@ -178,6 +194,7 @@ class CodeforcesProfileServiceTest {
                 """, com.whut.training.domain.dto.CodeforcesOverview.class);
         assertThat(legacy.ratingStats()).isNull();
         assertThat(legacy.ratingHistory()).isNull();
+        assertThat(legacy.profileInfo()).isNull();
         assertThat(legacy.withStale(true).solvedCount()).isEqualTo(4);
         var current = new com.whut.training.domain.dto.CodeforcesOverview("new", null, null,
                 1, 1, 1, 0, null, false, java.time.Instant.now(), false, List.of(), List.of(),

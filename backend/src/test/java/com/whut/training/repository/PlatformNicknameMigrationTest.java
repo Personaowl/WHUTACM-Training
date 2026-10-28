@@ -33,6 +33,12 @@ class PlatformNicknameMigrationTest {
                 assertThat(data.displayName()).isEqualTo("洛谷昵称");assertThat(data.solvedCount()).isEqualTo(1350);
             });
             assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM platform_statistics_snapshot",Integer.class)).isEqualTo(1);
+            var info=com.whut.training.domain.dto.PlatformProfileInfo.empty().with("followerCount",0).with("registrationTimeSeconds",1597576705L);
+            repository.save(7L,"luogu","123",new Statistics(null,null,1350,time,true,false,"洛谷昵称",info));
+            assertThat(repository.find(7L,"luogu","123")).get().satisfies(data->assertThat(data.profileInfo()).isEqualTo(info));
+            assertThat(repository.find(7L,"luogu","456")).isEmpty();
+            jdbc.update("UPDATE platform_statistics_snapshot SET profile_info_json = ?","{broken");
+            assertThat(repository.find(7L,"luogu","123")).get().satisfies(data->{assertThat(data.profileInfo()).isNull();assertThat(data.solvedCount()).isEqualTo(1350);});
         }
     }
 }

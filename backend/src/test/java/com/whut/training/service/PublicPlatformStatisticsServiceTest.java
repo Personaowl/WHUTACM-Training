@@ -10,6 +10,19 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class PublicPlatformStatisticsServiceTest {
+    @Test void legacyProfileFactsBackfillOnceAndReturnWithoutFetchingOnTheRequestThread() {
+        var repo=mock(PlatformStatisticsSnapshotRepository.class);var client=mock(PublicPlatformStatisticsClient.class);
+        var stored=new java.util.concurrent.atomic.AtomicReference<>(new Statistics(1258,1258,133,Instant.now().minusSeconds(5),false,false,"Nick"));
+        when(repo.find(1L,"atcoder","sample")).thenAnswer(call->Optional.of(stored.get()));
+        doAnswer(call->{stored.set(call.getArgument(3));return null;}).when(repo).save(anyLong(),anyString(),anyString(),any());
+        var jobs=new ArrayList<Runnable>();var service=new PublicPlatformStatisticsService(repo,client,jobs::add,true,30);
+        for(int n=0;n<40;n++)assertThat(service.read(1L,"atcoder","sample").solvedCount()).isEqualTo(133);
+        assertThat(jobs).hasSize(1);verifyNoInteractions(client);
+        when(client.fetch("atcoder","sample")).thenAnswer(call->new Statistics(1258,1258,133,Instant.now(),false,false,"Nick",com.whut.training.domain.dto.PlatformProfileInfo.empty()));
+        jobs.remove(0).run();
+        for(int n=0;n<40;n++)assertThat(service.read(1L,"atcoder","sample").profileInfo()).isNotNull();
+        assertThat(jobs).isEmpty();verify(client,times(1)).fetch("atcoder","sample");
+    }
     @Test void preUpgradeFreshSnapshotsBackfillNamesOnceWithoutBlockingOrRepeatedNullNameRefreshes() {
         var repo=mock(PlatformStatisticsSnapshotRepository.class);var client=mock(PublicPlatformStatisticsClient.class);
         var legacy=new Statistics(null,null,50,Instant.now().minusSeconds(5),true);

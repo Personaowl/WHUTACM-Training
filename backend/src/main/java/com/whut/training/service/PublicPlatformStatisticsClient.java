@@ -3,6 +3,7 @@ package com.whut.training.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.whut.training.service.PlatformStatisticsProvider.Statistics;
+import com.whut.training.domain.dto.PlatformProfileInfo;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.stereotype.Component;
@@ -42,7 +43,8 @@ public class PublicPlatformStatisticsClient {
             } catch (InterruptedException error) {
                 Thread.currentThread().interrupt(); throw new IllegalStateException("Statistics sync interrupted", error);
             } catch (RuntimeException ignored) { /* Keep independently available ratings. */ }
-            return checked(profile == null ? null : profile.rating(), profile == null ? null : profile.maxRating(), solved);
+            return checked(profile == null ? null : profile.rating(), profile == null ? null : profile.maxRating(), solved,
+                    null, profile == null ? PlatformProfileInfo.empty() : profile.profileInfo());
         }
         if (account == null || !account.matches("[1-9][0-9]{0,17}")) throw new IllegalArgumentException("Invalid UID");
         return switch (platform) {
@@ -71,7 +73,13 @@ public class PublicPlatformStatisticsClient {
         if (doc.selectFirst("#main-container") == null || doc.select("a[href='/users/" + account + "']").isEmpty())
             throw new IllegalArgumentException("Not an AtCoder profile");
         // Algorithm is the first contest status table; do not combine Heuristic ratings.
-        return checked(tableNumber(doc, "Rating"), tableNumber(doc, "Highest Rating"), null);
+        var info = PlatformProfileInfo.empty().with("globalRank", tableNumber(doc, "Rank"))
+                .with("ratedContestCount", tableNumber(doc, "Rated Matches"))
+                .with("country", tableText(doc, "Country/Region"))
+                .with("organization", tableText(doc, "Affiliation"));
+        String competed = tableText(doc, "Last Competed");
+        if (competed != null) info = info.with("lastCompetedDate", competed.replace('/', '-'));
+        return checked(tableNumber(doc, "Rating"), tableNumber(doc, "Highest Rating"), null, null, info);
     }
 
     Integer parseAcceptedCount(String json) {
@@ -92,8 +100,12 @@ public class PublicPlatformStatisticsClient {
             if (root.path("status").asInt() != 200 || !"user.show".equals(root.path("template").asText())
                     || !account.equals(user.path("uid").asText())) throw new IllegalArgumentException("Wrong Luogu identity");
             // gu.rating is 咕值, NOT contest Rating. Historical elo list is not an all-time maximum.
+            var info = PlatformProfileInfo.empty().with("followingCount", integer(user, "followingCount"))
+                    .with("followerCount", integer(user, "followerCount"))
+                    .with("attemptedCount", integer(user, "submittedProblemCount"));
+            if (user.path("registerTime").isIntegralNumber()) info = info.with("registrationTimeSeconds", user.path("registerTime").longValue());
             return checked(integer(user, "eloValue"), null, integer(user, "passedProblemCount"),
-                    user.path("name").isTextual() ? user.path("name").asText() : null);
+                    user.path("name").isTextual() ? user.path("name").asText() : null, info);
         } catch (java.io.IOException error) { throw new IllegalArgumentException("Invalid Luogu profile", error); }
     }
 
@@ -104,7 +116,23 @@ public class PublicPlatformStatisticsClient {
         // Only use the verified target profile header, never a feed author or a global navigation label.
         var name = doc.selectFirst(".profile-info-wrapper .coder-info-detail > .coder-name");
         String displayName = name == null ? null : name.attr("data-title").isBlank() ? name.text() : name.attr("data-title");
-        return checked(labelNumber(doc, "Rating"), null, labelNumber(doc, "题已通过"), displayName);
+        Integer attempted = labelNumber(doc, "题已挑战");
+        if (attempted == null) attempted = labelNumber(doc, "题已提交");
+        var info = PlatformProfileInfo.empty().with("globalRank", labelNumber(doc, "Rating排名"))
+                .with("attemptedCount", attempted).with("submissionCount", labelNumber(doc, "次提交"));
+        for (String kind : java.util.List.of("following", "followers")) {
+            var link = doc.selectFirst(".profile-info-wrapper a[href='/sns/" + account + "/" + kind + "']");
+            if (link != null) info = info.with("following".equals(kind) ? "followingCount" : "followerCount", leadingNumber(link.text()));
+        }
+        return checked(labelNumber(doc, "Rating"), null, labelNumber(doc, "题已通过"), displayName, info);
+    }
+
+    private String tableText(Document doc, String label) {
+        for (var row : doc.select("#main-container table tr")) {
+            var heading = row.selectFirst("th"); var cell = row.selectFirst("td");
+            if (heading != null && cell != null && label.equals(heading.text().trim())) return cell.text().trim();
+        }
+        return null;
     }
 
     private Integer tableNumber(Document doc, String label) {
@@ -119,13 +147,14 @@ public class PublicPlatformStatisticsClient {
         for (var item : doc.select(".status-item, .my-state-item")) {
             var heading = item.children().stream().filter(child -> child.tagName().equals("span")).findFirst().orElse(null);
             var number = item.selectFirst(".state-num");
+            if (number == null) number = item.selectFirst("div");
             if (heading != null && number != null && label.equals(heading.text().trim())) return leadingNumber(number.text());
         }
         return null;
     }
 
     private Integer leadingNumber(String text) {
-        var match = java.util.regex.Pattern.compile("^([0-9][0-9,]*)($|\\s|―)").matcher(text.trim());
+        var match = java.util.regex.Pattern.compile("^([0-9][0-9,]*)(?:st|nd|rd|th)?($|\\s|―)").matcher(text.trim());
         if (!match.find()) return null;
         try { return Integer.valueOf(match.group(1).replace(",", "")); }
         catch (NumberFormatException error) { return null; }
@@ -141,12 +170,16 @@ public class PublicPlatformStatisticsClient {
     }
 
     private Statistics checked(Integer rating, Integer maximum, Integer solved, String displayName) {
+        return checked(rating, maximum, solved, displayName, PlatformProfileInfo.empty());
+    }
+
+    private Statistics checked(Integer rating, Integer maximum, Integer solved, String displayName, PlatformProfileInfo info) {
         String name = displayName == null ? null : displayName.replaceAll("[\\p{Cc}\\p{Cf}]", "").strip();
         if (name != null && name.isBlank()) name = null;
         if (name != null) name = name.substring(0, name.offsetByCodePoints(0, Math.min(128, name.codePointCount(0, name.length()))));
-        if (rating == null && maximum == null && solved == null && name == null)
+        if (rating == null && maximum == null && solved == null && name == null && info.fields().isEmpty())
             throw new IllegalArgumentException("No public statistics");
         return new Statistics(rating, maximum, solved, Instant.now(), rating == null || maximum == null || solved == null,
-                false, name);
+                false, name, info);
     }
 }

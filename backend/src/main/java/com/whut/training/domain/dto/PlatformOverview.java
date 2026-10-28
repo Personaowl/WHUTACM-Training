@@ -14,7 +14,13 @@ public record PlatformOverview(
         Instant syncedAt,
         DataStatus dataStatus,
         boolean partial,
-        String displayName
+        String displayName,
+        PlatformProfileInfo profileInfo
 ) {
+    public PlatformOverview(String platform, String accountId, String profileUrl, boolean connected, Integer rating,
+                            Integer maxRating, Integer solvedCount, Instant syncedAt, DataStatus dataStatus,
+                            boolean partial, String displayName) {
+        this(platform, accountId, profileUrl, connected, rating, maxRating, solvedCount, syncedAt, dataStatus, partial, displayName, null);
+    }
     public enum DataStatus { UNBOUND, NOT_SUPPORTED, PENDING, SYNCING, READY, UNAVAILABLE }
 }

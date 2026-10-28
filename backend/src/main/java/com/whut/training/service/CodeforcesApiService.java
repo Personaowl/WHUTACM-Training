@@ -4,6 +4,7 @@ import com.whut.training.aspect.annotation.ServiceLog;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.whut.training.domain.entity.CfProblem;
+import com.whut.training.domain.dto.PlatformProfileInfo;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -93,7 +94,8 @@ public class CodeforcesApiService {
                     nullableInt(user, "maxRating"),
                     nullableBoolean(user, "online"),
                     nullableLong(user, "lastOnlineTimeSeconds"),
-                    nullableText(user, "titlePhoto")
+                    nullableText(user, "titlePhoto"),
+                    profileInfoFromUser(user)
             ));
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
@@ -527,17 +529,28 @@ public class CodeforcesApiService {
         return contestId + "-" + problemIndex;
     }
 
-    /**
-     * Codeforces 用户资料摘要。
-     *
-     * @param rating               当前 rating。
-     * @param maxRating            历史最高 rating。
-     * @param online               在线状态。
-     * @param lastOnlineTimeSeconds 最近在线时间戳。
-     * @param avatarUrl            头像地址。
-     */
+    /** Extract only public card facts, never contact details or avatar URLs. */
+    static PlatformProfileInfo profileInfoFromUser(JsonNode user) {
+        String name = java.util.stream.Stream.of(user.path("firstName"), user.path("lastName"))
+                .filter(JsonNode::isTextual).map(JsonNode::asText).filter(text -> !text.isBlank())
+                .collect(java.util.stream.Collectors.joining(" "));
+        var info = PlatformProfileInfo.empty().with("realName", name);
+        for (String key : java.util.List.of("country", "city", "organization")) {
+            if (user.path(key).isTextual()) info = info.with(key, user.path(key).asText());
+        }
+        for (String key : java.util.List.of("friendOfCount", "contribution", "registrationTimeSeconds", "lastOnlineTimeSeconds")) {
+            if (user.path(key).isIntegralNumber() && user.path(key).canConvertToLong()) info = info.with(key, user.path(key).longValue());
+        }
+        return info;
+    }
+
+    /** Public API summary; the legacy constructor remains available to existing callers. */
     public record CodeforcesUserProfile(Integer rating, Integer maxRating, Boolean online,
-                                        Long lastOnlineTimeSeconds, String avatarUrl) {
+                                        Long lastOnlineTimeSeconds, String avatarUrl,
+                                        PlatformProfileInfo profileInfo) {
+        public CodeforcesUserProfile(Integer rating, Integer maxRating, Boolean online, Long lastOnlineTimeSeconds, String avatarUrl) {
+            this(rating, maxRating, online, lastOnlineTimeSeconds, avatarUrl, null);
+        }
     }
 
     /**

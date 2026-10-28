@@ -10,6 +10,15 @@ import static org.assertj.core.api.Assertions.*;
 class PublicPlatformStatisticsLiveTest {
     private final PublicPlatformStatisticsClient client = new PublicPlatformStatisticsClient(new ObjectMapper(),
             new AtCoderApiService("https://atcoder.jp", "https://kenkoooo.com/atcoder/atcoder-api/v3/user/submissions"));
+    @Test void publicProfileFactsFromSamePages() {
+        var atcoder=client.parseAtcoder("Persona_owl",client.get("https://atcoder.jp/users/Persona_owl?lang=en"));
+        var luogu=client.parseLuogu("373100",client.get("https://www.luogu.com.cn/user/373100"));
+        var nowcoder=client.parseNowcoder("317580157",client.get("https://ac.nowcoder.com/acm/contest/profile/317580157/practice-coding"));
+        assertThat(atcoder.profileInfo().fields()).containsKeys("globalRank","ratedContestCount");
+        assertThat(luogu.profileInfo().fields()).containsKeys("followingCount","followerCount","registrationTimeSeconds");
+        assertThat(nowcoder.profileInfo().fields()).containsKeys("followingCount","followerCount","attemptedCount","submissionCount");
+        System.out.println("Public profile fact keys: AtCoder="+atcoder.profileInfo().fields().keySet()+", Luogu="+luogu.profileInfo().fields().keySet()+", Nowcoder="+nowcoder.profileInfo().fields().keySet());
+    }
     @Test void atcoder() {
         var data = client.fetch("atcoder", "tourist");
         assertThat(data.rating()).isNotNull(); assertThat(data.maxRating()).isGreaterThanOrEqualTo(data.rating());

@@ -1,6 +1,7 @@
 package com.whut.training.service;
 
 import com.whut.training.domain.dto.CodeforcesOverview;
+import com.whut.training.domain.dto.PlatformProfileInfo;
 import com.whut.training.domain.entity.User;
 import com.whut.training.exception.BusinessException;
 import com.whut.training.repository.CodeforcesProfileSnapshotRepository;
@@ -90,7 +91,7 @@ public class CodeforcesProfileService {
 
         CacheEntry cached = memoryCache.get(userId);
         if (cached != null && handle.equalsIgnoreCase(cached.handle()) && isFresh(cached.syncedAt())) {
-            if (cached.overview().ratingStats() == null || cached.overview().activity() == null || cached.overview().ratingHistory() == null) {
+            if (cached.overview().ratingStats() == null || cached.overview().activity() == null || cached.overview().ratingHistory() == null || cached.overview().profileInfo() == null) {
                 refreshInBackground(userId);
                 return cached.overview().withStale(true);
             }
@@ -101,7 +102,7 @@ public class CodeforcesProfileService {
         if (stored.isPresent()) {
             CodeforcesProfileSnapshotRepository.Snapshot snapshot = stored.get();
             memoryCache.put(userId, new CacheEntry(handle, snapshot.overview(), snapshot.syncedAt()));
-            if (isFresh(snapshot.syncedAt()) && snapshot.overview().ratingStats() != null && snapshot.overview().activity() != null && snapshot.overview().ratingHistory() != null) {
+            if (isFresh(snapshot.syncedAt()) && snapshot.overview().ratingStats() != null && snapshot.overview().activity() != null && snapshot.overview().ratingHistory() != null && snapshot.overview().profileInfo() != null) {
                 return snapshot.overview().withStale(false);
             }
             refreshInBackground(userId);
@@ -258,6 +259,11 @@ public class CodeforcesProfileService {
         Integer maxRating = profileResult.map(CodeforcesApiService.CodeforcesUserProfile::maxRating)
                 .orElseGet(() -> maxRating(ratingChanges, user.getMaxRating()));
         Instant syncedAt = Instant.now();
+        var profileInfo = profileResult.map(CodeforcesApiService.CodeforcesUserProfile::profileInfo)
+                .orElseGet(() -> snapshotRepository.find(user.getId(), handle).map(snapshot -> snapshot.overview().profileInfo())
+                        .orElse(PlatformProfileInfo.empty()))
+                .with("ratedContestCount", ratingChanges.size()).with("attemptedCount", attemptedProblems.size())
+                .with("acceptedSubmissionCount", acceptedSubmissionCount);
         CodeforcesOverview overview = new CodeforcesOverview(
                 handle,
                 currentRating,
@@ -274,7 +280,8 @@ public class CodeforcesProfileService {
                 recentContests,
                 List.copyOf(ratingStats),
                 activityCounts.entrySet().stream().map(entry -> new com.whut.training.domain.dto.PlatformDetails.ActivityDay(entry.getKey(), entry.getValue())).toList(),
-                sortedChanges.stream().limit(500).map(this::toRecentContest).toList()
+                sortedChanges.stream().limit(500).map(this::toRecentContest).toList(),
+                profileInfo
         );
 
         if (!java.util.Objects.equals(user.getCodeforcesRating(), currentRating)

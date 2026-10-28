@@ -33,6 +33,10 @@
 .platform-snapshot-content[data-metrics="0"]:not(:has(.platform-snapshot-empty)) .platform-snapshot-facts { grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; border-left:0; }
 .platform-snapshot-content[data-metrics="0"]:not(:has(.platform-snapshot-empty)) .platform-snapshot-facts>div+div { border-top:0; }
 .platform-snapshot-empty { align-self:center; margin:0; padding:24px; color:var(--muted); font-size:16px; line-height:1.6; }
+.platform-snapshot-public { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr)); gap:12px; margin:0; padding:20px 24px; border-top:1.5px solid var(--snapshot-line); }
+.platform-snapshot-public>div { min-width:0; padding:12px 14px; border:1px solid var(--snapshot-line); border-radius:10px; background:color-mix(in srgb,var(--snapshot-tint) 8%,white); }
+.platform-snapshot-public dt { color:var(--muted); font-size:15px; line-height:1.5; }
+.platform-snapshot-public dd { margin:6px 0 0; color:var(--ink); font-size:17px; font-weight:650; line-height:1.5; overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
 .platform-snapshot-card.is-compact .platform-snapshot-header { padding:18px; }
 .platform-snapshot-card.is-compact .platform-snapshot-identity { gap:12px; }
 .platform-snapshot-card.is-compact .platform-snapshot-mark { flex-basis:48px; width:48px; height:48px; box-shadow:none; }
@@ -44,6 +48,9 @@
 .platform-snapshot-card.is-compact .platform-snapshot-metrics dt { font-size:15px; }
 .platform-snapshot-card.is-compact .platform-snapshot-metrics dt svg { display:none; }
 .platform-snapshot-card.is-compact .platform-snapshot-metrics small { display:none; }
+.platform-snapshot-card.is-compact .platform-snapshot-public { display:flex; flex-wrap:wrap; gap:8px 16px; padding:12px 18px; }
+.platform-snapshot-card.is-compact .platform-snapshot-public>div { display:flex; align-items:baseline; gap:7px; padding:0; border:0; border-radius:0; background:none; }
+.platform-snapshot-card.is-compact .platform-snapshot-public dd { margin:0; font-size:16px; }
 .platform-snapshot-card.is-compact .snapshot-metric-solvedCount { grid-column:1/-1; display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:8px; }
 .platform-snapshot-card.is-compact .snapshot-metric-solvedCount dd { margin:0; }
 .platform-snapshot-card.is-compact .platform-snapshot-content[data-metrics="3"] .snapshot-metric-solvedCount { padding-top:14px; border-top:1px solid var(--snapshot-line); }
