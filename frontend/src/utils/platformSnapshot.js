@@ -52,6 +52,14 @@ export function platformProfileFacts(platform, profileInfo) {
 }
 const formatNumber=value=>value.toLocaleString("en-US");
 
+export function platformStatisticRows(facts = []) {
+  const practiceKeys = new Set(["attemptedCount", "acceptedSubmissionCount", "submissionCount"]);
+  return [
+    { key: "community", label: "参赛与社区统计", facts: facts.filter(item => !practiceKeys.has(item.key)) },
+    { key: "practice", label: "练习统计", facts: facts.filter(item => practiceKeys.has(item.key)) },
+  ].filter(row => row.facts.length > 0);
+}
+
 // A presentation of the existing verified overview; this model never fetches data.
 export function platformSnapshotModel(platform, accountId, overview) {
   if (!accountId || !THEMES[platform]) return null;
@@ -63,6 +71,8 @@ export function platformSnapshotModel(platform, accountId, overview) {
   const name = platformAccountLabel(platform, accountId, data);
   const rank = currentBand && platform === "codeforces" ? getRatingMeta(data.rating).label : null;
   const facts=platformProfileFacts(platform,data?.profileInfo);
+  const identityKeys = new Set(["organization", "location", "country"]);
+  const accountKeys = platform === "nowcoder" ? new Set(["globalRank", "followingCount", "followerCount"]) : new Set();
   return {
     name,
     accountId: String(accountId),
@@ -74,6 +84,11 @@ export function platformSnapshotModel(platform, accountId, overview) {
     rank,
     rankRange: currentBand ? ratingBandRange(currentBand) : null,
     facts,
+    factGroups: {
+      identity: facts.filter(item => identityKeys.has(item.key)),
+      statistics: facts.filter(item => item.kind === "number" && !accountKeys.has(item.key)),
+      records: facts.filter(item => accountKeys.has(item.key) || (!identityKeys.has(item.key) && item.kind !== "number")),
+    },
     highlights: facts.filter(item=>item.kind==="number").slice(0,3),
     metrics: metrics.map(item => ({ ...item, color: item.key === "solvedCount" ? null : ratingBand(platform, item.value)?.ink,
       rank: item.key !== "solvedCount" && platform === "codeforces" ? getRatingMeta(item.value).label : null })),

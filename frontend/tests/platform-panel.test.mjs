@@ -52,8 +52,8 @@ test("account summary uses a shared snapshot card with equal-sized metrics", asy
   const css = await readFile(new URL("../src/components/profile/PlatformSnapshotCard.css",import.meta.url),"utf8");
   assert.ok(component.includes('className="profile-platform-summary"'));
   assert.ok(component.includes('<PlatformSnapshotCard platform={selected} accountId={account} overview={data} compact={compact}'));
-  assert.match(css,/\.platform-snapshot-primary dd,\.platform-snapshot-metrics dd\s*\{[^}]*font-size:var\(--platform-number-size\)/);
-  assert.ok(css.includes('border-left:1.5px solid var(--snapshot-line)'));
+  assert.match(css,/\.platform-snapshot-primary dd,\s*\.platform-snapshot-metrics dd\s*\{[^}]*font-size:\s*var\(--platform-number-size\)/);
+  assert.match(css,/\.platform-snapshot-dossier\s*\{[^}]*border:\s*1px solid var\(--snapshot-line\)/);
   const profile = await readFile(new URL("../src/pages/ProfilePage.jsx",import.meta.url),"utf8");
   assert.ok(!profile.includes('Codeforces rating'));
   assert.ok(!profile.includes('`Codeforces: ${currentProfile.codeforcesHandle}'));

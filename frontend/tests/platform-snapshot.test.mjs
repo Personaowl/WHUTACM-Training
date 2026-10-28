@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { platformSnapshotModel, platformProfileFacts } from "../src/utils/platformSnapshot.js";
+import { platformSnapshotModel, platformProfileFacts, platformStatisticRows } from "../src/utils/platformSnapshot.js";
 
 const overview=(platform,fields={})=>({platform,accountId:"123",connected:true,dataStatus:"READY",...fields});
 
@@ -42,10 +42,49 @@ test("public facts are platform-specific and bind to the verified account snapsh
   assert.equal(atcoder.find(item=>item.key==="globalRank").label,"算法排名");
 });
 
+test("dossier layout groups every available fact once without losing zero or empty-source states",()=>{
+  const sources={
+    codeforces:{organization:"WHUT",city:"Wuhan",country:"China",realName:"Public Name",friendOfCount:"0",contribution:"-8",ratedContestCount:"62",registrationTimeSeconds:"1696851033",lastOnlineTimeSeconds:"1793160000",attemptedCount:"1800",acceptedSubmissionCount:"2401"},
+    atcoder:{organization:"WHUT",country:"China",globalRank:"9671",ratedContestCount:"13",lastCompetedDate:"2026-03-28"},
+    luogu:{followingCount:"0",followerCount:"25",attemptedCount:"1366",registrationTimeSeconds:"1597576705"},
+    nowcoder:{globalRank:"3916",followingCount:"13",followerCount:"6",attemptedCount:"964",submissionCount:"1543"},
+  };
+  for(const [platform,fields] of Object.entries(sources)){
+    const model=platformSnapshotModel(platform,"123",overview(platform,{profileInfo:{fields}}));
+    const grouped=Object.values(model.factGroups).flat();
+    assert.equal(new Set(grouped.map(item=>item.key)).size,model.facts.length);
+    assert.deepEqual(grouped.map(item=>item.key).sort(),model.facts.map(item=>item.key).sort());
+    assert.ok(model.factGroups.statistics.every(item=>item.kind==="number"));
+    assert.ok(model.factGroups.records.every(item=>!["organization","location","country"].includes(item.key)));
+    assert.deepEqual(platformSnapshotModel(platform,"new",overview(platform,{profileInfo:{fields}})).factGroups,{identity:[],statistics:[],records:[]});
+  }
+  const cf=platformSnapshotModel("codeforces","123",overview("codeforces",{profileInfo:{fields:sources.codeforces}}));
+  assert.deepEqual(cf.factGroups.identity.map(item=>item.key),["organization","location"]);
+  assert.deepEqual(cf.factGroups.records.map(item=>item.key),["realName","registrationTimeSeconds","lastOnlineTimeSeconds"]);
+  assert.equal(cf.factGroups.statistics.find(item=>item.key==="friendOfCount").value,"0");
+  const nc=platformSnapshotModel("nowcoder","123",overview("nowcoder",{profileInfo:{fields:sources.nowcoder}}));
+  assert.deepEqual(nc.factGroups.records.map(item=>item.key),["globalRank","followingCount","followerCount"]);
+  assert.deepEqual(nc.factGroups.statistics.map(item=>item.key),["attemptedCount","submissionCount"]);
+});
+
 test("Luogu only shows solved problems, even if a foreign rating field is present",()=>{
   const model=platformSnapshotModel("luogu","123",overview("luogu",{displayName:"猫头鹰",rating:1961,maxRating:2040,solvedCount:1349}));
   assert.equal(model.name,"猫头鹰"); assert.equal(model.showUid,true); assert.equal(model.rank,null);
   assert.deepEqual(model.metrics.map(item=>[item.key,item.value]),[["solvedCount",1349]]);
+});
+
+test("secondary statistic rows separate practice samples and divide only the available fields",()=>{
+  const facts=platformProfileFacts("codeforces",{fields:{ratedContestCount:"62",friendOfCount:"0",contribution:"-8",attemptedCount:"1800",acceptedSubmissionCount:"2401"}});
+  const rows=platformStatisticRows(facts);
+  assert.deepEqual(rows.map(row=>row.facts.map(fact=>fact.key)),[["ratedContestCount","friendOfCount","contribution"],["attemptedCount","acceptedSubmissionCount"]]);
+  assert.equal(rows[0].facts[1].value,"0");
+  assert.equal(rows[0].facts[2].value,"-8");
+  for(const subset of [[],facts.slice(0,1),facts.slice(3),facts.filter(fact=>fact.key!=="friendOfCount")]){
+    const shown=platformStatisticRows(subset);
+    assert.ok(shown.every(row=>row.facts.length>0));
+    assert.deepEqual(shown.flatMap(row=>row.facts),subset);
+  }
+  assert.deepEqual(platformStatisticRows(),[]);
 });
 
 test("true zero survives, missing metrics do not become fake statistics",()=>{
