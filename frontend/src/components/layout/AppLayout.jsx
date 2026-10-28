@@ -3,6 +3,7 @@ import { Outlet } from "react-router-dom";
 import Sidebar from "../ui/Sidebar";
 import TopBar from "../ui/TopBar";
 import DevPanel from "../ui/DevPanel";
+import AmbientSky from "../ui/AmbientSky";
 import { useAuth } from "../../context/AuthContext";
 import { checkDevStatus } from "../../api/dev";
 
@@ -73,6 +74,7 @@ export default function AppLayout() {
         />
       )}
       <div className="app-frame" inert={mobileNavOpen ? "" : undefined}>
+        <AmbientSky />
         <TopBar onMenuToggle={() => setMobileMenuOpen(true)} menuOpen={mobileNavOpen} />
         <main id="main-content" className="app-main" tabIndex={-1}>
           <div className="app-content">

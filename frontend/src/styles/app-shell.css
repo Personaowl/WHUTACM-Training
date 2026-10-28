@@ -6,6 +6,7 @@
   overflow: hidden;
   background:
     radial-gradient(ellipse at 85% 0%, #e7f1ff 0%, transparent 48%),
+    radial-gradient(ellipse at 100% 60%, #eff0fa4d 0%, transparent 42%),
     radial-gradient(ellipse at 20% 100%, #edf8f3 0%, transparent 48%),
     var(--canvas);
 }
@@ -14,7 +15,7 @@
   position: fixed;
   inset: 0;
   pointer-events: none;
-  opacity: 0.22;
+  opacity: 0.13;
   background-image:
     linear-gradient(rgba(17, 17, 17, 0.045) 1px, transparent 1px),
     linear-gradient(90deg, rgba(17, 17, 17, 0.045) 1px, transparent 1px);
@@ -35,6 +36,8 @@
 }
 
 .app-main {
+  position: relative;
+  z-index: 1;
   flex: 1;
   overflow-y: auto;
   scrollbar-gutter: stable;

@@ -2,6 +2,8 @@
 .surface-contour-host > :not(.surface-contours):not(.surface-sheen) { position: relative; z-index: 1; }
 .surface-contours { position: absolute; z-index: 0; right: 0; top: 0; width: min(45%, 240px); height: 100%; overflow: hidden; pointer-events: none; color: var(--surface-contour-color, var(--line-strong)); stroke: currentColor; stroke-width: 1.25; opacity: .2; }
 .surface-contours.is-wide { width: min(54%, 380px); }
+.surface-contour-stars circle { fill: currentColor; stroke: none; }
+.surface-contour-stars path { fill: var(--paper); }
 .surface-contours[data-tone="mint"] { --surface-contour-color: #669c89; }
 .surface-contours[data-tone="violet"] { --surface-contour-color: #9480b5; }
 @media (max-width: 640px) {
