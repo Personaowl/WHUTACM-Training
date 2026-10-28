@@ -60,9 +60,11 @@ CF 统计快照增加 `ratingStats: [{rating, count}]`，统计去重后的 AC �
 | POST /api/users/{id}/platform-details/refresh | 请求四平台后台更新，立即返回已有快照，不等待外站 |
 | POST /api/users/{id}/platform-details/{platform}/refresh | 仅请求当前平台后台更新 |
 
-本人校验同时适用于 GET / POST，管理员也不能用此接口读取其他人的合并活动。PlatformDetails 包含 `platform, accountId, syncedAt, status, partial, note, tagStats, difficultyStats, recentContests, activity, activityMetric`。`status` 可为 UNBOUND / PENDING / SYNCING / READY / STALE / UNAVAILABLE / DISABLED；STALE 表示保留上次快照但更新暂不可用。未提供的分区为 null，真实空列表为 []，不互相替代。
+本人校验同时适用于 GET / POST，管理员也不能用此接口读取其他人的合并活动。PlatformDetails 包含 `platform, accountId, syncedAt, status, partial, note, tagStats, difficultyStats, recentContests, activity, activityMetric, ratingHistory`。`status` 可为 UNBOUND / PENDING / SYNCING / READY / STALE / UNAVAILABLE / DISABLED；STALE 表示保留上次快照但更新暂不可用。未提供的分区为 null，真实空列表为 []，不互相替代。
 
-`activity` 为 `[{date:"YYYY-MM-DD",count:整数}]`，统一北京时间、最近 365 天。`activityMetric=AC_SUBMISSIONS` 的 CF / AtCoder / Nowcoder 可汇总 AC 提交次数（含重复 AC，非首次解题数）；洛谷的 PUBLIC_ACTIVITY 仅作公开活动，不能混入 AC 合计。活跃平台口径只统计每天有记录的来源个数，不将两类数量相加。CF 同步将 activity 一并写入原 cf_profile_snapshot，旧快照缺少该字段时后台补齐。
+`activity` 为 `[{date:"YYYY-MM-DD",count:整数}]`，统一北京时间、最近 365 天。`activityMetric=AC_SUBMISSIONS` 的 CF / AtCoder / Nowcoder 可汇总 AC 提交次数（含重复 AC，非首次解题数）；洛谷的 PUBLIC_ACTIVITY 仅作公开活动，不能混入 AC 合计。训练热力图自动汇总四平台，训练记录数为 AC 提交次数与洛谷公开活动的数量之和，以此呈现热度，明确不称作 AC/解题数/积分；另列纯 AC 合计，并保留每日来源拆分。CF 同步将 activity 一并写入原 cf_profile_snapshot，旧快照缺少该字段时后台补齐。
+
+CF 概览与单平台 PlatformDetails 的 `ratingHistory` 独立于 `recentContests`（最近 8 场）：前者最多最近 500 场 Rated 比赛，字段与比赛条目相同。四平台列表及批量刷新响应不携带完整 ratingHistory（投影为 null），避免只看热力图也下载数百场比赛；图表从 CF 概览或单平台详情读取。CF 复用既有 user.rating 同步；AtCoder / Nowcoder 复用既有公开 Rating 历史读取，没有额外逐图外部请求。旧 JSON 快照缺少字段时返回 null 并按需后台补齐，真实无历史为 []，不以最近 8 场冒充完整历史。三平台图表各自使用自身分值，只展示 Rated，不拼接不同平台的 Rating。该升级只新增 JSON 字段，无表结构变更。
 
 非 CF 详情默认缓存 360 分钟（app.platform-details.cache-minutes），手动刷新至少相隔一分钟；失败退避五分钟，队列拒绝退避 30 秒；独立 2 工作者、16 个排队位置、同用户/平台/账号合并任务。外站请求固定 HTTPS 来源、响应有大小/超时限制、无 Cookie、不跟随重定向；分页和访问间隔均有界，不在 HTTP 请求线程等待外站。
 

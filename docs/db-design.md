@@ -99,6 +99,8 @@ cf_problem 另有 idx_cf_practice_filter (is_interactive,source_contest_id,ratin
 
 CF 概览统计最多读取最近 10000 条提交，不能宣称覆盖任意大账号全部历史。每日题校验的“最近 30 条”是另一个独立查询，不影响上述概览上限。
 
+三平台 Rating 曲线的 `ratingHistory` 写入既有 CF / 多平台 JSON 快照，最多最近 500 场；`recentContests` 仍仅保留最近 8 场，用途不同。CF 原 `cf_rating_change` 完整历史及 Excel 导出不受该展示上限影响。旧快照按需后台补齐新字段，无需新增列或迁移业务数据。
+
 ## 6. 一级题单（2 表）
 
 ### platform_detail_snapshot（另新增 1 表）

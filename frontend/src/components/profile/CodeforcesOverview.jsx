@@ -8,6 +8,7 @@ import {
 import { getRatingMeta } from "../../utils/cf";
 import { CardSkeleton } from "../ui/Skeleton";
 import { TagSolvedChart, RatingSolvedChart } from "./CodeforcesCharts";
+import RatingHistoryChart from "./RatingHistoryChart";
 
 
 export default function CodeforcesOverview({
@@ -30,13 +31,19 @@ export default function CodeforcesOverview({
       return;
     }
     let cancelled = false;
+    let timer;
+    let polls = 0;
     async function load() {
-      setLoading(true);
+      if (!polls) setLoading(true);
       setError("");
       try {
         const response = await getCodeforcesOverview(userId);
         if (!cancelled) {
-          if (response.code === 200) setData(response.data);
+          if (response.code === 200) {
+            setData(response.data);
+            if (response.data?.stale && response.data?.ratingHistory == null && polls++ < 12 && document.visibilityState === "visible")
+              timer = window.setTimeout(load, Math.min(2500 * 2 ** (polls - 1), 10000));
+          }
           else setError(response.message || "Codeforces 数据加载失败");
         }
       } catch {
@@ -48,6 +55,7 @@ export default function CodeforcesOverview({
     load();
     return () => {
       cancelled = true;
+      window.clearTimeout(timer);
     };
   }, [userId, handle]);
 
@@ -191,6 +199,8 @@ export default function CodeforcesOverview({
           该账号提交超过 10,000 条，做题统计基于最近 10,000 条提交。
         </p>
       )}
+
+      <RatingHistoryChart platform="codeforces" items={data?.ratingHistory} pending={data?.stale} />
 
       <div className="cf-detail-grid">
         <TagSolvedChart items={data?.tagStats || []} />

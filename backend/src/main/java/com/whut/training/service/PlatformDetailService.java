@@ -27,6 +27,7 @@ public class PlatformDetailService {
     private final Executor executor;
     private final boolean enabled;
     private final Duration ttl;
+    private final Instant startedAt = Instant.now();
     private final Set<Key> refreshing = ConcurrentHashMap.newKeySet();
     private final Map<Key, Instant> retryAfter = new ConcurrentHashMap<>();
 
@@ -40,7 +41,7 @@ public class PlatformDetailService {
     }
 
     public List<PlatformDetails> all(User user, boolean force) {
-        return PLATFORMS.stream().map(platform -> read(user, platform, force)).toList();
+        return PLATFORMS.stream().map(platform -> read(user, platform, force).withoutRatingHistory()).toList();
     }
     public PlatformDetails read(User user, String platform, boolean force) {
         if (user == null || user.getId() == null) throw new BusinessException(401, "请先登录");
@@ -59,14 +60,17 @@ public class PlatformDetailService {
                     String.valueOf(row.contestId()), row.contestName(), row.rank(), row.oldRating(), row.newRating(), row.ratingChange(), row.ratingUpdateTimeSeconds(), row.url())).toList();
             return new PlatformDetails(platform, account, data.syncedAt(), data.stale() || requested ? "SYNCING" : "READY",
                     data.submissionLimitReached(), "Codeforces 最近最多 10,000 条提交；按北京时间汇总 AC 提交次数，重复 AC 也计入次数，不代表全历史首次通过。",
-                    data.tagStats(), null, contests, data.activity(), "AC_SUBMISSIONS");
+                    data.tagStats(), null, contests, data.activity(), "AC_SUBMISSIONS",
+                    data.ratingHistory() == null ? null : data.ratingHistory().stream().map(row -> new PlatformDetails.ContestStat(
+                            String.valueOf(row.contestId()), row.contestName(), row.rank(), row.oldRating(), row.newRating(), row.ratingChange(), row.ratingUpdateTimeSeconds(), row.url())).toList());
         }
         var key = new Key(user.getId(), platform, account);
         var stored = snapshots.find(user.getId(), platform, account).orElse(null);
         if (stored != null && (stored.syncedAt() == null || !platform.equals(stored.platform()) || !account.equals(stored.accountId()))) stored = null;
         var now = Instant.now();
         boolean backoff = retryAfter.getOrDefault(key, Instant.MIN).isAfter(now);
-        if (enabled && !backoff && (stored == null || stored.syncedAt().plus(force ? Duration.ofMinutes(1) : ttl).isBefore(now))) enqueue(key);
+        boolean historyBackfill = stored != null && !"luogu".equals(platform) && stored.ratingHistory() == null && stored.syncedAt().isBefore(startedAt);
+        if (enabled && !backoff && (stored == null || historyBackfill || stored.syncedAt().plus(force ? Duration.ofMinutes(1) : ttl).isBefore(now))) enqueue(key);
         if (stored == null) return empty(platform, account, backoff ? "UNAVAILABLE" : enabled ? "PENDING" : "DISABLED");
         return stored.withStatus(refreshing.contains(key) ? "SYNCING" : backoff ? "STALE" : "READY");
     }

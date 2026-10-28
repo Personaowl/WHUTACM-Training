@@ -118,6 +118,8 @@ class CodeforcesProfileServiceTest {
         assertThat(overview.recentContests())
                 .extracting(contest -> contest.contestName() + ":" + contest.ratingChange())
                 .containsExactly("Round 2:-20", "Round 1:100");
+        assertThat(overview.ratingHistory()).hasSize(2);
+        assertThat(overview.withStale(true).ratingHistory()).isEqualTo(overview.ratingHistory());
         verify(snapshotRepository).save(eq(7L), eq("tourist"), any());
     }
 
@@ -175,6 +177,7 @@ class CodeforcesProfileServiceTest {
                 {"handle":"old","solvedCount":4,"tagStats":[],"recentContests":[]}
                 """, com.whut.training.domain.dto.CodeforcesOverview.class);
         assertThat(legacy.ratingStats()).isNull();
+        assertThat(legacy.ratingHistory()).isNull();
         assertThat(legacy.withStale(true).solvedCount()).isEqualTo(4);
         var current = new com.whut.training.domain.dto.CodeforcesOverview("new", null, null,
                 1, 1, 1, 0, null, false, java.time.Instant.now(), false, List.of(), List.of(),
@@ -202,6 +205,7 @@ class CodeforcesProfileServiceTest {
         verify(api, org.mockito.Mockito.never()).getUserSubmissions(any(), org.mockito.ArgumentMatchers.anyInt());
         jobs.get(0).run();
         assertThat(service.getOverview(7L).ratingStats()).isEmpty();
+        assertThat(service.getOverview(7L).ratingHistory()).isEmpty();
         assertThat(jobs).hasSize(1);
     }
 
@@ -223,6 +227,20 @@ class CodeforcesProfileServiceTest {
         assertThat(result.solvedCount()).isEqualTo(1);
         assertThat(result.activity()).containsExactly(new com.whut.training.domain.dto.PlatformDetails.ActivityDay(today.toString(),2));
         assertThat(result.withStale(true).activity()).isEqualTo(result.activity());
+    }
+
+    @Test
+    void fullRatingCurveIsSeparateFromRecentEightAndUsesExistingApiFetch() {
+        UserRepository users=mock(UserRepository.class);CodeforcesApiService api=mock(CodeforcesApiService.class);
+        User user=new User(7L,"member",null,"pw",UserRole.USER);user.setCodeforcesHandle("sample");
+        when(users.findById(7L)).thenReturn(Optional.of(user));
+        when(api.getUserSubmissions("sample",10000)).thenReturn(Optional.of(List.of()));
+        var changes=java.util.stream.LongStream.rangeClosed(1,20).mapToObj(i->rating(i,"Round "+i,1000+(int)i,1001+(int)i,i*100)).toList();
+        when(api.getUserRatingHistory("sample")).thenReturn(Optional.of(changes));
+        var service=new CodeforcesProfileService(users,api,mock(CodeforcesProfileSnapshotRepository.class),mock(CodeforcesRatingHistoryRepository.class),30);
+        var result=service.refresh(7L);
+        assertThat(result.recentContests()).hasSize(8);assertThat(result.ratingHistory()).hasSize(20);
+        verify(api,org.mockito.Mockito.times(1)).getUserRatingHistory("sample");
     }
 
     private CodeforcesApiService.CodeforcesSubmission ratedSubmission(Long id, String index, Integer rating, String verdict) {

@@ -90,7 +90,7 @@ public class CodeforcesProfileService {
 
         CacheEntry cached = memoryCache.get(userId);
         if (cached != null && handle.equalsIgnoreCase(cached.handle()) && isFresh(cached.syncedAt())) {
-            if (cached.overview().ratingStats() == null || cached.overview().activity() == null) {
+            if (cached.overview().ratingStats() == null || cached.overview().activity() == null || cached.overview().ratingHistory() == null) {
                 refreshInBackground(userId);
                 return cached.overview().withStale(true);
             }
@@ -101,7 +101,7 @@ public class CodeforcesProfileService {
         if (stored.isPresent()) {
             CodeforcesProfileSnapshotRepository.Snapshot snapshot = stored.get();
             memoryCache.put(userId, new CacheEntry(handle, snapshot.overview(), snapshot.syncedAt()));
-            if (isFresh(snapshot.syncedAt()) && snapshot.overview().ratingStats() != null && snapshot.overview().activity() != null) {
+            if (isFresh(snapshot.syncedAt()) && snapshot.overview().ratingStats() != null && snapshot.overview().activity() != null && snapshot.overview().ratingHistory() != null) {
                 return snapshot.overview().withStale(false);
             }
             refreshInBackground(userId);
@@ -273,7 +273,8 @@ public class CodeforcesProfileService {
                 tagStats,
                 recentContests,
                 List.copyOf(ratingStats),
-                activityCounts.entrySet().stream().map(entry -> new com.whut.training.domain.dto.PlatformDetails.ActivityDay(entry.getKey(), entry.getValue())).toList()
+                activityCounts.entrySet().stream().map(entry -> new com.whut.training.domain.dto.PlatformDetails.ActivityDay(entry.getKey(), entry.getValue())).toList(),
+                sortedChanges.stream().limit(500).map(this::toRecentContest).toList()
         );
 
         if (!java.util.Objects.equals(user.getCodeforcesRating(), currentRating)

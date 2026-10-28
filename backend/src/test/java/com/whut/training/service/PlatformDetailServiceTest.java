@@ -53,4 +53,26 @@ class PlatformDetailServiceTest {
         assertThatThrownBy(()->service.read(null,"luogu",false)).isInstanceOf(com.whut.training.exception.BusinessException.class);
         assertThat(jobs).isEmpty();
     }
+
+    @Test void legacyRatingHistoryBackfillsOnceAndEmptyHistoryDoesNotTriggerRepeatedRefresh() {
+        var old=stored(Instant.now().minusSeconds(60));
+        var current=new java.util.concurrent.atomic.AtomicReference<PlatformDetails>(old);
+        when(snapshots.find(7L,"atcoder","bound")).thenAnswer(call->Optional.of(current.get()));
+        doAnswer(call->{current.set(call.getArgument(1));return null;}).when(snapshots).save(eq(7L),any());
+        var next=new PlatformDetails("atcoder","bound",Instant.now(),"READY",false,"public",null,null,List.of(),List.of(),"AC_SUBMISSIONS",List.of());
+        when(client.fetch("atcoder","bound")).thenReturn(next);
+        for(int i=0;i<30;i++)assertThat(service.read(user(),"atcoder",false).status()).isEqualTo("SYNCING");
+        assertThat(jobs).hasSize(1);jobs.get(0).run();
+        assertThat(service.read(user(),"atcoder",false).ratingHistory()).isEmpty();
+        assertThat(jobs).hasSize(1);
+    }
+
+    @Test void heatmapListDoesNotShipTheFullRatingHistoryButSinglePlatformRetainsIt() {
+        var data=new PlatformDetails("atcoder","bound",Instant.now(),"READY",false,"public",null,null,List.of(),List.of(),"AC_SUBMISSIONS",
+                List.of(new PlatformDetails.ContestStat("abc1","ABC",1,1000,1100,100,1760000000L,"https://atcoder.jp/contests/abc1")));
+        when(snapshots.find(7L,"atcoder","bound")).thenReturn(Optional.of(data));
+        assertThat(service.read(user(),"atcoder",false).ratingHistory()).hasSize(1);
+        assertThat(service.all(user(),false)).allSatisfy(row->assertThat(row.ratingHistory()).isNull());
+        verifyNoInteractions(client);
+    }
 }

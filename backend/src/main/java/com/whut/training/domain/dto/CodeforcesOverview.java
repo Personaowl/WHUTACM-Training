@@ -21,8 +21,19 @@ public record CodeforcesOverview(
         List<TagStat> tagStats,
         List<RecentContest> recentContests,
         List<RatingStat> ratingStats,
-        List<PlatformDetails.ActivityDay> activity
+        List<PlatformDetails.ActivityDay> activity,
+        List<RecentContest> ratingHistory
 ) {
+    public CodeforcesOverview(String handle, Integer currentRating, Integer maxRating,
+                              int solvedCount, int attemptedCount, int acceptedSubmissionCount,
+                              int ratedContestCount, Long lastSubmissionAtSeconds,
+                              boolean submissionLimitReached, Instant syncedAt, boolean stale,
+                              List<TagStat> tagStats, List<RecentContest> recentContests,
+                              List<RatingStat> ratingStats, List<PlatformDetails.ActivityDay> activity) {
+        this(handle, currentRating, maxRating, solvedCount, attemptedCount, acceptedSubmissionCount,
+                ratedContestCount, lastSubmissionAtSeconds, submissionLimitReached, syncedAt,
+                stale, tagStats, recentContests, ratingStats, activity, null);
+    }
     public CodeforcesOverview(String handle, Integer currentRating, Integer maxRating,
                               int solvedCount, int attemptedCount, int acceptedSubmissionCount,
                               int ratedContestCount, Long lastSubmissionAtSeconds,
@@ -59,7 +70,8 @@ public record CodeforcesOverview(
                 tagStats,
                 recentContests,
                 ratingStats,
-                activity
+                activity,
+                ratingHistory
         );
     }
 

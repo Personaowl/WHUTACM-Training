@@ -108,7 +108,7 @@ export default function HomePage() {
       </div>
 
       <section className="render-lazy cf-heatmap-section">
-        <SectionHeading title="训练足迹" icon={ChartNoAxesCombined} tone="mint" subtitle="过去 12 个月" />
+        <SectionHeading title="站内打卡记录" icon={ChartNoAxesCombined} tone="mint" subtitle="过去 12 个月" />
         {heatmapLoading ? (
           <CardSkeleton />
         ) : heatmapError ? (

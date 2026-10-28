@@ -61,4 +61,20 @@ class PublicPlatformDetailClientTest {
     @Test void untrustedIdentifiersAreRejectedBeforeNetwork() {
         for(String platform:List.of("atcoder","luogu","nowcoder"))assertThatThrownBy(()->client.fetch(platform,"../../host")).isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test void ratingHistoryIsNotTruncatedToRecentEightContests() throws Exception {
+        var root=mapper.createArrayNode();
+        for(int i=0;i<20;i++){
+            var row=root.addObject(); row.put("IsRated",true);row.put("ContestScreenName","abc"+i+".contest.atcoder.jp");
+            row.put("ContestName","ABC "+i);row.put("OldRating",1000+i);row.put("NewRating",1001+i);
+            row.put("EndTime",java.time.OffsetDateTime.parse("2026-01-01T21:00:00+09:00").plusDays(i).toString());
+        }
+        var result=client.parseAtcoderHistory(mapper.writeValueAsString(root));
+        assertThat(result).hasSize(20);assertThat(result.get(0).contestId()).isEqualTo("abc19");
+        var http=mock(PublicPlatformStatisticsClient.class);
+        org.mockito.Mockito.when(http.get("https://atcoder.jp/users/sample/history/json")).thenReturn(mapper.writeValueAsString(root));
+        org.mockito.Mockito.when(http.get(org.mockito.ArgumentMatchers.startsWith("https://kenkoooo.com/atcoder/atcoder-api/v3/user/submissions?"))).thenReturn("[]");
+        var data=new PublicPlatformDetailClient(http,mock(AtCoderApiService.class),mapper).fetch("atcoder","sample");
+        assertThat(data.recentContests()).hasSize(8);assertThat(data.ratingHistory()).hasSize(20);
+    }
 }

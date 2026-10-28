@@ -116,7 +116,7 @@ public class PublicPlatformDetailClient {
             result.put(id, new ContestStat(id, text(row, "ContestName", id), integer(row, "Place"), old, next,
                     old == null ? null : next - old, second, "https://atcoder.jp/contests/" + id));
         }
-        return recent(result.values());
+        return history(result.values());
     }
 
     List<ContestStat> parseNowcoderHistory(String text) {
@@ -134,7 +134,7 @@ public class PublicPlatformDetailClient {
                     delta == null ? null : next - delta, next, delta, second, "https://ac.nowcoder.com/acm/contest/" + id);
             if (!result.containsKey(id) || result.get(id).ratingUpdateTimeSeconds() <= second) result.put(id, item);
         }
-        return recent(result.values());
+        return history(result.values());
     }
 
     List<DifficultyStat> parseLuoguPractice(String account, String html) {
@@ -207,10 +207,11 @@ public class PublicPlatformDetailClient {
     private JsonNode json(String text) { try { return mapper.readTree(text); } catch (Exception error) { throw new IllegalArgumentException("Invalid public JSON", error); } }
     private Integer integer(JsonNode row, String field) { var n = row.path(field); return n.isNumber() && n.canConvertToInt() && n.asDouble() == n.asInt() ? n.asInt() : null; }
     private String text(JsonNode row, String field, String fallback) { String value = row.path(field).asText(fallback); return value.substring(0, Math.min(value.length(), 200)); }
-    private List<ContestStat> recent(Collection<ContestStat> rows) { return rows.stream().sorted(Comparator.comparing(ContestStat::ratingUpdateTimeSeconds).reversed()).limit(8).toList(); }
+    private List<ContestStat> history(Collection<ContestStat> rows) { return rows.stream().sorted(Comparator.comparing(ContestStat::ratingUpdateTimeSeconds).reversed()).limit(500).toList(); }
     private PlatformDetails checked(String platform, String account, List<ContestStat> contests, List<DifficultyStat> difficulty,
             List<ActivityDay> activity, String metric, boolean partial, String note) {
         if (contests == null && difficulty == null && activity == null) throw new IllegalStateException("No public details");
-        return new PlatformDetails(platform, account, Instant.now(), "READY", partial, note, null, difficulty, contests, activity, metric);
+        return new PlatformDetails(platform, account, Instant.now(), "READY", partial, note, null, difficulty,
+                contests == null ? null : contests.stream().limit(8).toList(), activity, metric, contests);
     }
 }

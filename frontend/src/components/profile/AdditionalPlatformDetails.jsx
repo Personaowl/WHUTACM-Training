@@ -1,6 +1,7 @@
 import usePlatformDetails from "../../hooks/usePlatformDetails";
 import { CardSkeleton } from "../ui/Skeleton";
 import { RecentContests } from "./CodeforcesOverview";
+import RatingHistoryChart from "./RatingHistoryChart";
 import "./PlatformDetails.css";
 
 export default function AdditionalPlatformDetails({ userId, platform }) {
@@ -8,7 +9,7 @@ export default function AdditionalPlatformDetails({ userId, platform }) {
   if (loading) return <CardSkeleton />;
   const pending = ["PENDING", "SYNCING"].includes(data?.status);
   return <section className="oj-details">
-    <div className="oj-details-toolbar"><h3>{platform === "luogu" ? "已通过题目分布" : "近期 Rating 比赛"}</h3><button type="button" className="button-ghost" onClick={sync}>同步公开记录</button></div>
+    <div className="oj-details-toolbar"><h3>{platform === "luogu" ? "已通过题目分布" : "比赛与 Rating 记录"}</h3><button type="button" className="button-ghost" onClick={sync}>同步公开记录</button></div>
     {error && <p role="alert">{error}</p>}
     {data?.difficultyStats && <div className="oj-difficulty-card"><h4>洛谷官方难度</h4>
       {data.difficultyStats.length === 0 ? <p>暂无公开的已通过题目</p> : <ul>{data.difficultyStats.map(item => {
@@ -16,6 +17,7 @@ export default function AdditionalPlatformDetails({ userId, platform }) {
         return <li key={item.label}><span>{item.label}</span><div><i style={{ width: `${item.count / max * 100}%`, background: item.color }} /></div><strong>{item.count.toLocaleString()}</strong></li>;
       })}</ul>}
     </div>}
+    {platform !== "luogu" && <RatingHistoryChart platform={platform} items={data?.ratingHistory} pending={pending} />}
     {data?.recentContests && <RecentContests items={data.recentContests} />}
     {pending && <p role="status">公开记录正在后台同步，页面会自动更新。</p>}
     {!pending && !data?.difficultyStats && !data?.recentContests && <p>{data?.status === "UNBOUND" ? "请先绑定平台账号。" : "暂时无法取得公开记录，请稍后重试。"}</p>}
