@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { normalizeRatingHistory, ratingHistoryModel, ratingContestUrl } from "../src/utils/ratingHistory.js";
 const point=(id,time,rating)=>({contestId:id,ratingUpdateTimeSeconds:time,newRating:rating,contestName:`Contest ${id}`,url:`https://codeforces.com/contest/${id}`});
 test("missing rating history is not confused with a measured empty history",()=>{
@@ -33,4 +34,13 @@ test("contest links must stay on each platform's HTTPS origin",()=>{
   assert.equal(ratingContestUrl("codeforces","https://name@codeforces.com/contest/1"),null);
   assert.equal(ratingContestUrl("codeforces","https://codeforces.com:444/contest/1"),null);
   assert.equal(ratingContestUrl("atcoder","https://atcoder.jp/contests/abc100"),"https://atcoder.jp/contests/abc100");
+});
+
+test("rating summaries use bordered cards while each legend entry stays compact",async()=>{
+  const css=await readFile(new URL("../src/components/profile/RatingHistoryChart.css",import.meta.url),"utf8");
+  assert.match(css,/\.rating-history-summary>div\s*\{[^}]*border:1\.5px solid[^}]*background:linear-gradient/);
+  assert.match(css,/\.rating-history-legend\s*\{[^}]*display:flex;[^}]*flex-wrap:wrap/);
+  assert.match(css,/\.rating-history-legend li\s*\{[^}]*display:inline-flex;[^}]*gap:7px/);
+  assert.doesNotMatch(css,/\.rating-history-legend strong\s*\{[^}]*(?:justify-self:end|margin-left:auto)/);
+  assert.match(css,/@media\(max-width:540px\)[\s\S]*\.rating-history-summary\s*\{[^}]*grid-template-columns:1fr/);
 });

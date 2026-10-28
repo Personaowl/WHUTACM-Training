@@ -5,8 +5,11 @@
 .rating-history-header [role=group] { display:flex; gap:4px; padding:4px; border-radius:12px; background:var(--soft); }
 .rating-history-header button,.rating-history-table nav button { min-height:42px; border:1px solid transparent; background:transparent; padding:8px 14px; border-radius:9px; color:var(--muted); font-size:16px; }
 .rating-history-header button[aria-pressed=true] { border-color:var(--line-strong); background:var(--paper); color:var(--ink); }
-.rating-history-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); margin:22px 0 12px; gap:18px; }
-.rating-history-summary dt { font-size:16px; color:var(--muted); }
+.rating-history-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); margin:22px 0 16px; gap:14px; }
+.rating-history-summary>div { --rating-stat-tint:#edf4ff; --rating-stat-edge:#b8cdef; min-width:0; padding:16px 18px; border:1.5px solid var(--rating-stat-edge); border-radius:12px; background:linear-gradient(115deg,var(--rating-stat-tint),var(--paper)); }
+.rating-history-summary>div:nth-child(2) { --rating-stat-tint:#f5efff; --rating-stat-edge:#d4c2ed; }
+.rating-history-summary>div:nth-child(3) { --rating-stat-tint:#eaf7f3; --rating-stat-edge:#b3dacf; }
+.rating-history-summary dt { font-size:16px; line-height:1.5; color:var(--muted); }
 .rating-history-summary dd { margin:5px 0 0; font-size:28px; font-weight:750; color:var(--ink); font-variant-numeric:tabular-nums; }
 .rating-history-summary small { margin-left:5px; font-size:15px; font-weight:500; }
 .rating-history-scroll { overflow-x:auto; scrollbar-width:thin; scrollbar-color:var(--line-strong) transparent; border-radius:8px; }
@@ -25,10 +28,10 @@
 .rating-history-selection { fill:none; stroke:#223954; stroke-width:2; }
 .rating-history-point { cursor:pointer; outline:none; }
 .rating-history-point:focus-visible .rating-history-selection { stroke:var(--ink); stroke-width:3; }
-.rating-history-legend { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr)); gap:10px 20px; padding:16px 0 0; margin:0 0 18px; list-style:none; }
-.rating-history-legend li { display:grid; grid-template-columns:16px auto 1fr; align-items:center; gap:8px; font-size:15px; color:var(--muted); }
+.rating-history-legend { display:flex; flex-wrap:wrap; align-items:center; gap:10px 24px; padding:16px 0 0; margin:0 0 18px; list-style:none; }
+.rating-history-legend li { display:inline-flex; align-items:center; gap:7px; font-size:15px; color:var(--muted); white-space:nowrap; }
 .rating-history-legend i { width:16px; height:16px; border:2px solid; border-radius:4px; }
-.rating-history-legend strong { justify-self:end; color:var(--ink); font-size:15px; font-weight:650; font-variant-numeric:tabular-nums; }
+.rating-history-legend strong { margin-left:3px; color:var(--ink); font-size:15px; font-weight:650; font-variant-numeric:tabular-nums; }
 .rating-history-detail { display:flex; align-items:center; flex-wrap:wrap; gap:14px 24px; min-height:82px; padding:15px 18px; margin-top:12px; border:1px solid var(--line); border-radius:12px; background:var(--surface-subtle); }
 .rating-history-detail>div { flex:1; min-width:160px; }
 .rating-history-detail>.rating-history-selected-score { flex:0 0 auto; min-width:140px; }
@@ -49,4 +52,4 @@
 .rating-history-table td:first-child { white-space:nowrap; }
 .rating-history-table nav { display:flex; align-items:center; justify-content:center; gap:12px; margin:15px 0 0; }
 .rating-history-card button:focus-visible,.rating-history-card a:focus-visible,.rating-history-scroll:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
-@media(max-width:540px) { .rating-history-card { padding:18px; } .rating-history-header h3 { font-size:20px; } .rating-history-summary { gap:10px; } .rating-history-summary dd { font-size:26px; } .rating-history-detail { padding:14px; } .rating-history-table table { min-width:520px; } }
+@media(max-width:540px) { .rating-history-card { padding:18px; } .rating-history-header h3 { font-size:20px; } .rating-history-summary { grid-template-columns:1fr; gap:10px; } .rating-history-summary>div { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px; } .rating-history-summary dd { margin:0; font-size:26px; } .rating-history-detail { padding:14px; } .rating-history-table table { min-width:520px; } }
