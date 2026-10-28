@@ -19,20 +19,7 @@
 .profile-platform-identity { display: flex; align-items: center; gap: 15px; min-width: 0; }
 .profile-platform-identity > div { min-width: 0; }
 .profile-platform-identity h3 { margin: 0 0 10px; font-size: 26px; font-weight: 800; color: var(--ink); }
-.profile-platform-identity a { display: inline-flex; align-items: center; gap: 9px; max-width: 100%; min-height: 44px; overflow-wrap: anywhere; }
-.profile-platform-identity a svg { flex-shrink: 0; }
-.profile-platform-name { min-width: 0; overflow-wrap: anywhere; }
-.profile-platform-uid { display: block; color: var(--muted); font-size: var(--ui-small); margin: 0 0 8px; overflow-wrap: anywhere; }
-.profile-platform-identity a:hover { text-decoration: underline; text-underline-offset: 4px; }
 .profile-platform-account-state { font-size: var(--ui-small); color: var(--muted); }
-.profile-platform-verified { display: inline-flex; flex-shrink: 0; align-items: center; gap: 6px; font-size: var(--ui-small); color: #21724c; }
-.profile-platform-metrics { display: flex; align-items: stretch; margin: 0; min-width: 0; }
-.profile-platform-metrics > div { flex: 1; min-width: 0; padding: 8px 22px; border-left: 2px solid var(--control-line); }
-.profile-platform-metrics > .is-primary { padding-left: 0; border-left: 0; }
-.profile-platform-metrics > .metric-solvedCount:not(.is-primary) { flex: 1; }
-.profile-platform-metrics dt { color: var(--muted); font-size: var(--ui-body); }
-.profile-platform-metrics dd { margin: 10px 0 0; font-size: var(--platform-number-size); line-height: 1.2; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -.035em; color: var(--ink); overflow-wrap: anywhere; }
-.profile-platform-metrics small { display: block; margin-top: 7px; font-size: var(--ui-small); }
 .profile-platform-footer { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px 20px; margin-top: 16px; font-size: var(--ui-small); color: var(--muted); }
 .profile-platform-footer > span { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 .profile-platform-partial { padding-left: 12px; border-left: 1px solid var(--line); }
@@ -60,10 +47,6 @@
   .profile-platform-body { padding: 20px 18px; }
   .profile-platform-identity { gap: 12px; }
   .profile-platform-identity h3 { font-size: 23px; }
-  .profile-platform-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 20px; }
-  .profile-platform-metrics > div { padding: 0 12px; }
-  .profile-platform-metrics > .metric-solvedCount:not(.is-primary) { grid-column: 1 / -1; padding: 16px 0 0; border-left: 0; border-top: 2px solid var(--control-line); display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-  .profile-platform-metrics > .metric-solvedCount:not(.is-primary) dd { margin-top: 0; }
 }
 .home-page .profile-platform-panel.is-compact { padding: 0; }
 .profile-platform-panel.is-compact .profile-platform-title { padding: 16px 18px 10px; }
@@ -74,12 +57,6 @@
 .profile-platform-panel.is-compact .profile-platform-summary { grid-template-columns: minmax(0, 1fr); gap: 18px; min-height: 0; }
 .profile-platform-panel.is-compact .profile-platform-account { border-right: 0; border-bottom: 2px solid var(--control-line); padding: 0 0 16px; }
 .profile-platform-panel.is-compact .profile-platform-identity h3 { font-size: 21px; margin-bottom: 3px; }
-.profile-platform-panel.is-compact .profile-platform-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 0; }
-.profile-platform-panel.is-compact .profile-platform-metrics > div { padding: 0 14px; }
-.profile-platform-panel.is-compact .profile-platform-metrics > .is-primary { padding-left: 0; }
-.profile-platform-panel.is-compact .profile-platform-metrics > .metric-solvedCount:not(.is-primary) { grid-column: 1 / -1; padding: 14px 0 0; border-left: 0; border-top: 2px solid var(--control-line); display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-.profile-platform-panel.is-compact .metric-solvedCount:not(.is-primary) dd { margin-top: 0; }
-.profile-platform-panel.is-compact .profile-platform-metrics dt { font-size: var(--ui-small); }
 .profile-platform-summary[data-unbound="true"] { grid-template-columns: minmax(0, 1fr); gap: 12px; text-align: center; }
 .profile-platform-summary[data-unbound="true"] .profile-platform-account { justify-content: center; padding: 0; border: 0; }
 .profile-platform-summary[data-unbound="true"] .profile-platform-empty { min-height: 0; align-items: center; }

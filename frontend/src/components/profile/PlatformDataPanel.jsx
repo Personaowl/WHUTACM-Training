@@ -1,9 +1,10 @@
 import { lazy, Suspense, useId, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowUpRight, ChartNoAxesCombined, CheckCircle2, ChevronDown, ExternalLink, Link2, RefreshCw } from "lucide-react";
+import { ArrowUpRight, ChartNoAxesCombined, ChevronDown, Link2, RefreshCw } from "lucide-react";
 import usePlatformOverviews from "../../hooks/usePlatformOverviews";
-import { formatPlatformMetric, matchingPlatformOverview, platformRatingMeta, platformAccountLabel } from "../../utils/platformOverview";
-import { PROFILE_PLATFORMS, availablePlatformMetrics, nextPlatformTab, platformProfileUrl, profilePlatformAccount } from "../../utils/platformPanel";
+import { matchingPlatformOverview } from "../../utils/platformOverview";
+import { PROFILE_PLATFORMS, availablePlatformMetrics, nextPlatformTab, profilePlatformAccount } from "../../utils/platformPanel";
+import PlatformSnapshotCard from "./PlatformSnapshotCard";
 import { CardSkeleton } from "../ui/Skeleton";
 import "./PlatformDataPanel.css";
 import "./PlatformMetricTokens.css";
@@ -25,12 +26,8 @@ export default function PlatformDataPanel({ profile, compact = false }) {
   const account = profilePlatformAccount(selectedKey, profile, overviews);
   const data = matchingPlatformOverview(overviews[selectedKey], account);
   const metrics = availablePlatformMetrics(selectedKey, data);
-  const accountLabel = platformAccountLabel(selectedKey, account, data);
-  const showUid = account && ["luogu", "nowcoder"].includes(selectedKey) && accountLabel !== `UID ${account}`;
-  const accountColor = platformRatingMeta(selectedKey, data?.rating).color;
   const syncing = ["PENDING", "SYNCING"].includes(data?.dataStatus);
   const failed = Boolean(error || data?.dataStatus === "UNAVAILABLE");
-  const profileUrl = platformProfileUrl(selectedKey, account);
   const updated = data?.syncedAt ? new Date(data.syncedAt) : null;
   const updatedText = updated && !Number.isNaN(updated.getTime()) ? updated.toLocaleString("zh-CN", {
     month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit",
@@ -60,34 +57,23 @@ export default function PlatformDataPanel({ profile, compact = false }) {
     </div>
     <div role="tabpanel" id={`${id}-panel`} aria-labelledby={`${id}-tab-${selectedKey}`} tabIndex={0}
       className={`profile-platform-body tone-${selected.tone}`} aria-busy={loading}>
-      <div className="profile-platform-summary" data-unbound={!loading && !account || undefined}>
+      {!loading && account ? <PlatformSnapshotCard platform={selected} accountId={account} overview={data} compact={compact}
+        emptyText={failed ? "平台数据暂时无法获取，可重新加载。" : syncing ? "首次同步中，稍后会自动更新。" : "暂时没有可展示的公开统计。"}/>
+      : <div className="profile-platform-summary" data-unbound={!loading && !account || undefined}>
       <div className="profile-platform-account">
         <div className="profile-platform-identity">
-          <div><h3>{account ? <a href={profileUrl} style={{ color: accountColor }} target="_blank" rel="noopener noreferrer"><span className="profile-platform-name">{accountLabel}</span><ExternalLink size={16} aria-hidden="true" /></a> : selected.label}</h3>
-            {showUid && <span className="profile-platform-uid">UID {account}</span>}
-            {account ? <span className="profile-platform-verified"><CheckCircle2 size={15} aria-hidden="true" />{selected.label} 已绑定</span>
-              : <span className="profile-platform-account-state">{loading ? "读取账号中" : failed ? "账号状态暂不可用" : "尚未绑定"}</span>}
+          <div><h3>{selected.label}</h3>
+            <span className="profile-platform-account-state">{loading ? "读取账号中" : failed ? "账号状态暂不可用" : "尚未绑定"}</span>
           </div>
         </div>
       </div>
       {loading ? <div className="profile-platform-loading" role="status">正在读取平台数据…</div>
-        : !account ? <div className="profile-platform-empty">
+        : <div className="profile-platform-empty">
           <p>{failed ? "账号状态读取失败，请重试。" : `绑定 ${selected.label} 后查看训练数据。`}</p>
           {failed ? <button type="button" className="button-ghost" onClick={reload}>重新加载</button>
             : <Link className="button-primary" to="/account-binding">前往绑定</Link>}
-        </div>
-          : metrics.length > 0 ? <dl className="profile-platform-metrics" aria-label={`${selected.label} 核心统计`}>
-              {metrics.map((metric, index) => {
-                const meta = metric.key === "solvedCount" ? null : platformRatingMeta(selectedKey, metric.value);
-                return <div key={metric.key} className={`metric-${metric.key}${index === 0 ? " is-primary" : ""}`}><dt>{metric.label}</dt>
-                  <dd style={meta ? { color: meta.color } : undefined}>{formatPlatformMetric(metric.value)}</dd>
-                  {meta?.label && <small style={{ color: meta.color }}>{meta.label}</small>}
-                </div>;
-              })}
-            </dl> : <div className="profile-platform-empty" role="status">
-              <p>{failed ? "平台数据暂时无法获取。" : syncing ? "首次同步中，稍后会自动更新。" : "暂时没有可展示的公开统计。"}</p>
             </div>}
-      </div>
+      </div>}
       {!loading && account && <>
             <div className="profile-platform-footer">
               <span>{failed ? "更新失败" : syncing ? "后台更新中" : updatedText ? `更新于 ${updatedText}` : "尚未同步"}

@@ -47,17 +47,13 @@ test("detail request and charts are mounted only after the user expands CF detai
   assert.ok(!source.includes('fetch('));
 });
 
-test("account summary has clear separators and equal-sized metrics without repeated logos", async () => {
+test("account summary uses a shared snapshot card with equal-sized metrics", async () => {
   const component = await readFile(new URL("../src/components/profile/PlatformDataPanel.jsx",import.meta.url),"utf8");
-  const css = await readFile(new URL("../src/components/profile/PlatformDataPanel.css",import.meta.url),"utf8");
+  const css = await readFile(new URL("../src/components/profile/PlatformSnapshotCard.css",import.meta.url),"utf8");
   assert.ok(component.includes('className="profile-platform-summary"'));
-  assert.ok(component.includes('index === 0 ? " is-primary"'));
-  assert.ok(component.includes('`UID ${account}`'));
-  assert.ok(!component.includes('src={selected.icon}'));
-  assert.ok(css.includes('font-size: var(--platform-number-size)'));
-  assert.ok(!css.includes('.is-primary dd { font-size:'));
-  assert.ok(css.includes('border-left: 2px solid var(--control-line)'));
-  assert.ok(css.includes('border-right: 2px solid var(--control-line)'));
+  assert.ok(component.includes('<PlatformSnapshotCard platform={selected} accountId={account} overview={data} compact={compact}'));
+  assert.match(css,/\.platform-snapshot-primary dd,\.platform-snapshot-metrics dd\s*\{[^}]*font-size:var\(--platform-number-size\)/);
+  assert.ok(css.includes('border-left:1.5px solid var(--snapshot-line)'));
   const profile = await readFile(new URL("../src/pages/ProfilePage.jsx",import.meta.url),"utf8");
   assert.ok(!profile.includes('Codeforces rating'));
   assert.ok(!profile.includes('`Codeforces: ${currentProfile.codeforcesHandle}'));
