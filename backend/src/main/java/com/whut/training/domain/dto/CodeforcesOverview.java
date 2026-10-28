@@ -20,8 +20,18 @@ public record CodeforcesOverview(
         boolean stale,
         List<TagStat> tagStats,
         List<RecentContest> recentContests,
-        List<RatingStat> ratingStats
+        List<RatingStat> ratingStats,
+        List<PlatformDetails.ActivityDay> activity
 ) {
+    public CodeforcesOverview(String handle, Integer currentRating, Integer maxRating,
+                              int solvedCount, int attemptedCount, int acceptedSubmissionCount,
+                              int ratedContestCount, Long lastSubmissionAtSeconds,
+                              boolean submissionLimitReached, Instant syncedAt, boolean stale,
+                              List<TagStat> tagStats, List<RecentContest> recentContests, List<RatingStat> ratingStats) {
+        this(handle, currentRating, maxRating, solvedCount, attemptedCount, acceptedSubmissionCount,
+                ratedContestCount, lastSubmissionAtSeconds, submissionLimitReached, syncedAt,
+                stale, tagStats, recentContests, ratingStats, null);
+    }
     /** Legacy constructors/snapshots have no difficulty distribution until their next refresh. */
     public CodeforcesOverview(String handle, Integer currentRating, Integer maxRating,
                               int solvedCount, int attemptedCount, int acceptedSubmissionCount,
@@ -48,7 +58,8 @@ public record CodeforcesOverview(
                 nextStale,
                 tagStats,
                 recentContests,
-                ratingStats
+                ratingStats,
+                activity
         );
     }
 

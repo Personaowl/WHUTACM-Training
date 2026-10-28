@@ -1,4 +1,4 @@
-import { memo, useMemo } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 
 const LEVEL_COLORS = ["#edf0f2", "#9be7ad", "#45c96a", "#26964d", "#176b38"];
 const CELL_SIZE = 20;
@@ -8,13 +8,33 @@ const DAY_LABEL_WIDTH = 44;
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const DAY_NAMES = ["", "Mon", "", "Wed", "", "Fri", ""];
 
-function Heatmap({ data = [], totalAllTime = 0 }) {
-  const model = useMemo(() => buildHeatmap(data), [data]);
+function Heatmap({ data = [], totalAllTime = 0, showStats = true, activityLabel = "Training activity", dayLabel, onDaySelect, alignRecent = false, todayDate }) {
+  const model = useMemo(() => buildHeatmap(data, todayDate), [data, todayDate]);
+  const scrollRef = useRef(null);
+  useEffect(() => {
+    if (!alignRecent || !scrollRef.current) return;
+    const element = scrollRef.current;
+    const align = () => { element.scrollLeft = element.scrollWidth; };
+    align();
+    const observer = new ResizeObserver(align);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [alignRecent]);
+  const [focusDate, setFocusDate] = useState(null);
+  const Cell = onDaySelect ? "button" : "span";
+  function moveDay(event) {
+    const offset = { ArrowLeft: -7, ArrowRight: 7, ArrowUp: -1, ArrowDown: 1 }[event.key];
+    if (offset === undefined) return;
+    event.preventDefault();
+    const cells = [...event.currentTarget.closest('[role="grid"]').querySelectorAll('[role="gridcell"]')];
+    const index = cells.indexOf(event.currentTarget);
+    cells[Math.max(0, Math.min(cells.length - 1, index + offset))]?.focus();
+  }
 
   return (
     <div className="heatmap-frame heatmap-cf-layout">
       <div className="heatmap-toolbar">
-        <span>Training activity</span>
+        <span>{activityLabel}</span>
         <div className="heatmap-legend" aria-label="Activity intensity">
           <span>Less</span>
           {LEVEL_COLORS.map((color) => <i key={color} style={{ background: color }} />)}
@@ -22,7 +42,7 @@ function Heatmap({ data = [], totalAllTime = 0 }) {
         </div>
       </div>
 
-      <div className="heatmap-scroll">
+      <div className="heatmap-scroll" ref={scrollRef}>
         <div className="heatmap-canvas" style={{ minWidth: DAY_LABEL_WIDTH + model.weeks.length * WEEK_WIDTH }}>
           <div className="heatmap-months" style={{ gap: CELL_GAP }}>
             <div style={{ width: DAY_LABEL_WIDTH, flexShrink: 0 }} />
@@ -43,17 +63,24 @@ function Heatmap({ data = [], totalAllTime = 0 }) {
               {model.weeks.map((week, weekIndex) => (
                 <div key={weekIndex} className="heatmap-week">
                   {week.map((day, dayIndex) => (
-                    <span
+                    <Cell
                       key={dayIndex}
+                      type={onDaySelect ? "button" : undefined}
+                      tabIndex={onDaySelect && day ? day.date === (focusDate || todayDate || formatDate(new Date())) ? 0 : -1 : undefined}
+                      onFocus={onDaySelect && day ? () => { setFocusDate(day.date); onDaySelect(day.date); } : undefined}
+                      onClick={onDaySelect && day ? () => onDaySelect(day.date) : undefined}
+                      onKeyDown={onDaySelect && day ? moveDay : undefined}
+                      disabled={onDaySelect && !day ? true : undefined}
                       className={`heatmap-cell ${day ? "" : "is-empty"}`}
                       style={{
                         width: CELL_SIZE,
                         height: CELL_SIZE,
                         marginBottom: dayIndex === 6 ? 0 : CELL_GAP,
                         background: day ? LEVEL_COLORS[day.level] : "transparent",
+                        padding: onDaySelect ? 0 : undefined,
                       }}
-                      title={day ? `${day.date}: ${day.score} points` : ""}
-                      aria-label={day ? `${day.date}, ${day.score} points` : undefined}
+                      title={day ? dayLabel ? dayLabel(day) : `${day.date}: ${day.score} points` : ""}
+                      aria-label={day ? dayLabel ? dayLabel(day) : `${day.date}, ${day.score} points` : undefined}
                       role={day ? "gridcell" : undefined}
                     />
                   ))}
@@ -64,14 +91,14 @@ function Heatmap({ data = [], totalAllTime = 0 }) {
         </div>
       </div>
 
-      <div className="heatmap-cf-stats">
+      {showStats && <div className="heatmap-cf-stats">
         <HeatmapStat value={totalAllTime} unit="points" label="earned for all time" />
         <HeatmapStat value={model.totalScore} unit="points" label="earned for the last year" />
         <HeatmapStat value={model.lastMonthScore} unit="points" label="earned for the last month" />
         <HeatmapStat value={model.activeDays} unit="days" label="active for the last year" />
         <HeatmapStat value={model.longestStreak} unit="days" label="longest streak for the last year" />
         <HeatmapStat value={model.lastMonthLongestStreak} unit="days" label="longest streak for the last month" />
-      </div>
+      </div>}
     </div>
   );
 }
@@ -85,9 +112,9 @@ function HeatmapStat({ value, unit, label }) {
   );
 }
 
-function buildHeatmap(data) {
+function buildHeatmap(data, todayDate) {
   const dateMap = new Map(data.map((item) => [item.date, item]));
-  const today = startOfDay(new Date());
+  const today = todayDate ? parseDate(todayDate) : startOfDay(new Date());
   const startDate = new Date(today);
   startDate.setDate(startDate.getDate() - 364);
   startDate.setDate(startDate.getDate() - startDate.getDay());

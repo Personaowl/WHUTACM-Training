@@ -6,10 +6,11 @@ export const PROFILE_PLATFORMS = [
 ];
 
 export function profilePlatformAccount(platform, profile, overviews) {
-  if (platform === "codeforces") return profile?.codeforcesHandle || null;
-  if (platform === "atcoder") return profile?.atcoderHandle || null;
   const row = overviews?.[platform];
-  return row?.connected && row.accountId ? String(row.accountId) : null;
+  if (row) return row.connected && row.accountId ? String(row.accountId) : null;
+  const field = platform === "codeforces" ? "codeforcesHandle" : platform === "atcoder" ? "atcoderHandle" : null;
+  if (field && Object.hasOwn(profile || {}, field)) return profile[field] || null;
+  return null;
 }
 
 export function platformProfileUrl(platform, account) {

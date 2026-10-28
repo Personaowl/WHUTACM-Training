@@ -2,7 +2,7 @@
 
 [文档索引](README.md) · [功能与权限](features.md) · [数据库](db-design.md)
 
-按 2026-10-23 的当前源码核对。本文是已有接口的对接说明，不是待实现设计；精确字段以 [Controller](../backend/src/main/java/com/whut/training/controller/) 与 [DTO](../backend/src/main/java/com/whut/training/domain/dto/) 为准。生产环境在网站同源下请求 `/api`，本地开发由 Vite 代理到 8080。
+按 2026-10-28 的当前源码核对。本文是已有接口的对接说明，不是待实现设计；精确字段以 [Controller](../backend/src/main/java/com/whut/training/controller/) 与 [DTO](../backend/src/main/java/com/whut/training/domain/dto/) 为准。生产环境在网站同源下请求 `/api`，本地开发由 Vite 代理到 8080。
 
 ## 1. 响应、认证与错误
 
@@ -50,6 +50,23 @@ LoginResponse 包含 `id, username, email, role, uid, codeforcesRating, maxRatin
 | POST /api/users/{id}/atcoder-binding/finish | 仅本人 | 无请求体，验证后返回 User |
 
 CF 统计快照增加 `ratingStats: [{rating, count}]`，统计去重后的 AC 题目，按难度升序排列；`rating: null` 表示无公开难度的题目，放在末尾。旧快照的 `ratingStats` 为 `null`，读取时仍立即返回旧统计并后台补齐；新快照的空数组表示已同步但暂无 AC 题目。该字段复用现有提交同步和 JSON 快照，无额外外部请求或数据库表结构变更。
+
+### 多平台详情与活动（仅本人）
+
+| 方法与路径 | 返回 / 行为 |
+| --- | --- |
+| GET /api/users/{id}/platform-details | 四个平台的 PlatformDetails 列表，读取本地并按需调度后台同步 |
+| GET /api/users/{id}/platform-details/{platform} | 单平台详情，platform 为 codeforces / atcoder / luogu / nowcoder |
+| POST /api/users/{id}/platform-details/refresh | 请求四平台后台更新，立即返回已有快照，不等待外站 |
+| POST /api/users/{id}/platform-details/{platform}/refresh | 仅请求当前平台后台更新 |
+
+本人校验同时适用于 GET / POST，管理员也不能用此接口读取其他人的合并活动。PlatformDetails 包含 `platform, accountId, syncedAt, status, partial, note, tagStats, difficultyStats, recentContests, activity, activityMetric`。`status` 可为 UNBOUND / PENDING / SYNCING / READY / STALE / UNAVAILABLE / DISABLED；STALE 表示保留上次快照但更新暂不可用。未提供的分区为 null，真实空列表为 []，不互相替代。
+
+`activity` 为 `[{date:"YYYY-MM-DD",count:整数}]`，统一北京时间、最近 365 天。`activityMetric=AC_SUBMISSIONS` 的 CF / AtCoder / Nowcoder 可汇总 AC 提交次数（含重复 AC，非首次解题数）；洛谷的 PUBLIC_ACTIVITY 仅作公开活动，不能混入 AC 合计。活跃平台口径只统计每天有记录的来源个数，不将两类数量相加。CF 同步将 activity 一并写入原 cf_profile_snapshot，旧快照缺少该字段时后台补齐。
+
+非 CF 详情默认缓存 360 分钟（app.platform-details.cache-minutes），手动刷新至少相隔一分钟；失败退避五分钟，队列拒绝退避 30 秒；独立 2 工作者、16 个排队位置、同用户/平台/账号合并任务。外站请求固定 HTTPS 来源、响应有大小/超时限制、无 Cookie、不跟随重定向；分页和访问间隔均有界，不在 HTTP 请求线程等待外站。
+
+AtCoder 使用官方 history/json（仅 IsRated 的 Algorithm 比赛）和 [AtCoder Problems 提交 API](https://github.com/kenkoooo/AtCoderProblems/blob/master/doc/api.md)，每次最多 4 页并共享 >1 秒访问门控；Nowcoder 使用公开 Rating 历史与练习 AC 页，最多 3 页；洛谷使用公开 user/practice 的 passed 难度及 user 的 dailyCounts，不抓提交详情、标签逐题页或需登录数据。各源的条数、公开范围和分页限制在 note / partial 中说明，不承诺全历史覆盖。
 
 资料更新字段：`username, email, password, displayName, realName, college, className, avatar, bio, showProblemTags`。不修改密码时应**省略 password**，不要发送空字符串（DTO 要求非空值长度 8～64）。头像传 `avatar` 而不是 `avatarUrl`，只接受 PNG/JPEG/WebP 的 Base64 data image，字符串最多 700000 字符，不接受外部 URL。前端负责裁剪压缩。
 

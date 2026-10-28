@@ -90,7 +90,7 @@ public class CodeforcesProfileService {
 
         CacheEntry cached = memoryCache.get(userId);
         if (cached != null && handle.equalsIgnoreCase(cached.handle()) && isFresh(cached.syncedAt())) {
-            if (cached.overview().ratingStats() == null) {
+            if (cached.overview().ratingStats() == null || cached.overview().activity() == null) {
                 refreshInBackground(userId);
                 return cached.overview().withStale(true);
             }
@@ -101,7 +101,7 @@ public class CodeforcesProfileService {
         if (stored.isPresent()) {
             CodeforcesProfileSnapshotRepository.Snapshot snapshot = stored.get();
             memoryCache.put(userId, new CacheEntry(handle, snapshot.overview(), snapshot.syncedAt()));
-            if (isFresh(snapshot.syncedAt()) && snapshot.overview().ratingStats() != null) {
+            if (isFresh(snapshot.syncedAt()) && snapshot.overview().ratingStats() != null && snapshot.overview().activity() != null) {
                 return snapshot.overview().withStale(false);
             }
             refreshInBackground(userId);
@@ -155,7 +155,7 @@ public class CodeforcesProfileService {
         }
     }
 
-    private void refreshInBackground(Long userId) {
+    public void refreshInBackground(Long userId) {
         if (System.nanoTime() < backgroundRetryAfter.getOrDefault(userId, Long.MIN_VALUE)) return;
         if (!refreshingUsers.add(userId)) {
             return;
@@ -197,6 +197,8 @@ public class CodeforcesProfileService {
         Set<String> attemptedProblems = new HashSet<>();
         int acceptedSubmissionCount = 0;
         Long lastSubmissionAt = null;
+        Map<String, Integer> activityCounts = new java.util.TreeMap<>();
+        var today = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Shanghai"));
 
         for (CodeforcesApiService.CodeforcesSubmission submission : submissions) {
             if (submission.creationTimeSeconds() != null
@@ -209,6 +211,10 @@ public class CodeforcesProfileService {
             }
             if ("OK".equalsIgnoreCase(submission.verdict())) {
                 acceptedSubmissionCount++;
+                if (submission.creationTimeSeconds() != null && submission.creationTimeSeconds() > 0) {
+                    var day = Instant.ofEpochSecond(submission.creationTimeSeconds()).atZone(java.time.ZoneId.of("Asia/Shanghai")).toLocalDate();
+                    if (!day.isBefore(today.minusDays(364)) && !day.isAfter(today)) activityCounts.merge(day.toString(), 1, Integer::sum);
+                }
                 if (problemKey != null) {
                     solvedProblems.putIfAbsent(problemKey, submission);
                 }
@@ -266,7 +272,8 @@ public class CodeforcesProfileService {
                 false,
                 tagStats,
                 recentContests,
-                List.copyOf(ratingStats)
+                List.copyOf(ratingStats),
+                activityCounts.entrySet().stream().map(entry -> new com.whut.training.domain.dto.PlatformDetails.ActivityDay(entry.getKey(), entry.getValue())).toList()
         );
 
         if (!java.util.Objects.equals(user.getCodeforcesRating(), currentRating)

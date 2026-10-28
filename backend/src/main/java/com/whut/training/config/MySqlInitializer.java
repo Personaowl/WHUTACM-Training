@@ -27,6 +27,16 @@ public class MySqlInitializer implements DatabaseInitializer {
     @PostConstruct
     public void init() {
         jdbcTemplate.execute("""
+                CREATE TABLE IF NOT EXISTS platform_detail_snapshot (
+                    user_id BIGINT NOT NULL,
+                    platform VARCHAR(16) NOT NULL,
+                    account_id VARCHAR(64) NOT NULL,
+                    payload_json MEDIUMTEXT NOT NULL,
+                    synced_at VARCHAR(64) NOT NULL,
+                    PRIMARY KEY(user_id, platform, account_id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                """);
+        jdbcTemplate.execute("""
                 CREATE TABLE IF NOT EXISTS contest_source_snapshot (
                     platform VARCHAR(16) PRIMARY KEY,
                     payload_json MEDIUMTEXT NOT NULL,

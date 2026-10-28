@@ -11,6 +11,11 @@ import java.util.concurrent.ThreadPoolExecutor;
 @Configuration
 public class AsyncExecutionConfig {
 
+    @Bean(name = "platformDetailExecutor")
+    public Executor platformDetailExecutor() {
+        return executor("platform-detail-", 2, 16);
+    }
+
     @Bean(name = "platformStatisticsExecutor")
     public Executor platformStatisticsExecutor() {
         return executor("platform-stats-", 2, 40);

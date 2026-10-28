@@ -24,6 +24,7 @@ import {
   Trophy,
 } from "lucide-react";
 import PlatformDataPanel from "../components/profile/PlatformDataPanel";
+import PlatformActivity from "../components/profile/PlatformActivity";
 import { PageIcon } from "../components/ui/PageHeading";
 import SurfaceSheen from "../components/ui/SurfaceSheen";
 import SurfaceContours from "../components/ui/SurfaceContours";
@@ -120,6 +121,8 @@ export default function HomePage() {
           </div>
         )}
       </section>
+
+      <PlatformActivity userId={user?.id} />
 
       <div className="render-lazy home-community-grid">
         <div className="home-community-aside">

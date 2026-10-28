@@ -2,14 +2,14 @@
 
 [文档索引](README.md) · [接口参考](api-design.md) · [数据迁移](migration.md)
 
-按 2026-10-27 当前 [MySqlInitializer](../backend/src/main/java/com/whut/training/config/MySqlInitializer.java) 和 [Repository](../backend/src/main/java/com/whut/training/repository/) 核对。下文说明表用途、关键字段及约束；完整类型、默认值和建表 SQL 以初始化器为准，避免在文档复制一份容易失效的 DDL。
+按 2026-10-28 当前 [MySqlInitializer](../backend/src/main/java/com/whut/training/config/MySqlInitializer.java) 和 [Repository](../backend/src/main/java/com/whut/training/repository/) 核对。下文说明表用途、关键字段及约束；完整类型、默认值和建表 SQL 以初始化器为准，避免在文档复制一份容易失效的 DDL。
 
 ## 1. 存储与初始化
 
 - 业务库默认名 whut_training，可通过 MYSQL_URL 修改。当前使用 MySQL、InnoDB、utf8mb4_unicode_ci 和 JdbcTemplate，不使用 ORM、SQLite 或 Redis。
 - 推荐服务器 MySQL 8.0；开发用 compose.yaml 实际固定 mysql:8.4。迁移时优先同版本恢复演练，不能把二者当作相同版本或直接复制数据目录。
 - 启动创建缺失表，并执行代码中列出的补字段、补索引和修正 SQL；**CREATE TABLE IF NOT EXISTS 不代表自动对齐任意旧表结构**，当前没有 Flyway/Liquibase 的版本化迁移体系。
-- 当前初始化器创建下列 **23 张表**；旧库可能还有已废弃的表，数量不能作为迁移成功的唯一判据。
+- 当前初始化器创建下列 **24 张表**；旧库可能还有已废弃的表，数量不能作为迁移成功的唯一判据。
 - ID 通常为 BIGINT 自增，周记录及 ABC 关系表使用复合主键。代码未声明外键级联约束，关联完整性与删除流程由应用维护，不能假设删父记录会自动删子记录。
 - date / week_start 等业务日期为 VARCHAR(10) 的 YYYY-MM-DD；多数过程时间为 VARCHAR(64) 的 ISO 字符串；部分创建时间为 TIMESTAMP，外部平台时间为 BIGINT Unix 秒。恢复必须保留这些语义，业务周按 Asia/Shanghai 计算。
 
@@ -100,6 +100,10 @@ cf_problem 另有 idx_cf_practice_filter (is_interactive,source_contest_id,ratin
 CF 概览统计最多读取最近 10000 条提交，不能宣称覆盖任意大账号全部历史。每日题校验的“最近 30 条”是另一个独立查询，不影响上述概览上限。
 
 ## 6. 一级题单（2 表）
+
+### platform_detail_snapshot（另新增 1 表）
+
+非 CF 的平台详情 JSON 快照，字段 user_id、platform、account_id、payload_json MEDIUMTEXT、synced_at，三元组为主键；应用写入限制 256 KiB。保存已公开的难度分布、近期 Rated 比赛和按日活动，缺失分区为 null。升级自动建表、不覆盖已有业务数据；换绑后按新账号键读取，不混入旧账号快照。CF 活动沿用 cf_profile_snapshot 的 JSON，无需补列。完整数据库备份会一并迁移此表。
 
 | 表 | 主要字段 | 约束与用途 |
 | --- | --- | --- |

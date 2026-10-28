@@ -239,7 +239,7 @@ function CompactStat({ label, value, valueColor }) {
 }
 
 
-function RecentContests({ items }) {
+export function RecentContests({ items }) {
   return (
     <div className="bg-white border border-border rounded-ui overflow-hidden">
       <h3 className="text-sm font-semibold text-text-primary m-0 px-4 py-3 border-b border-border">

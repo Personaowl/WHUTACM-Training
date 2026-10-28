@@ -18,16 +18,8 @@ export function TagSolvedChart({ items = [] }) {
     const gap = Math.min(0.045, sweep * 0.16);
     const start = point(100, cursor + gap / 2);
     const end = point(100, cursor + sweep - gap / 2);
-    const angle = cursor + sweep / 2;
     cursor += sweep;
-    return { ...item, index, angle, path: `M ${start.x} ${start.y} A 100 100 0 ${sweep - gap > Math.PI ? 1 : 0} 1 ${end.x} ${end.y}` };
-  });
-  const labels = [-1, 1].flatMap(side => {
-    const entries = arcs.slice(0, 6).filter(arc => (Math.cos(arc.angle) >= 0 ? 1 : -1) === side)
-      .sort((a, b) => Math.sin(a.angle) - Math.sin(b.angle));
-    return entries.map((arc, index) => ({ ...arc, side, labelY: entries.length === 1
-      ? Math.max(60, Math.min(300, point(125, arc.angle).y))
-      : 66 + (index + 0.5) * (224 / entries.length) }));
+    return { ...item, index, path: `M ${start.x} ${start.y} A 100 100 0 ${sweep - gap > Math.PI ? 1 : 0} 1 ${end.x} ${end.y}` };
   });
   function toggle(tag) { setActive(tag); }
   return <section className="cf-chart-card cf-tags-chart" aria-labelledby={`${id}-heading`}>
@@ -40,16 +32,6 @@ export function TagSolvedChart({ items = [] }) {
           {arcs.map(arc => <path key={arc.tag} d={arc.path} fill="none" stroke={TAG_COLORS[arc.index]} strokeWidth={active === arc.tag ? 35 : 29}
             strokeLinecap="butt" className="cf-tag-arc" opacity={active && active !== arc.tag ? 0.45 : 1}
             onPointerEnter={() => setActive(arc.tag)} onPointerLeave={() => setActive(null)} onClick={() => toggle(arc.tag)} />)}
-          {labels.map(arc => {
-            const start = point(120, arc.angle);
-            const elbowX = arc.side > 0 ? 350 : 90;
-            const labelX = arc.side > 0 ? 356 : 84;
-            return <g key={arc.tag} className="cf-tag-callout" opacity={active && active !== arc.tag ? 0.45 : 1}>
-              <polyline points={`${start.x},${start.y} ${elbowX - arc.side * 10},${arc.labelY} ${elbowX},${arc.labelY}`} fill="none" stroke={TAG_COLORS[arc.index]} strokeWidth="1.8" />
-              <text x={labelX} y={arc.labelY - 5} textAnchor={arc.side > 0 ? "start" : "end"}>{arc.tag.length > 11 ? `${arc.tag.slice(0, 10)}…` : arc.tag}</text>
-              <text x={labelX} y={arc.labelY + 13} textAnchor={arc.side > 0 ? "start" : "end"} className="cf-tag-callout-count">{number(arc.count)} · {(arc.count / total * 100).toFixed(1)}%</text>
-            </g>;
-          })}
         </svg>
         <div className="cf-tag-center" aria-live="polite"><span>{selected?.tag || "标签命中次数"}</span><strong>{number(selected?.count ?? total)}</strong>
           <small>{selected ? `${(selected.count / total * 100).toFixed(1)}%` : "一题可包含多个标签"}</small></div>

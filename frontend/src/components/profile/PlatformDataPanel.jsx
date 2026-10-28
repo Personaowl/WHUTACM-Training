@@ -9,6 +9,7 @@ import "./PlatformDataPanel.css";
 import "./PlatformMetricTokens.css";
 
 const CodeforcesOverview = lazy(() => import("./CodeforcesOverview"));
+const AdditionalPlatformDetails = lazy(() => import("./AdditionalPlatformDetails"));
 
 export default function PlatformDataPanel({ profile, compact = false }) {
   const [searchParams] = useSearchParams();
@@ -94,13 +95,13 @@ export default function PlatformDataPanel({ profile, compact = false }) {
               <button type="button" onClick={reload} disabled={loading}><RefreshCw size={15} aria-hidden="true" />{failed ? "重试" : "重新加载"}</button>
             </div>
             {selectedKey === "atcoder" && data?.solvedCount != null && <p className="profile-platform-source">解题数来自 AtCoder Problems</p>}
-            {!compact && selectedKey === "codeforces" && <div className="profile-platform-details">
+            {!compact && account && <div className="profile-platform-details">
               <button type="button" className="profile-platform-disclosure" aria-expanded={detailsOpen}
                 aria-controls={`${id}-details`} onClick={() => setDetailsOpen(open => !open)}>
-                <span><ChartNoAxesCombined size={18} aria-hidden="true" />题目分布与近期比赛</span><ChevronDown size={18} aria-hidden="true" />
+                <span><ChartNoAxesCombined size={18} aria-hidden="true" />{selectedKey === "luogu" ? "已通过题目分布" : "题目分布与近期比赛"}</span><ChevronDown size={18} aria-hidden="true" />
               </button>
-              <div id={`${id}-details`} hidden={!detailsOpen}>{detailsOpen && <Suspense fallback={<CardSkeleton />}><CodeforcesOverview key={`${profile.id}-${account}`}
-                userId={profile.id} handle={account} canRefresh detailsOnly onUpdated={reload} /></Suspense>}</div>
+              <div id={`${id}-details`} hidden={!detailsOpen}>{detailsOpen && <Suspense fallback={<CardSkeleton />}>{selectedKey === "codeforces" ? <CodeforcesOverview key={`${profile.id}-${account}`}
+                userId={profile.id} handle={account} canRefresh detailsOnly onUpdated={reload} /> : <AdditionalPlatformDetails key={`${profile.id}-${selectedKey}-${account}`} userId={profile.id} platform={selectedKey} />}</Suspense>}</div>
             </div>}
           </>}
     </div>

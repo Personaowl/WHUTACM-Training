@@ -11,6 +11,7 @@ import Heatmap from "../components/ui/Heatmap";
 import { CardSkeleton } from "../components/ui/Skeleton";
 import ProfileEditDialog from "../components/profile/ProfileEditDialog";
 import PlatformDataPanel from "../components/profile/PlatformDataPanel";
+import PlatformActivity from "../components/profile/PlatformActivity";
 import { Camera, CalendarRange, Link2, Trash2, UserRound } from "lucide-react";
 import PageHeading from "../components/ui/PageHeading";
 import SurfaceContours from "../components/ui/SurfaceContours";
@@ -206,6 +207,7 @@ export default function ProfilePage() {
           <Heatmap data={heatmapData} />
         </div>
       </section>
+      <PlatformActivity userId={user?.id} />
     </div>
   );
 }

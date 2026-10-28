@@ -17,8 +17,12 @@ test("only known metrics are shown; zero is real and missing highest is not an e
 test("pending and old account metadata cannot masquerade as verified bindings", () => {
   assert.equal(profilePlatformAccount("luogu",{}, {luogu:{connected:false,accountId:"123",pendingAccountId:"456"}}),null);
   assert.equal(profilePlatformAccount("luogu",{}, {luogu:{connected:true,accountId:123}}),"123");
-  assert.equal(profilePlatformAccount("codeforces",{}, {codeforces:{connected:true,accountId:"old"}}),null);
-  assert.equal(profilePlatformAccount("atcoder",{atcoderHandle:"new"}, {atcoder:{connected:true,accountId:"old"}}),"new");
+  assert.equal(profilePlatformAccount("codeforces",{codeforcesHandle:null}, {codeforces:{connected:true,accountId:"verified"}}),"verified");
+  assert.equal(profilePlatformAccount("atcoder",{atcoderHandle:"stale"}, {atcoder:{connected:true,accountId:"verified"}}),"verified");
+  assert.equal(profilePlatformAccount("atcoder",{atcoderHandle:"stale"}, {atcoder:{connected:false,accountId:null}}),null);
+  assert.equal(profilePlatformAccount("atcoder",{atcoderHandle:"fallback"}, {}),"fallback");
+  assert.equal(profilePlatformAccount("atcoder",{}, {atcoder:{connected:true,accountId:"verified"}}),"verified");
+  assert.equal(profilePlatformAccount("atcoder",{}, {atcoder:{connected:false,accountId:"pending"}}),null);
 });
 test("profile links use fixed platform origins and encoded accounts", () => {
   assert.equal(platformProfileUrl("unknown","1"),null);
@@ -62,7 +66,7 @@ test("account summary has clear separators and equal-sized metrics without repea
 test("home compact panel preserves the selected platform in its detail link and omits charts", async () => {
   const source = await readFile(new URL("../src/components/profile/PlatformDataPanel.jsx",import.meta.url),"utf8");
   assert.ok(source.includes('to={`/profile?platform=${selectedKey}`}'));
-  assert.ok(source.includes('!compact && selectedKey === "codeforces"'));
+  assert.ok(source.includes('!compact && account'));
   assert.ok(source.includes('item.key === searchParams.get("platform")'));
   const bindingCss = await readFile(new URL("../src/components/profile/PlatformStatistics.css",import.meta.url),"utf8");
   assert.ok(bindingCss.includes('font-size: var(--platform-number-size)'));

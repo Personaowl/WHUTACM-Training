@@ -52,7 +52,7 @@ public class PublicPlatformStatisticsClient {
         };
     }
 
-    private String get(String url) {
+    String get(String url) {
         var request = HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofSeconds(8))
                 .header("User-Agent", "WHUT-Training-PlatformStatistics/1.0").GET().build();
         var pending = http.sendAsync(request, ignored -> new PublicProfileVerifier.LimitedBody());

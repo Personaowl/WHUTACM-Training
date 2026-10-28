@@ -205,6 +205,26 @@ class CodeforcesProfileServiceTest {
         assertThat(jobs).hasSize(1);
     }
 
+    @Test
+    void dailyActivityCountsAcSubmissionsNotDistinctProblems() {
+        UserRepository users = mock(UserRepository.class);
+        CodeforcesApiService api = mock(CodeforcesApiService.class);
+        User user = new User(7L,"member",null,"pw",UserRole.USER); user.setCodeforcesHandle("sample");
+        when(users.findById(7L)).thenReturn(Optional.of(user));
+        var today=java.time.LocalDate.now(java.time.ZoneId.of("Asia/Shanghai"));
+        long second=today.atStartOfDay(java.time.ZoneId.of("Asia/Shanghai")).toEpochSecond();
+        when(api.getUserSubmissions("sample",10000)).thenReturn(Optional.of(List.of(
+                new CodeforcesApiService.CodeforcesSubmission(1L,100,"A","A",800,List.of(),"OK",second),
+                new CodeforcesApiService.CodeforcesSubmission(2L,100,"A","A",800,List.of(),"OK",second+1),
+                new CodeforcesApiService.CodeforcesSubmission(3L,100,"B","B",900,List.of(),"WRONG_ANSWER",second+2))));
+        when(api.getUserRatingHistory("sample")).thenReturn(Optional.of(List.of()));
+        var service=new CodeforcesProfileService(users,api,mock(CodeforcesProfileSnapshotRepository.class),mock(CodeforcesRatingHistoryRepository.class),30);
+        var result=service.refresh(7L);
+        assertThat(result.solvedCount()).isEqualTo(1);
+        assertThat(result.activity()).containsExactly(new com.whut.training.domain.dto.PlatformDetails.ActivityDay(today.toString(),2));
+        assertThat(result.withStale(true).activity()).isEqualTo(result.activity());
+    }
+
     private CodeforcesApiService.CodeforcesSubmission ratedSubmission(Long id, String index, Integer rating, String verdict) {
         return new CodeforcesApiService.CodeforcesSubmission(id, 100, index, "Problem " + index, rating, List.of("dp"), verdict, id);
     }
