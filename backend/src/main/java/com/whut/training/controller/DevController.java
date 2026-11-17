@@ -94,8 +94,8 @@ public class DevController {
     /**
      * 强制打卡 —— 跳过 Codeforces 提交校验，直接将指定日期的题目标记为已完成。
      *
-     * <p>请求体：{ "date": "2026-05-25", "slot": "easy|hard", "userId": 1 }
-     * 不传 userId 则使用当前登录用户；不传 slot 则尝试 easy 再 hard。
+     * <p>请求体：{ "date": "2026-05-25", "slot": "easy|mid|hard", "userId": 1 }
+     * 不传 userId 则使用当前登录用户；不传 slot 则按 Easy、Mid、Hard 顺序寻找有效题位。
      */
     @PostMapping("/check-in")
     public ApiResponse<Map<String, Object>> forceCheckIn(@RequestBody Map<String, String> body) {

@@ -376,6 +376,7 @@ public class TrainingWorkbookWriter {
 
     private String slotLabel(String slot) {
         if ("easy".equalsIgnoreCase(slot)) return "简单题";
+        if ("mid".equalsIgnoreCase(slot)) return "中档题";
         if ("hard".equalsIgnoreCase(slot)) return "困难题";
         return "每日题";
     }

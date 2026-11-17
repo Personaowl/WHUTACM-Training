@@ -109,6 +109,7 @@
 .home-problem-grid { display: grid; gap: 16px; }
 .home-page .home-problem-grid .problem-card { padding: 20px; border-color: var(--line); background: linear-gradient(120deg, #fcfdff, #f7fbff); border-radius: 16px; box-shadow: none; backdrop-filter: none; }
 .home-page .home-problem-grid .problem-card[data-slot="easy"] { border-color: var(--mint-line); background: linear-gradient(125deg, #fff 35%, #eff9f4); }
+.home-page .home-problem-grid .problem-card[data-slot="mid"] { background: linear-gradient(125deg, #fff 35%, #eef5ff); }
 .home-page .home-problem-grid .problem-card[data-slot="hard"] { border-color: var(--violet-line); background: linear-gradient(125deg, #fff 35%, #f5f0fd); }
 .home-problem-grid .problem-card h3 { font-size: var(--ui-item); line-height: 1.5; white-space: normal; overflow-wrap: anywhere; }
 .home-problem-grid .problem-card p { font-size: var(--ui-small); }

@@ -23,11 +23,11 @@ class DailyHistoryWindowTest {
     private final User user = new User(7L, "history-user", null, "hash", UserRole.USER);
     private final DailyProblemServiceImpl service = new DailyProblemServiceImpl(daily,
             mock(ProblemCatalogRepository.class), mock(ProblemPoolService.class), mock(CodeforcesApiService.class),
-            time, mock(DailyCheckInRecorder.class), 1200, 2000, 90, 800, 1800, 1900, 3000);
+            time, mock(DailyCheckInRecorder.class), 1200, 2000, 90, 800, 1400, 1500, 1900, 2000, 3500);
 
     @BeforeEach void setup() {
         when(time.today()).thenReturn(today);
-        when(daily.findCurrentDailySlotsByDate(today)).thenReturn(List.of(slot("easy"), slot("hard")));
+        when(daily.findCurrentDailySlotsByDate(today)).thenReturn(List.of(slot("easy"), slot("mid"), slot("hard")));
     }
 
     private DailyProblemSlot slot(String type) {

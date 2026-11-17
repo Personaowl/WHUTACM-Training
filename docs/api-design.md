@@ -157,8 +157,8 @@ Nowcoder 新挑战使用 24 字符的 `W-` + 无填充 Base64URL 编码，底层
 | PUT /api/admin/users/{id}/member-type | 管理员；JSON：memberType=REGULAR 或 ACTIVE_TEAM |
 | POST /api/admin/users/{id}/reset-password | 超管；其他非超管账号重置为 123456 并注销其会话 |
 | GET /api/roles | 管理员；角色名称/代码/描述列表 |
-| POST /api/admin/daily-problem/redraw | 管理员；query：slot=easy/hard，date 可选默认今天，confirm 默认 false |
-| POST /api/admin/daily-problem/regenerate | 管理员；兼容旧单题 daily_problem 的重新生成，返回单个 ProblemView，**不是同时重抽 Easy/Hard** |
+| POST /api/admin/daily-problem/redraw | 管理员；query：slot=easy/mid/hard，date 可选默认今天，confirm 默认 false |
+| POST /api/admin/daily-problem/regenerate | 管理员；兼容旧单题 daily_problem 的重新生成，返回单个 ProblemView，**不改变当前三档题位** |
 | GET /api/admin/training-dashboard | 管理员；现役成员每日题等训练统计 |
 | POST /api/admin/training-dashboard/export | 管理员；返回 .xlsx 文件，见下方选项 |
 | GET /api/admin/atcoder-abc | 管理员；可选 contestId |
@@ -166,7 +166,7 @@ Nowcoder 新挑战使用 24 字符的 `W-` + 无填充 Base64URL 编码，底层
 | PATCH /api/admin/atcoder-abc/setting | 管理员；JSON：minimumAcCount（0～8）、graceHours（1～168），可选 query contestId |
 | PATCH /api/admin/atcoder-abc/{contestId}/members/{userId}/exemption | 管理员；JSON：exempted、reason（最多 500） |
 
-redraw 的 confirm 当前不改变补记行为，不代表确认后重算历史积分。兼容 regenerate 仍有界面入口；若要更换双题位，应使用对应 redraw，而不是把旧单题接口当作双题位重建。
+redraw 的 confirm 当前不改变补记行为，不代表确认后重算历史积分。更换任一档位请使用对应 redraw；没有可用候选题时返回 503，保留原题。
 
 导出 JSON 字段为 `range, includeDaily, includeCodeforcesContests, includeAtCoderContests`，至少选择一种。range 为 WEEK / MONTH / ALL，空或未知值按 WEEK；WEEK 指含今天最近 7 天、MONTH 指含今天最近 30 天，**不是自然周/月**。CF Rated 数据来自同步记录，ABC 来自已跟踪场次；导出不包含自主练习、私人情况说明或人工周状态。成功响应 Content-Type 为 XLSX，文件名见 Content-Disposition。
 

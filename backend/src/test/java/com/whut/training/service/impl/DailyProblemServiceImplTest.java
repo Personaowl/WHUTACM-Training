@@ -59,9 +59,11 @@ class DailyProblemServiceImplTest {
                 2000,
                 90,
                 800,
-                1800,
+                1400,
+                1500,
                 1900,
-                3000
+                2000,
+                3500
         );
 
         try {
@@ -85,8 +87,10 @@ class DailyProblemServiceImplTest {
         List<DailyProblemSlot> slots = List.of(
                 new DailyProblemSlot(1L, today, "easy", "100-A", 100, "A", "Easy", 1200,
                         "math", "https://codeforces.com/problemset/problem/100/A", false),
-                new DailyProblemSlot(2L, today, "hard", "200-B", 200, "B", "Hard", 1800,
-                        "dp", "https://codeforces.com/problemset/problem/200/B", false)
+                new DailyProblemSlot(2L, today, "mid", "200-B", 200, "B", "Mid", 1800,
+                        "dp", "https://codeforces.com/problemset/problem/200/B", false),
+                new DailyProblemSlot(3L, today, "hard", "300-C", 300, "C", "Hard", 2300,
+                        "dp", "https://codeforces.com/problemset/problem/300/C", false)
         );
         User user = new User(7L, "owl", null, "password", UserRole.USER);
         user.setCodeforcesHandle("Persona_owl");
@@ -104,18 +108,18 @@ class DailyProblemServiceImplTest {
                 repository, catalogRepository, new ProblemPoolService(catalogRepository, codeforcesApiService, true),
                 codeforcesApiService, timeProvider,
                 new com.whut.training.service.DailyCheckInRecorder(repository, userRepository),
-                1200, 2000, 90, 800, 1800, 1900, 3000
+                1200, 2000, 90, 800, 1400, 1500, 1900, 2000, 3500
         );
         var result = service.checkIn(user, 999L);
 
-        assertEquals("HARD", result.type());
+        assertEquals("MID", result.type());
         assertEquals(1800, result.score());
         verify(codeforcesApiService, times(1)).getSubmissionStatus("Persona_owl", 999L);
         verify(userRepository).incrementTotalPoints(7L, 1800);
     }
 
     @Test
-    void checksEasyAndThenHardIndependentlyOnTheSameDay() {
+    void checksAllThreeSlotsIndependentlyAndOnlyAwardsTheDifference() {
         DailyProblemRepository repository = mock(DailyProblemRepository.class);
         ProblemCatalogRepository catalogRepository = mock(ProblemCatalogRepository.class);
         CodeforcesApiService codeforcesApiService = mock(CodeforcesApiService.class);
@@ -123,8 +127,10 @@ class DailyProblemServiceImplTest {
         TimeProvider timeProvider = mock(TimeProvider.class);
         LocalDate today = LocalDate.of(2026, 9, 6);
         List<DailyProblemSlot> slots = List.of(
-                new DailyProblemSlot(1L, today, "easy", "100-A", 100, "A", "Easy", 1800,
+                new DailyProblemSlot(1L, today, "easy", "100-A", 100, "A", "Easy", 1400,
                         "math", "https://codeforces.com/problemset/problem/100/A", false),
+                new DailyProblemSlot(3L, today, "mid", "300-C", 300, "C", "Mid", 1900,
+                        "dp", "https://codeforces.com/problemset/problem/300/C", false),
                 new DailyProblemSlot(2L, today, "hard", "200-B", 200, "B", "Hard", 2500,
                         "dp", "https://codeforces.com/problemset/problem/200/B", false)
         );
@@ -139,31 +145,40 @@ class DailyProblemServiceImplTest {
         when(codeforcesApiService.getSubmissionStatus("Persona_owl", 202L)).thenReturn(Optional.of(
                 new CodeforcesApiService.SubmissionStatus(202L, 200, "B", "OK", Instant.ofEpochSecond(1_001L))
         ));
+        when(codeforcesApiService.getSubmissionStatus("Persona_owl", 303L)).thenReturn(Optional.of(
+                new CodeforcesApiService.SubmissionStatus(303L, 300, "C", "OK", Instant.ofEpochSecond(1_001L))
+        ));
         when(repository.findUserDailySlotStatus(7L, today, "100-A")).thenReturn(Optional.empty());
         when(repository.findUserDailySlotStatus(7L, today, "200-B")).thenReturn(Optional.empty());
         when(repository.findUserDailyStatus(7L, today))
                 .thenReturn(Optional.empty())
-                .thenReturn(Optional.of(new com.whut.training.domain.entity.UserDailyStatus(7L, today, 101L, "OK", 1800)));
+                .thenReturn(Optional.of(new com.whut.training.domain.entity.UserDailyStatus(7L, today, 101L, "OK", 1400)))
+                .thenReturn(Optional.of(new com.whut.training.domain.entity.UserDailyStatus(7L, today, 303L, "OK", 1900)));
         when(repository.maxUserDailySlotScore(7L, today))
-                .thenReturn(1800)
+                .thenReturn(1400)
+                .thenReturn(1900)
                 .thenReturn(2500);
 
         DailyProblemServiceImpl service = new DailyProblemServiceImpl(
                 repository, catalogRepository, new ProblemPoolService(catalogRepository, codeforcesApiService, true),
                 codeforcesApiService, timeProvider,
                 new com.whut.training.service.DailyCheckInRecorder(repository, userRepository),
-                1200, 2000, 90, 800, 1800, 1900, 3000
+                1200, 2000, 90, 800, 1400, 1500, 1900, 2000, 3500
         );
 
         var easyResult = service.checkIn(user, 101L);
+        var midResult = service.checkIn(user, 303L);
         var hardResult = service.checkIn(user, 202L);
 
         assertEquals("EASY", easyResult.type());
-        assertEquals(1800, easyResult.score());
+        assertEquals(1400, easyResult.score());
+        assertEquals("MID", midResult.type());
+        assertEquals(1900, midResult.score());
         assertEquals("HARD", hardResult.type());
         assertEquals(2500, hardResult.score());
         var order = inOrder(userRepository);
-        order.verify(userRepository).incrementTotalPoints(7L, 1800);
-        order.verify(userRepository).incrementTotalPoints(7L, 700);
+        order.verify(userRepository).incrementTotalPoints(7L, 1400);
+        order.verify(userRepository).incrementTotalPoints(7L, 500);
+        order.verify(userRepository).incrementTotalPoints(7L, 600);
     }
 }

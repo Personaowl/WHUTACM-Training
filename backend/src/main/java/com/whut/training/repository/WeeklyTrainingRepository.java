@@ -58,20 +58,21 @@ public class WeeklyTrainingRepository {
                     week.toString(), week.plusDays(6).toString(), userId};
         return jdbc.query("""
                 SELECT user_id, date, MAX(score) AS score,
-                    MAX(easy_done) AS easy_done, MAX(hard_done) AS hard_done
+                    MAX(easy_done) AS easy_done, MAX(mid_done) AS mid_done, MAX(hard_done) AS hard_done
                 FROM (
-                    SELECT user_id, date, score, 0 AS easy_done, 0 AS hard_done
+                    SELECT user_id, date, score, 0 AS easy_done, 0 AS mid_done, 0 AS hard_done
                     FROM user_daily_status WHERE date BETWEEN ? AND ? AND UPPER(verdict) = 'OK'
                 """ + filter + """
                     UNION ALL
                     SELECT user_id, date, score,
                         CASE WHEN slot = 'easy' THEN 1 ELSE 0 END AS easy_done,
+                        CASE WHEN slot = 'mid' THEN 1 ELSE 0 END AS mid_done,
                         CASE WHEN slot = 'hard' THEN 1 ELSE 0 END AS hard_done
                     FROM user_daily_slot_status WHERE date BETWEEN ? AND ? AND UPPER(verdict) = 'OK'
                 """ + filter + """
                 ) activity GROUP BY user_id, date
                 """, (rs, row) -> new DailyRow(rs.getLong("user_id"), LocalDate.parse(rs.getString("date")),
-                rs.getInt("score"), rs.getInt("easy_done") == 1, rs.getInt("hard_done") == 1), args);
+                rs.getInt("score"), rs.getInt("easy_done") == 1, rs.getInt("mid_done") == 1, rs.getInt("hard_done") == 1), args);
     }
 
     public List<ContestRow> findContests(long start, long end) {
@@ -159,7 +160,7 @@ public class WeeklyTrainingRepository {
 
     public record Roster(Long userId, String username, String displayName, String realName, String college,
                          String className, String avatarUrl, String memberType, String atcoderHandle) {}
-    public record DailyRow(Long userId, LocalDate date, int score, boolean easy, boolean hard) {}
+    public record DailyRow(Long userId, LocalDate date, int score, boolean easy, boolean mid, boolean hard) {}
     public record ContestRow(String id, String name, String url, long start, long end, boolean frozen) {}
     public record ParticipationRow(Long userId, String contestId, boolean exempted, String status,
                                    Integer acCount, String checkedAt) {}

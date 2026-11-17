@@ -74,14 +74,14 @@ public class DailyProblemRepository {
     }
 
     /**
-     * 按日期查询所有题位（slot），用于支持每日多题（easy/hard）。
+     * 按日期查询所有题位（含重抽历史）。
      *
      * @param date 日期。
      * @return 题位列表（可能为空）。
      */
     public List<DailyProblemSlot> findDailySlotsByDate(LocalDate date) {
         return jdbcTemplate.query(
-                "SELECT id, date, slot, problem_key, contest_id, problem_index, name, rating, tags, source_url, is_redrawn FROM daily_problem_slot WHERE date = ? ORDER BY slot",
+                "SELECT id, date, slot, problem_key, contest_id, problem_index, name, rating, tags, source_url, is_redrawn FROM daily_problem_slot WHERE date = ? ORDER BY CASE slot WHEN 'easy' THEN 1 WHEN 'mid' THEN 2 WHEN 'hard' THEN 3 ELSE 4 END, id",
                 dailyProblemSlotRowMapper,
                 date.toString()
         );
@@ -107,7 +107,7 @@ public class DailyProblemRepository {
      * 查询某日每个题位当前应展示的题目。
      *
      * <p>正常情况下每个题位只有一条有效记录；查询仍按 slot 取最新 id，作为旧数据
-     * 残留或多实例短暂并发时的兜底，确保客户端最多收到一题 Easy 和一题 Hard。
+     * 残留或多实例短暂并发时的兜底，确保每个档位至多展示一题。
      */
     public List<DailyProblemSlot> findCurrentDailySlotsByDate(LocalDate date) {
         return jdbcTemplate.query(
@@ -121,11 +121,17 @@ public class DailyProblemRepository {
                             WHERE date = ? AND is_redrawn = 0
                             GROUP BY slot
                         ) latest ON latest.latest_id = s.id
-                        ORDER BY s.slot
+                        ORDER BY CASE s.slot WHEN 'easy' THEN 1 WHEN 'mid' THEN 2 WHEN 'hard' THEN 3 ELSE 4 END
                         """,
                 dailyProblemSlotRowMapper,
                 date.toString()
         );
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    public DailyProblemSlot replaceDailySlot(LocalDate date, String slot, CfProblem problem, String generatedBy) {
+        markActiveSlotsRedrawn(date, slot);
+        return insertDailySlot(date, slot, problem, generatedBy);
     }
 
     /**
@@ -400,17 +406,17 @@ public class DailyProblemRepository {
                                p.is_redrawn,
                                CASE
                                    WHEN us.submission_id IS NOT NULL THEN us.submission_id
-                                   WHEN p.slot = 'daily' OR ud.score = p.rating THEN ud.submission_id
+                                   WHEN p.slot = 'daily' OR legacy_status.submission_id IS NOT NULL THEN ud.submission_id
                                    ELSE NULL
                                END AS submission_id,
                                CASE
                                    WHEN us.submission_id IS NOT NULL THEN us.verdict
-                                   WHEN p.slot = 'daily' OR ud.score = p.rating THEN ud.verdict
+                                   WHEN p.slot = 'daily' OR legacy_status.submission_id IS NOT NULL THEN ud.verdict
                                    ELSE NULL
                                END AS verdict,
                                CASE
                                    WHEN us.submission_id IS NOT NULL THEN us.score
-                                   WHEN p.slot = 'daily' OR ud.score = p.rating THEN ud.score
+                                   WHEN p.slot = 'daily' OR legacy_status.submission_id IS NOT NULL THEN ud.score
                                    ELSE NULL
                                END AS score
                         FROM (
@@ -437,7 +443,11 @@ public class DailyProblemRepository {
                             ON us.user_id = ? AND us.date = p.date AND us.problem_key = p.problem_key
                         LEFT JOIN user_daily_status ud
                             ON ud.user_id = ? AND ud.date = p.date
-                        ORDER BY p.date DESC, p.slot ASC
+                        LEFT JOIN user_daily_status legacy_status
+                            ON legacy_status.id = ud.id AND p.slot IN ('easy', 'hard') AND ud.score = p.rating
+                            AND NOT EXISTS (SELECT 1 FROM user_daily_slot_status recorded
+                                            WHERE recorded.user_id = ud.user_id AND recorded.date = ud.date)
+                        ORDER BY p.date DESC, CASE p.slot WHEN 'easy' THEN 1 WHEN 'mid' THEN 2 WHEN 'hard' THEN 3 ELSE 4 END
                         """,
                 (rs, rowNum) -> new DailyProblemHistoryItem(
                         rs.getString("date"),

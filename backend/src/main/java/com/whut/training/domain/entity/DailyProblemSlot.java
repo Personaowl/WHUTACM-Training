@@ -3,7 +3,7 @@ package com.whut.training.domain.entity;
 import java.time.LocalDate;
 
 /**
- * 多题位（slot）实体，用于支持每日多题（easy/hard）以及是否被重抽标记。
+ * 每日题位实体，记录档位（easy/mid/hard）以及是否已被重抽。
  */
 public record DailyProblemSlot(
         Long id,

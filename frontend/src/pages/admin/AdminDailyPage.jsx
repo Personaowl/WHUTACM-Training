@@ -78,31 +78,24 @@ export default function AdminDailyPage() {
               <div className="mt-1.5 flex justify-end">
                 <button
                   className="px-3 py-1 text-xs border border-border rounded-ui bg-white text-text-primary hover:bg-bg-secondary cursor-pointer disabled:opacity-50"
-                  disabled={redrawing === p.type?.toLowerCase()}
-                  onClick={() => handleRedraw(p.type?.toLowerCase() || "easy")}
+                  disabled={redrawing !== null}
+                  onClick={() => p.type === "DAILY" ? handleRegenerate() : handleRedraw(p.type.toLowerCase())}
                 >
-                  {redrawing === p.type?.toLowerCase() ? "重抽中..." : `重抽 ${p.type || ""}`}
+                  {p.type === "DAILY" ? "重新生成每日一题" :
+                    redrawing === p.type.toLowerCase() ? "重抽中..." : `重抽 ${p.type}`}
                 </button>
               </div>
             </div>
           ))}
-          <div className="flex justify-center pt-2">
-            <button
-              className="px-4 py-2 text-sm font-medium text-white bg-text-primary hover:bg-[#1b1f23] rounded-ui border-0 cursor-pointer"
-              onClick={handleRegenerate}
-            >
-              重新生成每日一题
-            </button>
-          </div>
         </div>
       ) : (
         <div className="text-center py-8 text-sm text-text-secondary">
           <p>今日题目尚未生成</p>
           <button
             className="mt-3 px-4 py-2 text-sm font-medium text-white bg-text-primary hover:bg-[#1b1f23] rounded-ui border-0 cursor-pointer"
-            onClick={handleRegenerate}
+            onClick={load}
           >
-            生成今日题
+            重新加载今日题
           </button>
         </div>
       )}

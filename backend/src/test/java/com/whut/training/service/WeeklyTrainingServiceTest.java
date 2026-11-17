@@ -113,6 +113,7 @@ class WeeklyTrainingServiceTest {
         daily(week.minusDays(1), "easy", 1);
         daily(week, "easy", 2);
         daily(week, "hard", 3);
+        daily(week, "mid", 6);
         daily(week.plusDays(6), "easy", 4);
         daily(week.plusDays(7), "easy", 5);
         abc.upsertContest("weekly-test-last-second", "Sunday contest", epoch(week.plusDays(7)) - 1,
@@ -132,6 +133,7 @@ class WeeklyTrainingServiceTest {
                 .containsExactly("weekly-test-last-second");
         var monday = report.members().get(0).days().get(0);
         assertThat(monday.easyCompleted()).isTrue();
+        assertThat(monday.midCompleted()).isTrue();
         assertThat(monday.hardCompleted()).isTrue();
         assertThat(monday.score()).isEqualTo(1900);
         assertThat(WeeklyTrainingService.weekStart(LocalDate.of(2027, 1, 3))).isEqualTo(LocalDate.of(2026, 12, 28));

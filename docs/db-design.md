@@ -61,7 +61,7 @@
 | --- | --- | --- |
 | cf_problem | id、problem_key、contest_id、problem_index、name、rating、tags、is_interactive、source_contest_id、solved_count、source_url、last_synced_at | problem_key 唯一，通常为 contestId-index；有 rating 和比赛题号索引；仅题目元数据，不存题面、测试数据、代码 |
 | daily_problem | id、date、problem_key、contest_id、problem_index、name、rating、tags、source_url、generated_at、generated_by | date 唯一；兼容旧单题快照和 regenerate 接口，仍被代码使用，不能当废表删除 |
-| daily_problem_slot | id、date、slot、problem_key、contest_id、problem_index、name、rating、tags、source_url、generated_at、generated_by、is_redrawn | date 索引；当前 Easy/Hard 主表，重抽将旧行 is_redrawn=1；没有 (date,slot) 唯一键，因为保留历次题目 |
+| daily_problem_slot | id、date、slot、problem_key、contest_id、problem_index、name、rating、tags、source_url、generated_at、generated_by、is_redrawn | date 索引；支持 Easy/Mid/Hard，新增 mid 复用原字符串列；重抽将旧行 is_redrawn=1；没有 (date,slot) 唯一键，因为保留历次题目 |
 | user_daily_status | id、user_id、date、submission_id、verdict、checked_at、score | (user_id,date) 唯一；每日汇总最高分，不是每题一行；有 user_id、(date,user_id)、(user_id,checked_at) 索引，最后一项支持排行时间查询 |
 | user_daily_slot_status | id、user_id、date、slot、problem_key、submission_id、verdict、checked_at、score | (user_id,date,problem_key) 唯一；保留题级完成；有 (user_id,date)、problem_key、(date,user_id) 索引 |
 | user_practice_draw | id、user_id、draw_date、problem_key、contest_id、problem_index、name、rating、tags、source_url、drawn_at、submission_id、verdict、checked_at | (user_id,draw_date) 索引；仅个人抽题历史，后三个校验字段为旧兼容字段，不代表仍提供练习校验 |
@@ -73,7 +73,7 @@ cf_problem 另有 idx_cf_practice_filter (is_interactive,source_contest_id,ratin
 1. CF 外部校验在数据库事务之外完成。
 2. DailyCheckInRecorder 在短事务中锁 users 对应行，保存题级完成情况。
 3. 取已有当天分与全部题级完成分的最大值，更新 user_daily_status。
-4. 只将新旧当天分的正差额累加到 users.total_points，避免 Easy + Hard 重复累加。
+4. 只将新旧当天分的正差额累加到 users.total_points，避免各档分数重复累加。
 5. 历史页面仅呈现每个日期/题位的当前有效题，不把旧重抽行展开成更多每日题；旧完成数据保留用于积分与审计。
 
 初始化器会将重复有效题位中较旧的行标为已重抽，保留最大 id 的有效行。当前有效题位约束由应用选择、锁和修正 SQL 维护，**不是数据库唯一约束**；多实例部署不能仅依赖进程锁保证它。

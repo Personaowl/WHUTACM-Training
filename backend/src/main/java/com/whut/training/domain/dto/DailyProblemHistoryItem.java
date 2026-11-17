@@ -4,7 +4,7 @@ package com.whut.training.domain.dto;
  * 每日题历史条目（基于 slot）。
  *
  * @param date         日期。
- * @param slot         题位（easy/hard），兼容旧数据时可能为 null。
+ * @param slot         题位（easy/mid/hard），兼容旧单题时为 daily。
  * @param problemKey   题目唯一键。
  * @param name         题目标题。
  * @param rating       难度。

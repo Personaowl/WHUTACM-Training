@@ -121,7 +121,9 @@ public class TrainingDashboardRepository {
                    AND daily_status.date = problems.date
                 WHERE u.member_type = 'ACTIVE_TEAM'
                 """ + dateFilter + """
-                ORDER BY problems.date DESC, problems.slot ASC, u.username ASC
+                ORDER BY problems.date DESC,
+                         CASE problems.slot WHEN 'easy' THEN 1 WHEN 'mid' THEN 2 WHEN 'hard' THEN 3 ELSE 4 END,
+                         u.username ASC
                 """;
         Object[] arguments = startDate == null ? new Object[0] : new Object[]{startDate.toString()};
         return jdbcTemplate.query(

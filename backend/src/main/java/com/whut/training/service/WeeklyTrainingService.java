@@ -129,7 +129,8 @@ public class WeeklyTrainingService {
                 String status = completed ? "COMPLETED" : date.isAfter(time.today()) ? "UPCOMING"
                         : date.equals(time.today()) ? "IN_PROGRESS" : "INCOMPLETE";
                 days.add(new WeeklyTrainingReport.Day(date.toString(), completed,
-                        completed && row.easy(), completed && row.hard(), completed ? row.score() : 0, status));
+                        completed && row.easy(), completed && row.mid(), completed && row.hard(),
+                        completed ? row.score() : 0, status));
             }
             var results = participation.getOrDefault(member.userId(), Map.of());
             List<WeeklyTrainingReport.Contest> races = new ArrayList<>();

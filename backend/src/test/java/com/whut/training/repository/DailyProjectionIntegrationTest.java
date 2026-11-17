@@ -18,6 +18,7 @@ class DailyProjectionIntegrationTest {
     @Autowired DailyProblemRepository daily;
     @Autowired TrainingDashboardRepository dashboard;
     @Autowired UserRepository users;
+    @Autowired ProblemCatalogRepository catalog;
     private final CfProblem problem = new CfProblem("123-A", 123, "A", "Projection example", 1200,
             "math", false, null, 1, "https://codeforces.com/problemset/problem/123/A");
     private User member(String name) {
@@ -69,5 +70,39 @@ class DailyProjectionIntegrationTest {
                     assertThat(row.score()).isEqualTo(1200);
                     assertThat(row.submissionId()).isEqualTo(9007199254740993L);
                 });
+    }
+
+    @Test void midDoesNotReuseActiveLegacyHardOrInheritItsCompletion() {
+        User user = member("projection-mid");
+        LocalDate date = LocalDate.of(2031, 2, 3);
+        var legacyHard = new CfProblem("991-A", 991, "A", "Old hard", 1900, "math", false, null, 1,
+                "https://codeforces.com/problemset/problem/991/A");
+        var mid = new CfProblem("991-B", 991, "B", "New mid", 1900, "dp", false, null, 1,
+                "https://codeforces.com/problemset/problem/991/B");
+        catalog.upsertProblems(java.util.List.of(legacyHard, mid));
+        daily.insertDailySlot(date, "easy", problem, "test");
+        daily.insertDailySlot(date, "hard", legacyHard, "test");
+        daily.saveUserDailySlotStatus(user.getId(), date, "hard", legacyHard.problemKey(), 50L, "OK", 1900);
+        daily.saveUserDailyStatus(user.getId(), date, 50L, "OK", 1900);
+
+        var candidate = catalog.findDailySlotCandidate(1900, 1900, date, date.minusDays(90)).orElseThrow();
+        assertThat(candidate.problemKey()).isEqualTo(mid.problemKey());
+        daily.insertDailySlot(date, "mid", candidate, "test");
+        assertThat(daily.findCurrentDailySlotsByDate(date)).extracting(slot -> slot.slot())
+                .containsExactly("easy", "mid", "hard");
+        var history = daily.findDailyHistoryForUser(user.getId(), date, date);
+        assertThat(history).extracting(row -> row.slot()).containsExactly("easy", "mid", "hard");
+        assertThat(history.get(1).checkedIn()).isFalse();
+        assertThat(history.get(2).checkedIn()).isTrue();
+        assertThat(dashboard.findActiveTeamDailyExport(date)).filteredOn(row -> row.userId().equals(user.getId()))
+                .extracting(row -> row.slot()).containsExactly("easy", "mid", "hard");
+        assertThat(catalog.findDailySlotCandidate(1900, 1900, date, null)).isEmpty();
+
+        daily.replaceDailySlot(date, "mid", new CfProblem("991-C", 991, "C", "Replacement", 1700, "dp",
+                false, null, 1, "https://codeforces.com/problemset/problem/991/C"), "admin-redraw");
+        assertThat(daily.findCurrentDailySlotsByDate(date)).extracting(slot -> slot.problemKey())
+                .containsExactly(problem.problemKey(), "991-C", legacyHard.problemKey());
+        assertThat(daily.findDailySlotsByDate(date)).filteredOn(slot -> slot.isRedrawn())
+                .extracting(slot -> slot.problemKey()).containsExactly(mid.problemKey());
     }
 }

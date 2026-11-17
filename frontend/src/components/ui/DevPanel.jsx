@@ -131,6 +131,7 @@ export default function DevPanel() {
           >
             <option value="">自动选择</option>
             <option value="easy">easy</option>
+            <option value="mid">mid</option>
             <option value="hard">hard</option>
           </select>
           <button

@@ -294,14 +294,16 @@ export default function DailyProblemPage() {
                     {items.map((item, index) => (
                       <div
                         key={`${item.problemKey}-${index}`}
-                        className="flex items-center justify-between px-4 py-2 text-sm"
+                        className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 text-sm"
                       >
-                        <div className="flex items-center gap-2">
+                        <div className="flex min-w-0 flex-wrap items-center gap-2">
                           <span
                             className={`text-xs px-1.5 py-0.5 rounded-sm ${
                               item.slot === "easy"
                                 ? "bg-[#f0fff0] text-success"
-                                : "bg-[#fff8f0] text-warning"
+                                : item.slot === "mid"
+                                  ? "bg-[#eef5ff] text-text-primary"
+                                  : "bg-[#fff8f0] text-warning"
                             }`}
                           >
                             {item.slot ?? "?"}
@@ -310,7 +312,7 @@ export default function DailyProblemPage() {
                             href={item.sourceUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-text-primary hover:underline"
+                            className="min-w-0 break-words text-text-primary hover:underline"
                           >
                             {item.name}
                           </a>

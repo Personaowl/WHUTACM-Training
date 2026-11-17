@@ -80,7 +80,7 @@ export default function WeeklyTrainingDetails({ member }) {
               </div>
               <div className="mt-1 min-h-4 text-[10px] text-text-secondary">
                 {day.completed
-                  ? [day.easyCompleted && "Easy", day.hardCompleted && "Hard"]
+                  ? [day.easyCompleted && "Easy", day.midCompleted && "Mid", day.hardCompleted && "Hard"]
                       .filter(Boolean)
                       .join(" · ") || "已校验"
                   : "—"}

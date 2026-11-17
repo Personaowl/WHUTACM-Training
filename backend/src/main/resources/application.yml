@@ -74,9 +74,11 @@ app:
     min-rating: 1200
     max-rating: 2000
     easy-min-rating: 800
-    easy-max-rating: 1800
-    hard-min-rating: 1900
-    hard-max-rating: 3000
+    easy-max-rating: 1400
+    mid-min-rating: 1500
+    mid-max-rating: 1900
+    hard-min-rating: 2000
+    hard-max-rating: 3500
     no-repeat-days: 90
     cron: "0 5 0 * * *"
     sync-cron: "0 0 0 * * MON"

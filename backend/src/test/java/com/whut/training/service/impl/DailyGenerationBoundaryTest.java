@@ -27,9 +27,10 @@ class DailyGenerationBoundaryTest {
             10, "https://codeforces.com/problemset/problem/123/B");
     private final DailyProblemSlot easySlot = slot(1L, "easy", 1200);
     private final DailyProblemSlot hardSlot = slot(2L, "hard", 1900);
+    private final DailyProblemSlot midSlot = slot(3L, "mid", 1900);
     private final DailyProblemServiceImpl service = new DailyProblemServiceImpl(daily, catalog, pool,
             mock(CodeforcesApiService.class), time, mock(DailyCheckInRecorder.class),
-            1200, 2000, 90, 800, 1800, 1900, 3000);
+            1200, 2000, 90, 800, 1400, 1500, 1900, 2000, 3500);
     private DailyProblemSlot slot(Long id, String slot, int rating) {
         return new DailyProblemSlot(id, today, slot, "123-" + id, 123, "B", slot, rating,
                 "dp", "https://codeforces.com/problemset/problem/123/B", false);
@@ -37,36 +38,51 @@ class DailyGenerationBoundaryTest {
 
     @Test void existingSlotsDoNotTouchCatalogOrSynchronization() {
         when(time.today()).thenReturn(today);
-        when(daily.findCurrentDailySlotsByDate(today)).thenReturn(List.of(easySlot, hardSlot));
+        when(daily.findCurrentDailySlotsByDate(today)).thenReturn(List.of(easySlot, midSlot, hardSlot));
         assertTrue(service.ensureTodaySlots());
         verifyNoInteractions(catalog, pool);
         verify(daily, never()).insertDailySlot(any(), any(), any(), any());
     }
 
-    @Test void onlyMissingHardSlotIsGeneratedWithinItsOriginalRange() {
+    @Test void upgradeFillsOnlyMissingMidAndKeepsPreviouslyPublishedSlots() {
         when(time.today()).thenReturn(today);
-        when(daily.findCurrentDailySlotsByDate(today)).thenReturn(List.of(easySlot));
-        when(catalog.findRandomProblem(1900, 3000, today.minusDays(90))).thenReturn(Optional.of(hard));
+        when(daily.findCurrentDailySlotsByDate(today)).thenReturn(List.of(easySlot, hardSlot));
+        when(catalog.findDailySlotCandidate(1500, 1900, today, today.minusDays(90))).thenReturn(Optional.of(hard));
         assertTrue(service.ensureTodaySlots());
         verify(pool).ensureAvailable();
-        verify(catalog).findRandomProblem(1900, 3000, today.minusDays(90));
+        verify(catalog).findDailySlotCandidate(1500, 1900, today, today.minusDays(90));
         verifyNoMoreInteractions(catalog);
-        verify(daily).insertDailySlot(today, "hard", hard, "api-home");
-        verify(daily, never()).insertDailySlot(eq(today), eq("easy"), any(), any());
+        verify(daily).insertDailySlot(today, "mid", hard, "api-home");
+        verify(daily, never()).insertDailySlot(eq(today), argThat(slot -> !"mid".equals(slot)), any(), any());
     }
 
-    @Test void redrawingHardInvalidatesAllOldHardSlotsBeforeInsertingTheNewOne() {
-        when(daily.findCurrentDailySlotsByDate(today)).thenReturn(List.of(easySlot, hardSlot));
-        when(catalog.findRandomProblem(1900, 3000, today.minusDays(90))).thenReturn(Optional.of(hard));
-        when(daily.insertDailySlot(today, "hard", hard, "admin-redraw")).thenReturn(hardSlot);
+    @Test void redrawingMidOnlyReplacesThatSlotAfterSelectingAProblem() {
+        when(catalog.findDailySlotCandidate(1500, 1900, today, today.minusDays(90))).thenReturn(Optional.of(hard));
+        when(daily.replaceDailySlot(today, "mid", hard, "admin-redraw")).thenReturn(midSlot);
         User admin = new User(7L, "admin", null, "hash", UserRole.ADMIN);
-        assertEquals("HARD", service.adminRedrawSlot(admin, today, "hard", true).type());
+        assertEquals("MID", service.adminRedrawSlot(admin, today, "MID", true).type());
         var order = inOrder(daily, pool, catalog);
-        order.verify(daily).findCurrentDailySlotsByDate(today);
-        order.verify(daily).markActiveSlotsRedrawn(today, "hard");
         order.verify(pool).ensureAvailable();
-        order.verify(catalog).findRandomProblem(1900, 3000, today.minusDays(90));
-        order.verify(daily).insertDailySlot(today, "hard", hard, "admin-redraw");
-        verify(daily, never()).markActiveSlotsRedrawn(today, "easy");
+        order.verify(catalog).findDailySlotCandidate(1500, 1900, today, today.minusDays(90));
+        order.verify(daily).replaceDailySlot(today, "mid", hard, "admin-redraw");
+        verifyNoMoreInteractions(daily);
+    }
+
+    @Test void newDayUsesThreeConfiguredRangesInOrder() {
+        when(time.today()).thenReturn(today);
+        assertTrue(service.ensureTodaySlots());
+        var order = inOrder(catalog);
+        for (int[] range : new int[][]{{800, 1400}, {1500, 1900}, {2000, 3500}}) {
+            order.verify(catalog).findDailySlotCandidate(range[0], range[1], today, today.minusDays(90));
+            order.verify(catalog).findDailySlotCandidate(range[0], range[1], today, null);
+        }
+    }
+
+    @Test void unavailableRedrawDoesNotChangeAnySlot() {
+        User admin = new User(7L, "admin", null, "hash", UserRole.ADMIN);
+        var error = assertThrows(com.whut.training.exception.BusinessException.class,
+                () -> service.adminRedrawSlot(admin, today, "mid", true));
+        assertEquals(503, error.getCode());
+        verifyNoInteractions(daily);
     }
 }

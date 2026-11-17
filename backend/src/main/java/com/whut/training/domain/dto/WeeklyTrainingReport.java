@@ -16,7 +16,7 @@ public record WeeklyTrainingReport(String weekStart, String weekEnd, String toda
                          List<Contest> contests, Explanation explanation, long version,
                          boolean canExplain, List<Audit> history) {}
 
-    public record Day(String date, boolean completed, boolean easyCompleted, boolean hardCompleted,
+    public record Day(String date, boolean completed, boolean easyCompleted, boolean midCompleted, boolean hardCompleted,
                       int score, String status) {}
     public record Contest(String contestId, String name, String url, long startTimeSeconds,
                           String status, Integer acCount, String checkedAt) {}

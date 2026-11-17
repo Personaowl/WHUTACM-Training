@@ -52,18 +52,18 @@ public interface DailyProblemService {
     ProblemView regenerateTodayByAdmin(User adminUser);
 
     /**
-     * 管理员对指定 slot（easy/hard）进行单题重抽。
+     * 管理员对指定 slot（easy/mid/hard）进行单题重抽。
      *
      * @param adminUser 管理员用户。
      * @param date      要重抽的日期（可为 null，表示今日）。
-     * @param slot      slot 名称，eg. "easy" 或 "hard"。
+     * @param slot      slot 名称：easy、mid 或 hard。
      * @param confirm   是否立即生效（当前实现标记历史并插入新题，confirm 用于未来策略）。
      * @return 新插入的题目视图。
      */
     ProblemView adminRedrawSlot(User adminUser, java.time.LocalDate date, String slot, boolean confirm);
 
     /**
-     * 确保当日题位（easy/hard）已生成。供首页等场景在读取 slot 之前调用。
+     * 确保当日题位已生成。供首页等场景在读取 slot 之前调用。
      */
     boolean ensureTodaySlots();
 

@@ -46,7 +46,7 @@ public class AdminDailyProblemController {
     }
 
     /**
-     * 管理员对指定 slot（easy/hard）进行重抽。
+     * 管理员对指定 slot（easy/mid/hard）进行重抽。
      * 示例：POST /api/admin/daily-problem/redraw?slot=easy&confirm=false
      */
     @PostMapping("/redraw")

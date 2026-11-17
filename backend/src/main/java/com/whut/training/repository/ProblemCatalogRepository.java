@@ -104,6 +104,32 @@ public class ProblemCatalogRepository {
         return count == null ? 0 : count;
     }
 
+    public Optional<CfProblem> findDailySlotCandidate(int min, int max, LocalDate date, LocalDate cutoff) {
+        String sql = """
+                SELECT problem_key, contest_id, problem_index, name, rating, tags, is_interactive,
+                       source_contest_id, solved_count, source_url
+                FROM cf_problem p
+                WHERE p.source_contest_id IS NULL AND p.is_interactive = 0 AND p.rating BETWEEN ? AND ?
+                  AND NOT EXISTS (
+                      SELECT 1 FROM daily_problem_slot s
+                      WHERE s.date = ? AND s.is_redrawn = 0 AND s.problem_key = p.problem_key
+                  )
+                """;
+        var params = new java.util.ArrayList<Object>(List.of(min, max, date.toString()));
+        if (cutoff != null) {
+            sql += """
+                      AND NOT EXISTS (SELECT 1 FROM daily_problem_slot s
+                                      WHERE s.date >= ? AND s.problem_key = p.problem_key)
+                      AND NOT EXISTS (SELECT 1 FROM daily_problem d
+                                      WHERE d.date >= ? AND d.problem_key = p.problem_key)
+                    """;
+            params.add(cutoff.toString());
+            params.add(cutoff.toString());
+        }
+        return jdbcTemplate.query(sql + " ORDER BY RAND() LIMIT 1", cfProblemRowMapper, params.toArray())
+                .stream().findFirst();
+    }
+
     /**
      * 在指定 rating 范围内随机抽取题目，并排除最近重复题。
      *

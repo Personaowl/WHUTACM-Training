@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 /**
@@ -45,10 +46,9 @@ public class DailyProblemServiceImpl implements DailyProblemService {
     private final int defaultMinRating;
     private final int defaultMaxRating;
     private final int noRepeatDays;
-    private final int easyMinRating;
-    private final int easyMaxRating;
-    private final int hardMinRating;
-    private final int hardMaxRating;
+    private final List<SlotRange> slotRanges;
+
+    private record SlotRange(String name, int min, int max) {}
 
     public DailyProblemServiceImpl(
             DailyProblemRepository dailyProblemRepository,
@@ -61,9 +61,11 @@ public class DailyProblemServiceImpl implements DailyProblemService {
             @Value("${app.daily-problem.max-rating:2000}") int defaultMaxRating,
             @Value("${app.daily-problem.no-repeat-days:90}") int noRepeatDays,
             @Value("${app.daily-problem.easy-min-rating:800}") int easyMinRating,
-            @Value("${app.daily-problem.easy-max-rating:1800}") int easyMaxRating,
-            @Value("${app.daily-problem.hard-min-rating:1900}") int hardMinRating,
-            @Value("${app.daily-problem.hard-max-rating:3000}") int hardMaxRating
+            @Value("${app.daily-problem.easy-max-rating:1400}") int easyMaxRating,
+            @Value("${app.daily-problem.mid-min-rating:1500}") int midMinRating,
+            @Value("${app.daily-problem.mid-max-rating:1900}") int midMaxRating,
+            @Value("${app.daily-problem.hard-min-rating:2000}") int hardMinRating,
+            @Value("${app.daily-problem.hard-max-rating:3500}") int hardMaxRating
     ) {
         this.dailyProblemRepository = dailyProblemRepository;
         this.catalogRepository = catalogRepository;
@@ -74,10 +76,8 @@ public class DailyProblemServiceImpl implements DailyProblemService {
         this.defaultMinRating = defaultMinRating;
         this.defaultMaxRating = defaultMaxRating;
         this.noRepeatDays = noRepeatDays;
-        this.easyMinRating = easyMinRating;
-        this.easyMaxRating = easyMaxRating;
-        this.hardMinRating = hardMinRating;
-        this.hardMaxRating = hardMaxRating;
+        this.slotRanges = List.of(new SlotRange("easy", easyMinRating, easyMaxRating),
+                new SlotRange("mid", midMinRating, midMaxRating), new SlotRange("hard", hardMinRating, hardMaxRating));
     }
 
     /**
@@ -87,11 +87,11 @@ public class DailyProblemServiceImpl implements DailyProblemService {
     public void generateDailyProblemByScheduler() {
         LocalDate today = timeProvider.today();
         ensureDailyProblem(today, false, "scheduler");
-        ensureDailySlots(today, false, "scheduler");
+        ensureDailySlots(today, "scheduler");
     }
 
     /**
-     * 获取今日题与打卡状态（返回 easy/hard 多题位）。
+     * 获取今日题与各题位的打卡状态。
      *
      * @param user 当前用户。
      * @return 今日题响应。
@@ -99,7 +99,7 @@ public class DailyProblemServiceImpl implements DailyProblemService {
     @Override
     public DailyProblemTodayResponse getToday(User user) {
         LocalDate today = timeProvider.today();
-        ensureDailySlots(today, false, "api");
+        ensureDailySlots(today, "api");
 
         List<com.whut.training.domain.entity.DailyProblemSlot> slots =
                 dailyProblemRepository.findCurrentDailySlotsByDate(today);
@@ -174,8 +174,8 @@ public class DailyProblemServiceImpl implements DailyProblemService {
     public CheckInResultResponse checkIn(User user, Long submissionId, LocalDate targetDate) {
         String codeforcesHandle = requireCodeforcesHandle(user);
         LocalDate today = targetDate == null ? timeProvider.today() : targetDate;
-        // support multi-slot daily: try to find matching slot (easy/hard) first
-        ensureDailySlots(today, false, "api");
+        // Match the submission against active daily slots before the legacy fallback.
+        ensureDailySlots(today, "api");
 
         List<com.whut.training.domain.entity.DailyProblemSlot> slots = dailyProblemRepository.findCurrentDailySlotsByDate(today);
         List<com.whut.training.domain.entity.DailyProblemSlot> activeSlots = slots == null
@@ -238,7 +238,7 @@ public class DailyProblemServiceImpl implements DailyProblemService {
     @Override
     public List<DailyProblemHistoryItem> getHistory(User user, int days) {
         LocalDate today = timeProvider.today();
-        ensureDailySlots(today, false, "history");
+        ensureDailySlots(today, "history");
         int historyDays = days <= 0 ? 30 : Math.min(days, 30);
         LocalDate startDate = today.minusDays(historyDays - 1L);
         return dailyProblemRepository.findDailyHistoryForUser(user.getId(), startDate, today);
@@ -254,7 +254,7 @@ public class DailyProblemServiceImpl implements DailyProblemService {
     @Override
     public boolean ensureTodaySlots() {
         try {
-            ensureDailySlots(timeProvider.today(), false, "api-home");
+            ensureDailySlots(timeProvider.today(), "api-home");
             return true;
         } catch (BusinessException ex) {
             if (ex.getCode() != 503) {
@@ -285,29 +285,17 @@ public class DailyProblemServiceImpl implements DailyProblemService {
         if (adminUser == null || (adminUser.getRole() != UserRole.ADMIN && adminUser.getRole() != UserRole.SUPER_ADMIN)) {
             throw new BusinessException(403, "admin role required");
         }
-        if (!"easy".equalsIgnoreCase(slot) && !"hard".equalsIgnoreCase(slot)) {
-            throw new BusinessException(400, "invalid slot");
-        }
+        SlotRange range = slotRanges.stream().filter(r -> r.name().equalsIgnoreCase(slot))
+                .findFirst().orElseThrow(() -> new BusinessException(400, "invalid slot"));
         LocalDate target = date == null ? timeProvider.today() : date;
         synchronized (generationLock) {
-            // 生成、旧题失效、新题落库必须视为一个临界区，避免连续点击或并发请求插入多个有效题位。
-            ensureDailySlots(target, false, "admin-redraw");
-            dailyProblemRepository.markActiveSlotsRedrawn(target, slot);
-
             problemPoolService.ensureAvailable();
-            LocalDate noRepeatAfterDate = target.minusDays(Math.max(1, noRepeatDays));
-            CfProblem picked = "easy".equalsIgnoreCase(slot)
-                    ? catalogRepository.findRandomProblem(easyMinRating, easyMaxRating, noRepeatAfterDate)
-                    .or(() -> catalogRepository.findRandomProblem(easyMinRating, easyMaxRating))
-                    .orElseThrow(() -> new BusinessException(500, "failed to select easy problem"))
-                    : catalogRepository.findRandomProblem(hardMinRating, hardMaxRating, noRepeatAfterDate)
-                    .or(() -> catalogRepository.findRandomProblem(hardMinRating, hardMaxRating))
-                    .orElseThrow(() -> new BusinessException(500, "failed to select hard problem"));
-
-            var newSlot = dailyProblemRepository.insertDailySlot(target, slot, picked, "admin-redraw");
+            CfProblem picked = pickSlotProblem(target, range)
+                    .orElseThrow(() -> new BusinessException(503, "no available problem for " + range.name()));
+            var newSlot = dailyProblemRepository.replaceDailySlot(target, range.name(), picked, "admin-redraw");
             // confirm currently does not change backfill behavior; saved for future semantics
             return new ProblemView(
-                    slot.toUpperCase(),
+                    range.name().toUpperCase(Locale.ROOT),
                     newSlot.date().toString(),
                     newSlot.problemKey(),
                     newSlot.contestId(),
@@ -337,8 +325,6 @@ public class DailyProblemServiceImpl implements DailyProblemService {
                 }
             } else {
                 dailyProblemRepository.deleteDailyByDate(date);
-                // also clear slot table if forcing regenerate
-                dailyProblemRepository.deleteDailySlotsByDate(date);
             }
 
             problemPoolService.ensureAvailable();
@@ -352,45 +338,26 @@ public class DailyProblemServiceImpl implements DailyProblemService {
     }
 
     /**
-     * 确保当日的两个题位（easy/hard）存在；若不存在则生成并落库。
+     * 只生成缺失的题位；上线当天保留已发布题目及打卡记录。
      */
-    private void ensureDailySlots(LocalDate date, boolean forceRegenerate, String generatedBy) {
+    private void ensureDailySlots(LocalDate date, String generatedBy) {
         synchronized (generationLock) {
-            boolean hasActiveEasy = false;
-            boolean hasActiveHard = false;
-            if (!forceRegenerate) {
-                List<com.whut.training.domain.entity.DailyProblemSlot> exist = dailyProblemRepository.findCurrentDailySlotsByDate(date);
-                hasActiveEasy = exist != null && exist.stream()
-                        .anyMatch(slot -> !slot.isRedrawn() && "easy".equalsIgnoreCase(slot.slot()));
-                hasActiveHard = exist != null && exist.stream()
-                        .anyMatch(slot -> !slot.isRedrawn() && "hard".equalsIgnoreCase(slot.slot()));
-                if (hasActiveEasy && hasActiveHard) {
-                    return;
-                }
-            } else {
-                dailyProblemRepository.deleteDailySlotsByDate(date);
-            }
-
+            var existing = dailyProblemRepository.findCurrentDailySlotsByDate(date);
+            var missing = slotRanges.stream().filter(range -> existing.stream()
+                    .noneMatch(slot -> !slot.isRedrawn() && range.name().equalsIgnoreCase(slot.slot()))).toList();
+            if (missing.isEmpty()) return;
             problemPoolService.ensureAvailable();
-            LocalDate noRepeatAfterDate = date.minusDays(Math.max(1, noRepeatDays));
-
-            // easy: 800 .. 1800 by default (independently configurable)
-            CfProblem easy = hasActiveEasy ? null : catalogRepository.findRandomProblem(easyMinRating, easyMaxRating, noRepeatAfterDate)
-                    .or(() -> catalogRepository.findRandomProblem(easyMinRating, easyMaxRating))
-                    .orElse(null);
-
-            // hard: 1900 .. 3000 by default; 1801..1899 is intentionally left out.
-            CfProblem hard = hasActiveHard ? null : catalogRepository.findRandomProblem(hardMinRating, hardMaxRating, noRepeatAfterDate)
-                    .or(() -> catalogRepository.findRandomProblem(hardMinRating, hardMaxRating))
-                    .orElse(null);
-
-            if (easy != null) {
-                dailyProblemRepository.insertDailySlot(date, "easy", easy, generatedBy);
-            }
-            if (hard != null) {
-                dailyProblemRepository.insertDailySlot(date, "hard", hard, generatedBy);
+            for (SlotRange range : missing) {
+                pickSlotProblem(date, range).ifPresent(problem ->
+                        dailyProblemRepository.insertDailySlot(date, range.name(), problem, generatedBy));
             }
         }
+    }
+
+    private Optional<CfProblem> pickSlotProblem(LocalDate date, SlotRange range) {
+        LocalDate cutoff = date.minusDays(Math.max(1, noRepeatDays));
+        return catalogRepository.findDailySlotCandidate(range.min(), range.max(), date, cutoff)
+                .or(() -> catalogRepository.findDailySlotCandidate(range.min(), range.max(), date, null));
     }
 
     private boolean sameProblem(CodeforcesApiService.SubmissionStatus submission, Integer contestId,
