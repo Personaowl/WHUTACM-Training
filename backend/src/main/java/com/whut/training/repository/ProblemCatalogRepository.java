@@ -105,9 +105,18 @@ public class ProblemCatalogRepository {
     }
 
     public Optional<CfProblem> findDailySlotCandidate(int min, int max, LocalDate date, LocalDate cutoff) {
+        return findDailySlotCandidate(min, max, date, cutoff, null);
+    }
+
+    /** Equal probability per eligible rating, then random selection within that rating. */
+    public Optional<CfProblem> findDailySlotCandidateByRating(int min, int max, LocalDate date, LocalDate cutoff) {
+        return findDailySlotCandidate(min, max, date, cutoff, bound -> ThreadLocalRandom.current().nextInt(bound));
+    }
+
+    // The index picker makes the two-stage draw deterministic in repository tests.
+    Optional<CfProblem> findDailySlotCandidate(int min, int max, LocalDate date, LocalDate cutoff,
+                                             java.util.function.IntUnaryOperator ratingIndex) {
         String sql = """
-                SELECT problem_key, contest_id, problem_index, name, rating, tags, is_interactive,
-                       source_contest_id, solved_count, source_url
                 FROM cf_problem p
                 WHERE p.source_contest_id IS NULL AND p.is_interactive = 0 AND p.rating BETWEEN ? AND ?
                   AND NOT EXISTS (
@@ -126,7 +135,18 @@ public class ProblemCatalogRepository {
             params.add(cutoff.toString());
             params.add(cutoff.toString());
         }
-        return jdbcTemplate.query(sql + " ORDER BY RAND() LIMIT 1", cfProblemRowMapper, params.toArray())
+        if (ratingIndex != null) {
+            var ratings = jdbcTemplate.queryForList("SELECT DISTINCT p.rating " + sql + " ORDER BY p.rating",
+                    Integer.class, params.toArray());
+            if (ratings.isEmpty()) return Optional.empty();
+            int rating = ratings.get(ratingIndex.applyAsInt(ratings.size()));
+            sql += " AND p.rating = ?";
+            params.add(rating);
+        }
+        return jdbcTemplate.query("""
+                SELECT problem_key, contest_id, problem_index, name, rating, tags, is_interactive,
+                       source_contest_id, solved_count, source_url
+                """ + sql + " ORDER BY RAND() LIMIT 1", cfProblemRowMapper, params.toArray())
                 .stream().findFirst();
     }
 

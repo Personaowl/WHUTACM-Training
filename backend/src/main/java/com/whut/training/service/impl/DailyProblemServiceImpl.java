@@ -356,8 +356,13 @@ public class DailyProblemServiceImpl implements DailyProblemService {
 
     private Optional<CfProblem> pickSlotProblem(LocalDate date, SlotRange range) {
         LocalDate cutoff = date.minusDays(Math.max(1, noRepeatDays));
-        return catalogRepository.findDailySlotCandidate(range.min(), range.max(), date, cutoff)
-                .or(() -> catalogRepository.findDailySlotCandidate(range.min(), range.max(), date, null));
+        return pickSlotCandidate(date, range, cutoff).or(() -> pickSlotCandidate(date, range, null));
+    }
+
+    private Optional<CfProblem> pickSlotCandidate(LocalDate date, SlotRange range, LocalDate cutoff) {
+        return "hard".equals(range.name())
+                ? catalogRepository.findDailySlotCandidate(range.min(), range.max(), date, cutoff)
+                : catalogRepository.findDailySlotCandidateByRating(range.min(), range.max(), date, cutoff);
     }
 
     private boolean sameProblem(CodeforcesApiService.SubmissionStatus submission, Integer contestId,
